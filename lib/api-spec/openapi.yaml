@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: THREADCAST TTRPG API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: characters
+    description: Character management
 paths:
   /healthz:
     get:
@@ -24,6 +28,141 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+
+  /characters:
+    get:
+      operationId: listCharacters
+      tags: [characters]
+      summary: List all characters for current user
+      responses:
+        "200":
+          description: List of characters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Character"
+    post:
+      operationId: createCharacter
+      tags: [characters]
+      summary: Create a new character
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CharacterInput"
+      responses:
+        "201":
+          description: Created character
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+
+  /characters/{id}:
+    get:
+      operationId: getCharacter
+      tags: [characters]
+      summary: Get a character by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Character
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCharacter
+      tags: [characters]
+      summary: Update a character
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CharacterUpdate"
+      responses:
+        "200":
+          description: Updated character
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+    delete:
+      operationId: deleteCharacter
+      tags: [characters]
+      summary: Delete a character
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +173,87 @@ components:
       required:
         - status
 
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, username, displayName, role]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [player, weavekeeper]
+
+    Character:
+      type: object
+      required: [id, userId, name, level, data, isDraft, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        level:
+          type: integer
+        affinity:
+          type: ["string", "null"]
+        mode:
+          type: ["string", "null"]
+        data:
+          type: object
+          description: Full character sheet data as JSONB
+          additionalProperties: true
+        isDraft:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    CharacterInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        level:
+          type: integer
+        affinity:
+          type: string
+        mode:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        isDraft:
+          type: boolean
+
+    CharacterUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        level:
+          type: integer
+        affinity:
+          type: string
+        mode:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        isDraft:
+          type: boolean

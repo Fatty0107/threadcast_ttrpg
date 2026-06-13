@@ -1,0 +1,1429 @@
+import { useState } from "react";
+
+const SECTIONS = [
+  { id: "overview", label: "Overview", icon: "⚡" },
+  { id: "auth", label: "Auth & Login", icon: "🔐" },
+  { id: "design", label: "Visual Design", icon: "🎨" },
+  { id: "layout", label: "Layout & Navigation", icon: "🗺" },
+  { id: "builder", label: "Character Builder", icon: "⚗" },
+  { id: "sheet", label: "Character Sheet", icon: "📜" },
+  { id: "tension", label: "Tension System UI", icon: "🌀" },
+  { id: "homebrew", label: "Homebrew Creator", icon: "🔨" },
+  { id: "weavekeeper", label: "Weavekeeper Tools", icon: "👁" },
+  { id: "architecture", label: "Architecture", icon: "🏗" },
+  { id: "components", label: "Components", icon: "🧩" },
+  { id: "animations", label: "Animations", icon: "✨" },
+  { id: "accessibility", label: "Accessibility", icon: "♿" },
+];
+
+const Tag = ({ children, color = "amber" }) => {
+  const colors = {
+    amber: { bg: "#2a1f0a", border: "#c8843a", text: "#c8843a" },
+    red:   { bg: "#2a0a0a", border: "#8b2a2a", text: "#cf5050" },
+    teal:  { bg: "#0a1f1a", border: "#2e6b5a", text: "#4a9a82" },
+    blue:  { bg: "#0a1420", border: "#1a4060", text: "#5090c0" },
+    purple:{ bg: "#1a0a2a", border: "#5a2a8a", text: "#9060c0" },
+    gray:  { bg: "#1a1a1a", border: "#3a3a3a", text: "#8a8a8a" },
+  };
+  const c = colors[color];
+  return (
+    <span style={{
+      display: "inline-block",
+      background: c.bg,
+      border: `1px solid ${c.border}`,
+      color: c.text,
+      padding: "2px 8px",
+      borderRadius: "3px",
+      fontSize: "11px",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontWeight: 600,
+      letterSpacing: "0.05em",
+      margin: "2px",
+    }}>{children}</span>
+  );
+};
+
+const Code = ({ children }) => (
+  <code style={{
+    background: "#1a1917",
+    border: "1px solid #2e2b28",
+    color: "#c8843a",
+    padding: "2px 6px",
+    borderRadius: "3px",
+    fontSize: "12px",
+    fontFamily: "'JetBrains Mono', monospace",
+  }}>{children}</code>
+);
+
+const CodeBlock = ({ children, title }) => (
+  <div style={{ margin: "1rem 0" }}>
+    {title && (
+      <div style={{
+        background: "#252320",
+        border: "1px solid #2e2b28",
+        borderBottom: "none",
+        padding: "6px 12px",
+        borderRadius: "4px 4px 0 0",
+        fontSize: "11px",
+        color: "#9e9080",
+        fontFamily: "'JetBrains Mono', monospace",
+        letterSpacing: "0.05em",
+      }}>{title}</div>
+    )}
+    <pre style={{
+      background: "#141311",
+      border: "1px solid #2e2b28",
+      borderRadius: title ? "0 0 4px 4px" : "4px",
+      padding: "16px",
+      fontSize: "12px",
+      fontFamily: "'JetBrains Mono', monospace",
+      color: "#b8c0cc",
+      margin: 0,
+      overflowX: "auto",
+      lineHeight: 1.7,
+      whiteSpace: "pre-wrap",
+    }}>{children}</pre>
+  </div>
+);
+
+const Section = ({ title, children, id }) => (
+  <div id={id} style={{ marginBottom: "3rem" }}>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      marginBottom: "1.5rem",
+      paddingBottom: "12px",
+      borderBottom: "1px solid #2e2b28",
+    }}>
+      <h2 style={{
+        fontFamily: "'Cinzel', serif",
+        fontSize: "18px",
+        color: "#c8843a",
+        margin: 0,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+      }}>{title}</h2>
+    </div>
+    {children}
+  </div>
+);
+
+const SubSection = ({ title, children }) => (
+  <div style={{ marginBottom: "2rem" }}>
+    <h3 style={{
+      fontFamily: "'Cinzel', serif",
+      fontSize: "13px",
+      color: "#9e9080",
+      letterSpacing: "0.1em",
+      textTransform: "uppercase",
+      margin: "0 0 1rem 0",
+      paddingLeft: "10px",
+      borderLeft: "2px solid #c8843a",
+    }}>{title}</h3>
+    {children}
+  </div>
+);
+
+const P = ({ children }) => (
+  <p style={{
+    color: "#c8c0b0",
+    fontSize: "14px",
+    lineHeight: 1.8,
+    margin: "0 0 0.8rem 0",
+    fontFamily: "Inter, sans-serif",
+  }}>{children}</p>
+);
+
+const SpecRow = ({ label, value, desc }) => (
+  <div style={{
+    display: "grid",
+    gridTemplateColumns: "180px 1fr",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid #1e1c1a",
+    alignItems: "start",
+  }}>
+    <div style={{
+      fontSize: "12px",
+      fontFamily: "'JetBrains Mono', monospace",
+      color: "#9e9080",
+      paddingTop: "2px",
+    }}>{label}</div>
+    <div>
+      <div style={{ fontSize: "14px", color: "#e8dcc8", fontFamily: "Inter, sans-serif", marginBottom: desc ? "4px" : 0 }}>{value}</div>
+      {desc && <div style={{ fontSize: "12px", color: "#6e6460", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{desc}</div>}
+    </div>
+  </div>
+);
+
+const Alert = ({ type = "info", children }) => {
+  const colors = {
+    info:    { bg: "#0a1420", border: "#1a4060", icon: "ℹ", iconColor: "#5090c0" },
+    warning: { bg: "#1a1200", border: "#4a3000", icon: "⚠", iconColor: "#c8843a" },
+    danger:  { bg: "#1a0808", border: "#4a1515", icon: "🔴", iconColor: "#8b2a2a" },
+    success: { bg: "#081a10", border: "#1a4a2a", icon: "✓", iconColor: "#4a7c6b" },
+  };
+  const c = colors[type];
+  return (
+    <div style={{
+      background: c.bg,
+      border: `1px solid ${c.border}`,
+      borderRadius: "4px",
+      padding: "12px 16px",
+      margin: "1rem 0",
+      display: "flex",
+      gap: "10px",
+      alignItems: "flex-start",
+      fontSize: "13px",
+      color: "#c8c0b0",
+      fontFamily: "Inter, sans-serif",
+      lineHeight: 1.6,
+    }}>
+      <span style={{ color: c.iconColor, marginTop: "1px", flexShrink: 0 }}>{c.icon}</span>
+      <div>{children}</div>
+    </div>
+  );
+};
+
+const UIPreview = ({ title, children }) => (
+  <div style={{ margin: "1rem 0" }}>
+    {title && <div style={{ fontSize: "11px", color: "#6e6460", fontFamily: "'JetBrains Mono', monospace", marginBottom: "6px", letterSpacing: "0.1em" }}>PREVIEW: {title}</div>}
+    <div style={{
+      background: "#0f0e0d",
+      border: "1px solid #2e2b28",
+      borderRadius: "4px",
+      padding: "20px",
+      position: "relative",
+    }}>
+      {children}
+    </div>
+  </div>
+);
+
+const MockCard = ({ title, sub, tags, accent = false }) => (
+  <div style={{
+    background: "#1a1917",
+    border: `1px solid ${accent ? "#c8843a" : "#2e2b28"}`,
+    borderRadius: "4px",
+    padding: "14px",
+    flex: 1,
+    boxShadow: accent ? "0 0 12px rgba(200,132,58,0.1)" : "none",
+  }}>
+    <div style={{ fontFamily: "'Cinzel', serif", fontSize: "13px", color: "#e8dcc8", letterSpacing: "0.05em", marginBottom: "4px" }}>{title}</div>
+    {sub && <div style={{ fontSize: "12px", color: "#6e6460", fontFamily: "Inter, sans-serif", marginBottom: "8px" }}>{sub}</div>}
+    {tags && <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>{tags.map((t, i) => <Tag key={i} color="gray">{t}</Tag>)}</div>}
+  </div>
+);
+
+const TensionGaugeMock = ({ tension = 7, pool = 16, safeLimit = 6 }) => {
+  const pct = tension / pool;
+  const safePct = safeLimit / pool;
+  const overSafe = tension > safeLimit;
+  const r = 42, cx = 56, cy = 56;
+  const circum = 2 * Math.PI * r;
+  const fillLen = pct * circum * 0.75;
+  const safeArc = safePct * circum * 0.75;
+  return (
+    <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        <defs>
+          <filter id="amber-glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        {/* Track */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#252320" strokeWidth="8"
+          strokeDasharray={`${circum * 0.75} ${circum * 0.25}`}
+          strokeDashoffset={circum * 0.125}
+          strokeLinecap="round"/>
+        {/* Safe zone fill */}
+        <circle cx={cx} cy={cy} r={r} fill="none"
+          stroke="#c8843a" strokeWidth="8"
+          strokeDasharray={`${Math.min(fillLen, safeArc)} ${circum}`}
+          strokeDashoffset={circum * 0.125}
+          strokeLinecap="round"
+          filter="url(#amber-glow)"
+          style={{ transition: "stroke-dasharray 0.3s ease-out" }}/>
+        {/* Over-safe fill */}
+        {overSafe && (
+          <circle cx={cx} cy={cy} r={r} fill="none"
+            stroke="#8b2a2a" strokeWidth="8"
+            strokeDasharray={`${fillLen - safeArc} ${circum}`}
+            strokeDashoffset={circum * 0.125 - safeArc}
+            strokeLinecap="round"/>
+        )}
+        {/* Safe limit marker */}
+        <text x={cx} y={cy - 8} textAnchor="middle" fill="#9e9080" fontSize="10" fontFamily="JetBrains Mono, monospace">TENSION</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill={overSafe ? "#cf5050" : "#e8dcc8"} fontSize="22" fontFamily="JetBrains Mono, monospace" fontWeight="700">{tension}</text>
+        <text x={cx} y={cy + 24} textAnchor="middle" fill="#6e6460" fontSize="9" fontFamily="JetBrains Mono, monospace">/ {pool} TP · SL:{safeLimit}</text>
+        {overSafe && (
+          <text x={cx} y={cy + 38} textAnchor="middle" fill="#8b2a2a" fontSize="8" fontFamily="JetBrains Mono, monospace">⚠ STRAIN</text>
+        )}
+      </svg>
+      <div style={{ display: "flex", gap: "4px" }}>
+        <button style={{ background: "#252320", border: "1px solid #3a3530", color: "#9e9080", padding: "3px 8px", borderRadius: "2px", fontSize: "11px", cursor: "pointer", fontFamily: "JetBrains Mono, monospace" }}>− Release</button>
+        <button style={{ background: "#252320", border: "1px solid #c8843a", color: "#c8843a", padding: "3px 8px", borderRadius: "2px", fontSize: "11px", cursor: "pointer", fontFamily: "JetBrains Mono, monospace" }}>+ Spend</button>
+      </div>
+    </div>
+  );
+};
+
+const BurnoutTrackMock = ({ level = 2 }) => (
+  <div>
+    <div style={{ fontSize: "10px", fontFamily: "'JetBrains Mono', monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "6px" }}>BURNOUT</div>
+    <div style={{ display: "flex", gap: "6px" }}>
+      {[1,2,3,4,5,6].map(n => (
+        <div key={n} style={{
+          width: "24px", height: "24px",
+          borderRadius: "50%",
+          background: n <= level ? "#8b2a2a" : "transparent",
+          border: `2px solid ${n <= level ? "#8b2a2a" : "#3a3530"}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: n <= level ? "0 0 6px rgba(139,42,42,0.4)" : "none",
+          transition: "all 0.6s ease",
+          fontSize: "9px",
+          color: n <= level ? "#e8dcc8" : "#4a4540",
+          fontFamily: "JetBrains Mono, monospace",
+        }}>{n}</div>
+      ))}
+    </div>
+    {level > 0 && (
+      <div style={{ fontSize: "11px", color: "#8b2a2a", fontFamily: "Inter, sans-serif", marginTop: "6px", lineHeight: 1.4 }}>
+        {level >= 1 && "● Frayed: Discord on Thread Checks"}
+        {level >= 2 && <><br/>● Stretched: +1 Tension cost</>}
+      </div>
+    )}
+  </div>
+);
+
+const VPBarMock = ({ current = 22, max = 28 }) => {
+  const pct = current / max;
+  const color = pct > 0.5 ? "#4a7c6b" : pct > 0.25 ? "#c8843a" : "#8b2a2a";
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+        <span style={{ fontSize: "10px", fontFamily: "'JetBrains Mono', monospace", color: "#9e9080", letterSpacing: "0.1em" }}>VITALITY</span>
+        <span style={{ fontSize: "13px", fontFamily: "'JetBrains Mono', monospace", color: "#e8dcc8" }}>{current} / {max}</span>
+      </div>
+      <div style={{ background: "#252320", borderRadius: "2px", height: "8px", overflow: "hidden" }}>
+        <div style={{ width: `${pct * 100}%`, height: "100%", background: color, borderRadius: "2px", transition: "width 0.3s ease-out, background 0.3s" }}/>
+      </div>
+    </div>
+  );
+};
+
+const StepSidebarMock = ({ active = 2 }) => {
+  const steps = ["Basic Info","Background","Attributes","Affinity","Mode","Strings","Path & Guild","Skills","Signature","Equipment","Review & Save"];
+  return (
+    <div style={{ width: "160px", background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "12px 0" }}>
+      <div style={{ padding: "0 12px 10px", borderBottom: "1px solid #2e2b28", marginBottom: "8px" }}>
+        <div style={{ fontSize: "12px", fontFamily: "'Cinzel', serif", color: "#c8843a", letterSpacing: "0.06em" }}>ARIA SOLFORGE</div>
+        <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "Inter, sans-serif", marginTop: "2px" }}>Level 1 · Draft</div>
+      </div>
+      {steps.map((s, i) => {
+        const state = i < active ? "done" : i === active ? "active" : "todo";
+        return (
+          <div key={i} style={{
+            padding: "5px 12px",
+            display: "flex", alignItems: "center", gap: "8px",
+            background: state === "active" ? "#1e1c1a" : "transparent",
+            borderLeft: state === "active" ? "2px solid #c8843a" : "2px solid transparent",
+            cursor: state !== "todo" ? "pointer" : "default",
+          }}>
+            <span style={{ fontSize: "11px", color: state === "done" ? "#4a7c6b" : state === "active" ? "#c8843a" : "#4a4540", fontFamily: "'JetBrains Mono', monospace" }}>
+              {state === "done" ? "✓" : state === "active" ? "●" : "○"}
+            </span>
+            <span style={{ fontSize: "11px", color: state === "done" ? "#9e9080" : state === "active" ? "#e8dcc8" : "#4a4540", fontFamily: "Inter, sans-serif" }}>{s}</span>
+          </div>
+        );
+      })}
+      <div style={{ padding: "10px 12px 0", borderTop: "1px solid #2e2b28", marginTop: "8px" }}>
+        <div style={{ fontSize: "10px", color: "#4a7c6b", fontFamily: "Inter, sans-serif" }}>✓ Saved 2s ago</div>
+      </div>
+    </div>
+  );
+};
+
+const SkillRowMock = ({ name, attr, mod, rb, attuned, locked }) => (
+  <div style={{
+    display: "grid",
+    gridTemplateColumns: "1fr 40px 36px 36px 44px 60px",
+    alignItems: "center",
+    padding: "6px 0",
+    borderBottom: "1px solid #1e1c1a",
+    fontSize: "12px",
+    fontFamily: "Inter, sans-serif",
+    color: "#c8c0b0",
+    cursor: "pointer",
+  }}>
+    <span style={{ color: attuned ? "#c8843a" : "#c8c0b0" }}>{name}</span>
+    <span style={{ color: "#6e6460", fontFamily: "'JetBrains Mono', monospace", fontSize: "11px" }}>{attr}</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#9e9080" }}>{mod}</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: attuned ? "#c8843a" : "#4a4540" }}>{attuned ? rb : "—"}</span>
+    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8dcc8", fontWeight: 700 }}>{attuned ? `+${parseInt(mod)+parseInt(rb)}` : mod}</span>
+    <span style={{ color: locked ? "#4a4540" : attuned ? "#c8843a" : "#4a4540", fontSize: "10px" }}>
+      {attuned ? "● Attuned" : locked ? "🔒 Locked" : "○ None"}
+    </span>
+  </div>
+);
+
+const ModeCardMock = ({ name, tagline, stat, dice, range, selected }) => (
+  <div style={{
+    background: selected ? "#1e1c1a" : "#141311",
+    border: `1px solid ${selected ? "#c8843a" : "#2e2b28"}`,
+    borderRadius: "4px",
+    padding: "14px",
+    cursor: "pointer",
+    flex: 1,
+    minWidth: "180px",
+    boxShadow: selected ? "0 0 16px rgba(200,132,58,0.08)" : "none",
+    transition: "all 0.15s",
+  }}>
+    <div style={{ fontFamily: "'Cinzel', serif", fontSize: "12px", color: selected ? "#c8843a" : "#9e9080", letterSpacing: "0.08em", marginBottom: "4px" }}>MODE: {name}</div>
+    <div style={{ fontSize: "11px", color: "#6e6460", fontFamily: "Inter, sans-serif", fontStyle: "italic", marginBottom: "10px" }}>"{tagline}"</div>
+    <div style={{ fontSize: "11px", fontFamily: "'JetBrains Mono', monospace", color: "#9e9080", lineHeight: 1.7 }}>
+      <div>Check: <span style={{ color: "#c8c0b0" }}>{stat}</span></div>
+      <div>Dice: <span style={{ color: "#c8c0b0" }}>{dice}</span></div>
+      <div>Range: <span style={{ color: "#c8c0b0" }}>{range}</span></div>
+    </div>
+    {selected && <div style={{ marginTop: "8px", fontSize: "10px", color: "#4a7c6b", fontFamily: "JetBrains Mono, monospace" }}>● PRIMARY — Harmony on all checks</div>}
+  </div>
+);
+
+export default function ThreadcastSpec() {
+  const [activeSection, setActiveSection] = useState("overview");
+  const [expandedItems, setExpandedItems] = useState({});
+  const [tensionDemo, setTensionDemo] = useState(7);
+  const [burnoutDemo, setBurnoutDemo] = useState(2);
+  const [vpDemo, setVpDemo] = useState(22);
+
+  const toggle = (key) => setExpandedItems(p => ({ ...p, [key]: !p[key] }));
+
+  const scrollTo = (id) => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const styles = {
+    root: {
+      display: "flex",
+      background: "#0f0e0d",
+      color: "#e8dcc8",
+      fontFamily: "Inter, sans-serif",
+      minHeight: "100vh",
+      fontSize: "14px",
+    },
+    nav: {
+      width: "200px",
+      flexShrink: 0,
+      background: "#0a0908",
+      borderRight: "1px solid #1e1c1a",
+      position: "sticky",
+      top: 0,
+      height: "100vh",
+      overflowY: "auto",
+      padding: "20px 0",
+    },
+    navTitle: {
+      fontFamily: "'Cinzel', serif",
+      fontSize: "11px",
+      color: "#c8843a",
+      letterSpacing: "0.12em",
+      padding: "0 16px 16px",
+      borderBottom: "1px solid #1e1c1a",
+      marginBottom: "8px",
+      textTransform: "uppercase",
+    },
+    navItem: (active) => ({
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      padding: "7px 16px",
+      cursor: "pointer",
+      fontSize: "12px",
+      color: active ? "#c8843a" : "#9e9080",
+      background: active ? "#1a1512" : "transparent",
+      borderLeft: active ? "2px solid #c8843a" : "2px solid transparent",
+      transition: "all 0.15s",
+      fontFamily: "Inter, sans-serif",
+    }),
+    main: {
+      flex: 1,
+      overflowY: "auto",
+      padding: "40px 48px",
+      maxWidth: "900px",
+    },
+    hero: {
+      marginBottom: "3rem",
+      paddingBottom: "2rem",
+      borderBottom: "1px solid #2e2b28",
+    },
+  };
+
+  return (
+    <div style={styles.root}>
+      {/* Sidebar Navigation */}
+      <div style={styles.nav}>
+        <div style={styles.navTitle}>Threadcast Spec</div>
+        {SECTIONS.map(s => (
+          <div key={s.id} style={styles.navItem(activeSection === s.id)} onClick={() => scrollTo(s.id)}>
+            <span style={{ fontSize: "14px" }}>{s.icon}</span>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div style={styles.main}>
+
+        {/* Hero */}
+        <div style={styles.hero}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: "10px", color: "#6e6460", letterSpacing: "0.2em", marginBottom: "12px", textTransform: "uppercase" }}>
+            UI/UX & Architecture Specification · v1.0
+          </div>
+          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: "32px", color: "#e8dcc8", margin: "0 0 8px", letterSpacing: "0.08em", lineHeight: 1.2 }}>
+            THREADCAST
+          </h1>
+          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: "16px", color: "#c8843a", margin: "0 0 16px", letterSpacing: "0.12em", fontWeight: 400 }}>
+            CHARACTER BUILDER & HOMEBREW SYSTEM
+          </h2>
+          <P>
+            A complete specification for the official digital toolset for THREADCAST — a TTRPG set in Aethros where leyline magic is dangerous, political, and costs everything. Every UI decision in this document is game-aware: the Tension system, Mode of Resonance, Strings, and Burnout track are load-bearing mechanics that shape the entire design.
+          </P>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }}>
+            <Tag color="amber">React + TypeScript</Tag>
+            <Tag color="teal">TailwindCSS</Tag>
+            <Tag color="blue">Zustand</Tag>
+            <Tag color="purple">React Router v6</Tag>
+            <Tag color="gray">PostgreSQL + JSONB</Tag>
+            <Tag color="red">JWT Auth</Tag>
+          </div>
+        </div>
+
+        {/* OVERVIEW */}
+        <Section title="Overview & Philosophy" id="overview">
+          <P>
+            THREADCAST's digital toolset should feel like a guild scribe's ledger crossed with a magical research terminal — disciplined, readable, with controlled warmth. Not gothic horror, not glowing neon. This is a records system, not a consumer app. Every interaction should feel precise and intentional, like the magic system itself.
+          </P>
+          <Alert type="warning">
+            <strong>Design mandate:</strong> The only "moment of delight" is the Tension Gauge. Everything else is deliberately still, precise, and readable in dim lighting during actual play. Resist the temptation to add shimmer, bounce, or rounded corners everywhere.
+          </Alert>
+
+          <SubSection title="Core Design Principles">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {[
+                ["Playable in dim light", "High contrast text, no reliance on subtle gradients. The sheet must be readable across a dim table."],
+                ["One-handed on mobile", "Primary actions reachable with a thumb during play. VP / Tension updates = 2 taps max."],
+                ["Information density", "Show everything relevant without hiding stats behind extra clicks. Think D&D Beyond, but darker and denser."],
+                ["Game-aware state", "UI enforces rules: can't select PL4 above your limit, can't exceed Thread Pool without Snapback warning."],
+              ].map(([title, desc]) => (
+                <div key={title} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "11px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "6px", textTransform: "uppercase" }}>{title}</div>
+                  <div style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="Route Map">
+            <CodeBlock title="routes.tsx">
+{`/ (landing / login redirect)
+/login
+/characters                    → My Characters list
+/characters/new                → Character Builder wizard
+/characters/:id                → Character Sheet viewer (live play)
+/characters/:id/build          → Builder edit mode
+/characters/:id/export         → PDF export preview
+
+/homebrew                      → Browse public homebrew
+/homebrew/my                   → My creations
+/homebrew/affinities/new
+/homebrew/items/new
+/homebrew/feats/new
+/homebrew/backgrounds/new
+/homebrew/techniques/new
+
+/compendium                    → Read-only rules reference
+/compendium/modes
+/compendium/skills
+/compendium/tension
+/compendium/combat
+
+/weavekeeper/campaigns         → DM tools
+/weavekeeper/campaigns/:id`}
+            </CodeBlock>
+          </SubSection>
+        </Section>
+
+        {/* AUTH */}
+        <Section title="Authentication — Hardcoded Credentials" id="auth">
+          <Alert type="info">
+            No email required. Users log in with a pre-set username and password stored in a config file. This is ideal for a personal/group tool or a demo instance.
+          </Alert>
+
+          <SubSection title="Login Page Design">
+            <P>The login screen is a full-bleed dark page with a centered card. Background should have a very subtle animated leyline texture — thin, slow-moving amber lines at 0.02 opacity. Not distracting, just alive.</P>
+
+            <UIPreview title="Login Card">
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "280px", background: "#1a1917", border: "1px solid #2e2b28", borderRadius: "4px", padding: "32px 28px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "22px", color: "#c8843a", letterSpacing: "0.1em", marginBottom: "4px", textAlign: "center" }}>THREADCAST</div>
+                  <div style={{ fontSize: "11px", color: "#6e6460", fontFamily: "Inter, sans-serif", textAlign: "center", marginBottom: "28px", letterSpacing: "0.08em" }}>WORLD OF AETHROS</div>
+                  <div style={{ marginBottom: "14px" }}>
+                    <div style={{ fontSize: "11px", color: "#9e9080", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", marginBottom: "5px" }}>USERNAME</div>
+                    <input readOnly value="aria_solforge" style={{ width: "100%", background: "#141311", border: "1px solid #2e2b28", color: "#e8dcc8", padding: "9px 12px", borderRadius: "2px", fontSize: "13px", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }}/>
+                  </div>
+                  <div style={{ marginBottom: "20px" }}>
+                    <div style={{ fontSize: "11px", color: "#9e9080", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", marginBottom: "5px" }}>PASSWORD</div>
+                    <input readOnly type="password" value="password" style={{ width: "100%", background: "#141311", border: "1px solid #2e2b28", color: "#e8dcc8", padding: "9px 12px", borderRadius: "2px", fontSize: "13px", fontFamily: "'JetBrains Mono', monospace", boxSizing: "border-box" }}/>
+                  </div>
+                  <button style={{ width: "100%", background: "#c8843a", border: "none", color: "#0f0e0d", padding: "10px", borderRadius: "2px", fontSize: "12px", fontFamily: "'Cinzel', serif", letterSpacing: "0.1em", cursor: "pointer", fontWeight: 700 }}>ENTER THE WEAVE</button>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Credential Configuration">
+            <P>Store user accounts in a <Code>config/users.ts</Code> file. At startup the backend reads this and initializes accounts if they don't exist in the DB. No email verification, no registration flow.</P>
+            <CodeBlock title="config/users.ts">
+{`export const HARDCODED_USERS = [
+  {
+    username: "aria_solforge",
+    password: "embersong",          // bcrypt on first load
+    display_name: "Aria Solforge",
+    role: "player",
+  },
+  {
+    username: "weavekeeper_dm",
+    password: "threadpuller",
+    display_name: "The Weavekeeper",
+    role: "weavekeeper",            // unlocks /weavekeeper routes
+  },
+  // Add more players here
+] as const;`}
+            </CodeBlock>
+            <Alert type="warning">
+              Passwords are stored as bcrypt hashes in the database. The plaintext config is only used to seed on first run. Run <Code>npm run seed-users</Code> to hash and insert them.
+            </Alert>
+          </SubSection>
+
+          <SubSection title="Auth Flow">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <SpecRow label="Token type" value="JWT with 7-day expiry" desc="Stored in HttpOnly cookie. No localStorage."/>
+              <SpecRow label="Refresh" value="Auto-refresh on /api/auth/refresh" desc="Client calls this on mount if token near expiry."/>
+              <SpecRow label="Protected routes" value="RequireAuth HOC wraps all /characters and /weavekeeper routes" desc="Redirects to /login if no valid session."/>
+              <SpecRow label="Weavekeeper routes" value="role === 'weavekeeper' check" desc="Players who hit /weavekeeper see a 403 page with a styled error."/>
+            </div>
+          </SubSection>
+        </Section>
+
+        {/* VISUAL DESIGN */}
+        <Section title="Visual Design System" id="design">
+          <SubSection title="Color Palette">
+            <P>Every color has a named semantic purpose. Never use <Code>--accent-burnout</Code> for anything positive. Never use <Code>--accent-mend</Code> for warnings.</P>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              {[
+                { name: "--bg-base", hex: "#0f0e0d", use: "Canvas. The root background. Near-black parchment." },
+                { name: "--bg-surface", hex: "#1a1917", use: "Card / panel backgrounds." },
+                { name: "--bg-elevated", hex: "#252320", use: "Raised surfaces, dropdowns, tooltips." },
+                { name: "--accent-thread", hex: "#c8843a", use: "Thread amber — ALL primary actions, active states, Tension bar, magical highlights." },
+                { name: "--accent-burnout", hex: "#8b2a2a", use: "ONLY for Burnout, Snapback, danger states. Never positive." },
+                { name: "--accent-mend", hex: "#4a7c6b", use: "Healing, VP restoration, success, recovery." },
+                { name: "--text-primary", hex: "#e8dcc8", use: "Body text — warm near-white." },
+                { name: "--text-secondary", hex: "#9e9080", use: "Labels, secondary content." },
+                { name: "--text-disabled", hex: "#4a4540", use: "Locked / locked-future content." },
+                { name: "--border-subtle", hex: "#2e2b28", use: "Hairline borders between panels." },
+              ].map(c => (
+                <div key={c.name} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "7px 0", borderBottom: "1px solid #1a1917" }}>
+                  <div style={{ width: "28px", height: "28px", background: c.hex, borderRadius: "2px", flexShrink: 0, border: "1px solid #3a3530" }}/>
+                  <code style={{ fontSize: "12px", color: "#c8843a", fontFamily: "'JetBrains Mono', monospace", minWidth: "180px" }}>{c.name}</code>
+                  <code style={{ fontSize: "11px", color: "#6e6460", fontFamily: "'JetBrains Mono', monospace", minWidth: "80px" }}>{c.hex}</code>
+                  <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif" }}>{c.use}</span>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="Typography System">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+              <div style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "16px" }}>
+                <div style={{ fontSize: "10px", color: "#6e6460", letterSpacing: "0.1em", marginBottom: "10px", fontFamily: "JetBrains Mono, monospace" }}>DISPLAY</div>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: "18px", color: "#e8dcc8", letterSpacing: "0.08em" }}>Cinzel</div>
+                <div style={{ fontSize: "11px", color: "#6e6460", marginTop: "6px", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Page titles, section headers, character names. Used sparingly. Heavy tracking.</div>
+              </div>
+              <div style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "16px" }}>
+                <div style={{ fontSize: "10px", color: "#6e6460", letterSpacing: "0.1em", marginBottom: "10px", fontFamily: "JetBrains Mono, monospace" }}>BODY</div>
+                <div style={{ fontFamily: "Inter, sans-serif", fontSize: "16px", color: "#e8dcc8" }}>Inter</div>
+                <div style={{ fontSize: "11px", color: "#6e6460", marginTop: "6px", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>All UI text, labels, descriptions, notes. Clean and legible at small sizes.</div>
+              </div>
+              <div style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "16px" }}>
+                <div style={{ fontSize: "10px", color: "#6e6460", letterSpacing: "0.1em", marginBottom: "10px", fontFamily: "JetBrains Mono, monospace" }}>MONOSPACE</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "16px", color: "#e8dcc8" }}>JetBrains Mono</div>
+                <div style={{ fontSize: "11px", color: "#6e6460", marginTop: "6px", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Stat values, dice notation, Tension counter, DC numbers. Precise and mechanical.</div>
+              </div>
+            </div>
+          </SubSection>
+
+          <SubSection title="Design Rules (Non-Negotiable)">
+            <div style={{ display: "grid", gap: "8px" }}>
+              {[
+                ["Border radius", "4px on cards, 2px on inputs. No rounded-xl anywhere. This is a records system."],
+                ["Motion", "3 animations only: Tension gauge (0.3s ease-out), tab transitions (0.15s fade), Burnout circle fill (0.6s ominous)."],
+                ["Grid / tables", "Dense tables over cards for stat blocks. Cards for content (strings, techniques, items)."],
+                ["No shadows", "No drop shadows anywhere except the Tension gauge glow which uses an SVG filter, not CSS box-shadow."],
+                ["No emojis in UI", "Use geometric symbols: ○ ● ✓ ⚠ 🔒 for states. Emojis feel wrong in this aesthetic."],
+              ].map(([rule, desc]) => (
+                <div key={rule} style={{ display: "flex", gap: "12px", padding: "8px 0", borderBottom: "1px solid #1a1917" }}>
+                  <code style={{ minWidth: "130px", fontSize: "11px", color: "#c8843a", fontFamily: "JetBrains Mono, monospace" }}>{rule}</code>
+                  <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+        </Section>
+
+        {/* LAYOUT & NAV */}
+        <Section title="Global Layout & Navigation" id="layout">
+          <SubSection title="Top Navigation Bar (All pages)">
+            <P>Fixed header, 48px tall. Three zones: brand left, primary nav center, user right.</P>
+            <UIPreview title="Top Nav">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #2e2b28", paddingBottom: "12px" }}>
+                <div style={{ fontFamily: "'Cinzel', serif", fontSize: "14px", color: "#c8843a", letterSpacing: "0.1em" }}>THREADCAST</div>
+                <div style={{ display: "flex", gap: "24px" }}>
+                  {["Characters", "Homebrew", "Compendium", "Weavekeeper"].map((n, i) => (
+                    <span key={n} style={{ fontSize: "12px", color: i === 0 ? "#c8843a" : "#9e9080", fontFamily: "Inter, sans-serif", borderBottom: i === 0 ? "1px solid #c8843a" : "none", paddingBottom: "2px", cursor: "pointer" }}>{n}</span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#252320", border: "1px solid #3a3530", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#9e9080", fontFamily: "Cinzel, serif" }}>AS</div>
+                  <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif" }}>aria_solforge</span>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Characters List Page (/characters)">
+            <P>Grid of character cards. Each card shows portrait, name, level, affinity, mode, VP, and a live Tension state indicator if in an active session. "Draft" badge for incomplete characters.</P>
+            <UIPreview title="Character Cards Grid">
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                {[
+                  { name: "Aria Solforge", level: 3, affinity: "Fire", mode: "Striker", vp: "28/28", draft: false },
+                  { name: "Tomas Grey", level: 2, affinity: "Water", mode: "Anchor", vp: "22/26", draft: false },
+                  { name: "New Character", level: 1, affinity: "—", mode: "—", vp: "—", draft: true },
+                ].map(c => (
+                  <div key={c.name} style={{
+                    background: "#1a1917",
+                    border: `1px solid ${c.draft ? "#3a3530" : "#2e2b28"}`,
+                    borderRadius: "4px",
+                    padding: "16px",
+                    minWidth: "180px",
+                    cursor: "pointer",
+                    opacity: c.draft ? 0.6 : 1,
+                  }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "2px", background: "#252320", border: "1px solid #3a3530", marginBottom: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px" }}>
+                      {c.draft ? "+" : "🔥"}
+                    </div>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: "13px", color: "#e8dcc8", letterSpacing: "0.05em", marginBottom: "4px" }}>{c.name}</div>
+                    <div style={{ fontSize: "11px", color: "#6e6460", fontFamily: "Inter, sans-serif" }}>Lv.{c.level} · {c.affinity} · {c.mode}</div>
+                    {c.draft ? (
+                      <Tag color="gray">DRAFT</Tag>
+                    ) : (
+                      <div style={{ marginTop: "8px", fontSize: "11px", fontFamily: "JetBrains Mono, monospace", color: "#4a7c6b" }}>VP {c.vp}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </UIPreview>
+          </SubSection>
+        </Section>
+
+        {/* CHARACTER BUILDER */}
+        <Section title="Character Builder — 11-Step Wizard" id="builder">
+          <P>
+            A multi-step wizard with a persistent left sidebar showing step completion state. Auto-saves every 30 seconds and on every step transition. A collapsible Character Preview panel shows live-computed stats.
+          </P>
+
+          <SubSection title="Builder Layout (Desktop)">
+            <UIPreview title="Builder Layout">
+              <div style={{ display: "flex", gap: "16px" }}>
+                <StepSidebarMock active={2} />
+                <div style={{ flex: 1, background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "20px", minHeight: "320px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "14px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #2e2b28" }}>
+                    STEP 3: ATTRIBUTES
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <div>
+                      {[["POTENCY","POT",14,2],["CONTROL","CTR",13,1],["RESILIENCE","RES",12,1]].map(([name,abbr,score,mod]) => (
+                        <div key={abbr} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 0", borderBottom: "1px solid #1a1917" }}>
+                          <div style={{ width: "28px", fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace" }}>{abbr}</div>
+                          <div style={{ flex: 1, fontSize: "11px", color: "#9e9080", fontFamily: "Inter, sans-serif" }}>{name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <button style={{ width: "22px", height: "22px", background: "#252320", border: "1px solid #3a3530", color: "#9e9080", borderRadius: "2px", cursor: "pointer", fontSize: "12px" }}>−</button>
+                            <span style={{ fontSize: "15px", fontFamily: "JetBrains Mono, monospace", color: "#e8dcc8", minWidth: "28px", textAlign: "center" }}>{score}</span>
+                            <button style={{ width: "22px", height: "22px", background: "#252320", border: "1px solid #3a3530", color: "#9e9080", borderRadius: "2px", cursor: "pointer", fontSize: "12px" }}>+</button>
+                          </div>
+                          <div style={{ fontSize: "13px", fontFamily: "JetBrains Mono, monospace", color: "#c8843a", minWidth: "30px", textAlign: "right" }}>{mod > 0 ? `+${mod}` : mod}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background: "#0f0e0d", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px" }}>
+                      <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.1em", marginBottom: "10px" }}>DERIVED STATS</div>
+                      {[["Vitality Points","22"],["Thread Pool","12"],["Safe Limit","6"],["Ward Rating","13"],["Guard Rating","11"]].map(([name,val]) => (
+                        <div key={name} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" }}>
+                          <span style={{ color: "#9e9080", fontFamily: "Inter, sans-serif" }}>{name}</span>
+                          <span style={{ color: "#e8dcc8", fontFamily: "JetBrains Mono, monospace" }}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px", paddingTop: "14px", borderTop: "1px solid #2e2b28" }}>
+                    <button style={{ background: "transparent", border: "1px solid #3a3530", color: "#9e9080", padding: "8px 16px", borderRadius: "2px", fontSize: "12px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>← Back</button>
+                    <div style={{ fontSize: "11px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", alignSelf: "center" }}>Points Remaining: <span style={{ color: "#c8843a" }}>15</span></div>
+                    <button style={{ background: "#c8843a", border: "none", color: "#0f0e0d", padding: "8px 20px", borderRadius: "2px", fontSize: "12px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 700 }}>Next →</button>
+                  </div>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Step 5: Mode of Resonance Cards">
+            <P>8 mode cards in a 2×4 grid. Selected mode reveals a technique checklist (choose exactly 2). Level 4+ shows Secondary Mode selector.</P>
+            <UIPreview title="Mode Cards">
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <ModeCardMock name="STRIKER" tagline="Violent displacement" stat="POT mod + RB" dice="2d12" range="30–60 ft" selected={true}/>
+                <ModeCardMock name="ANCHOR" tagline="Tension stabilization" stat="RES mod + RB" dice="—" range="Touch" selected={false}/>
+                <ModeCardMock name="CONDUCTOR" tagline="Internal channeling" stat="RES mod + RB" dice="—" range="Self" selected={false}/>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Step 6: Strings (Semi-Collaborative)">
+            <P>Strings aren't selected from a list — they're co-designed with the Weavekeeper. The UI provides a scaffold: name + description fields per string slot, with level-unlock labels and a "plan ahead" toggle for future strings.</P>
+            <Alert type="info">
+              Each String has: Name field, Description textarea, "Unlocked" toggle (auto-set by character level), and a faint "Unlock at Level N" badge for future strings. Locked strings show dimmed but are pre-writable for planning.
+            </Alert>
+            <CodeBlock title="String slot data model">
+{`interface CharacterString {
+  id: string;
+  string_name: string;
+  description: string;
+  is_unlocked: boolean;       // auto: level >= unlock_level
+  unlock_level: 1 | 3 | 5 | 7 | 9;
+  sort_order: number;
+  weavekeeper_notes?: string; // private note only WK can see
+}`}
+            </CodeBlock>
+          </SubSection>
+
+          <SubSection title="Derived Stat Calculation (Shared Logic)">
+            <P>These functions live in <Code>shared/stats.ts</Code> and are imported by both frontend and backend. Never duplicate them.</P>
+            <CodeBlock title="shared/stats.ts">
+{`export const getMod = (score: number) => Math.floor((score - 10) / 2);
+export const getVP = (res: number, level: number) => res + 8 + (level - 1) * 2;
+export const getTP = (pot: number, ctr: number, lvl: number) =>
+  Math.max(6, (getMod(pot) + getMod(ctr) + lvl) * 2);
+export const getSafeLimit = (pot: number, ctr: number, lvl: number) =>
+  getMod(pot) + getMod(ctr) + lvl;
+export const getWardRating = (ctr: number) => 10 + getMod(ctr);
+export const getGuardRating = (res: number) => 10 + getMod(res);
+export const getRecoveryDice = (res: number) => getMod(res) + 2;
+export const getRB = (level: number) =>
+  level <= 2 ? 2 : level <= 4 ? 3 : level <= 6 ? 4 : level <= 8 ? 5 : 6;
+export const getMaxSafePL = (pot: number, level: number) =>
+  Math.max(1, level + Math.floor(getMod(pot) / 3));
+export const getStrainDC = (tension: number, safeLimit: number) =>
+  10 + (tension - safeLimit);`}
+            </CodeBlock>
+          </SubSection>
+        </Section>
+
+        {/* CHARACTER SHEET */}
+        <Section title="Character Sheet — Live Play View" id="sheet">
+          <P>The most-used screen. Must be fast, readable in dim room lighting, and usable with one hand on mobile. Divided into a fixed header, a fixed left column, and a tabbed main content area.</P>
+
+          <SubSection title="Fixed Header (Always Visible)">
+            <UIPreview title="Character Sheet Header">
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingBottom: "14px", borderBottom: "1px solid #2e2b28" }}>
+                  <div style={{ width: "48px", height: "48px", borderRadius: "2px", background: "#252320", border: "1px solid #3a3530", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>🔥</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Cinzel', serif", fontSize: "18px", color: "#e8dcc8", letterSpacing: "0.06em" }}>ARIA SOLFORGE</div>
+                    <div style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", marginTop: "2px" }}>Level 3 · Fire · Striker · Thaumatarch (Sigilist)</div>
+                    <div style={{ marginTop: "8px" }}>
+                      <VPBarMock current={vpDemo} max={28}/>
+                    </div>
+                  </div>
+                  <TensionGaugeMock tension={tensionDemo} pool={16} safeLimit={6}/>
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                  {["Short Rest","Long Rest","Mend","Edit Sheet"].map(btn => (
+                    <button key={btn} style={{ background: "#252320", border: "1px solid #3a3530", color: "#9e9080", padding: "6px 12px", borderRadius: "2px", fontSize: "11px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>{btn}</button>
+                  ))}
+                </div>
+                <div style={{ marginTop: "12px", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace" }}>TENSION DEMO:</span>
+                  <input type="range" min={0} max={16} value={tensionDemo} onChange={e => setTensionDemo(+e.target.value)} style={{ width: "120px" }}/>
+                  <span style={{ fontSize: "12px", color: "#c8843a", fontFamily: "JetBrains Mono, monospace" }}>{tensionDemo}</span>
+                  <span style={{ fontSize: "11px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", marginLeft: "16px" }}>VP:</span>
+                  <input type="range" min={0} max={28} value={vpDemo} onChange={e => setVpDemo(+e.target.value)} style={{ width: "100px" }}/>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Left Column (Fixed Status Panel)">
+            <UIPreview title="Left Column">
+              <div style={{ width: "180px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                <BurnoutTrackMock level={burnoutDemo}/>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em" }}>BURNOUT LEVEL</span>
+                    <input type="range" min={0} max={6} value={burnoutDemo} onChange={e => setBurnoutDemo(+e.target.value)} style={{ width: "80px" }}/>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "6px" }}>FATIGUE</div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {[1,2,3,4,5,6].map(n => (
+                      <div key={n} style={{ width: "22px", height: "22px", borderRadius: "50%", border: "2px solid #3a3530", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#4a4540", fontFamily: "JetBrains Mono, monospace", cursor: "pointer" }}>{n}</div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "6px" }}>CORRUPTION POINTS</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button style={{ background: "#252320", border: "1px solid #3a3530", color: "#9e9080", width: "22px", height: "22px", borderRadius: "2px", cursor: "pointer", fontSize: "14px" }}>−</button>
+                    <span style={{ fontSize: "18px", fontFamily: "JetBrains Mono, monospace", color: "#e8dcc8" }}>3</span>
+                    <span style={{ fontSize: "12px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace" }}>/ 10</span>
+                    <button style={{ background: "#252320", border: "1px solid #8b2a2a", color: "#8b2a2a", width: "22px", height: "22px", borderRadius: "2px", cursor: "pointer", fontSize: "14px" }}>+</button>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#8b2a2a", marginTop: "4px", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>Nightmares; −1 THS checks</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "6px" }}>CONDITIONS</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                    {["Shaking Hands"].map(c => (
+                      <span key={c} style={{ background: "#2a0808", border: "1px solid #8b2a2a", color: "#cf5050", padding: "2px 8px", borderRadius: "2px", fontSize: "11px", fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", gap: "4px" }}>
+                        {c} <span style={{ cursor: "pointer", color: "#8b2a2a" }}>×</span>
+                      </span>
+                    ))}
+                    <button style={{ background: "transparent", border: "1px dashed #3a3530", color: "#6e6460", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>+ Add</button>
+                  </div>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Tab Bar & Content Tabs">
+            <UIPreview title="Tabs">
+              <div>
+                <div style={{ display: "flex", gap: "0", borderBottom: "1px solid #2e2b28", marginBottom: "16px" }}>
+                  {["Stats","Actions","Skills","Equipment","Features","Strings","Notes"].map((t,i) => (
+                    <div key={t} style={{ padding: "8px 14px", fontSize: "12px", fontFamily: "Inter, sans-serif", color: i === 0 ? "#c8843a" : "#6e6460", borderBottom: i === 0 ? "2px solid #c8843a" : "2px solid transparent", cursor: "pointer", marginBottom: "-1px" }}>{t}</div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div>
+                      <div style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "8px" }}>ATTRIBUTES</div>
+                      {[["POTENCY","POT",16,3],["CONTROL","CTR",14,2],["RESILIENCE","RES",12,1],["ACUITY","ACU",13,1],["PRESENCE","PRE",10,0],["THREAD SENSE","THS",14,2]].map(([n,a,s,m]) => (
+                        <div key={a} style={{ display: "grid", gridTemplateColumns: "28px 1fr 40px 36px", gap: "6px", alignItems: "center", padding: "5px 0", borderBottom: "1px solid #1a1917", fontSize: "12px" }}>
+                          <span style={{ fontFamily: "JetBrains Mono, monospace", color: "#6e6460", fontSize: "10px" }}>{a}</span>
+                          <span style={{ fontFamily: "Inter, sans-serif", color: "#9e9080" }}>{n}</span>
+                          <span style={{ fontFamily: "JetBrains Mono, monospace", color: "#e8dcc8", textAlign: "right" }}>{s}</span>
+                          <span style={{ fontFamily: "JetBrains Mono, monospace", color: "#c8843a", textAlign: "right" }}>{m >= 0 ? `+${m}` : m}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "10px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080", letterSpacing: "0.1em", marginBottom: "8px" }}>DERIVED STATS</div>
+                      {[["Vitality Points","28 / 28"],["Thread Pool","16"],["Safe Limit","8"],["Ward Rating","12"],["Guard Rating","11"],["Recovery Dice","3 / 3"],["Refinement Bonus","+3"]].map(([n,v]) => (
+                        <div key={n} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #1a1917", fontSize: "12px" }}>
+                          <span style={{ color: "#9e9080", fontFamily: "Inter, sans-serif" }}>{n}</span>
+                          <span style={{ color: "#e8dcc8", fontFamily: "JetBrains Mono, monospace" }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Skills Tab">
+            <UIPreview title="Skills Table">
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 36px 36px 44px 60px", fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.08em", padding: "4px 0 8px", borderBottom: "1px solid #2e2b28", marginBottom: "4px" }}>
+                  <span>SKILL</span><span>ATTR</span><span>MOD</span><span>RB</span><span>TOTAL</span><span>ATTUNED</span>
+                </div>
+                <SkillRowMock name="Thread Reach" attr="THS" mod="+2" rb="+3" attuned={true}/>
+                <SkillRowMock name="Surge" attr="POT" mod="+3" rb="+3" attuned={false}/>
+                <SkillRowMock name="Weave Reading" attr="THS" mod="+2" rb="+3" attuned={true}/>
+                <SkillRowMock name="Inscription" attr="ACU" mod="+1" rb="+3" attuned={false}/>
+                <SkillRowMock name="Combat Forms" attr="ACU" mod="+1" rb="+3" attuned={false}/>
+                <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "Inter, sans-serif", marginTop: "8px" }}>Click any skill to open a quick-roll modal with DC input.</div>
+              </div>
+            </UIPreview>
+          </SubSection>
+        </Section>
+
+        {/* TENSION SYSTEM UI */}
+        <Section title="Tension System UI — The Signature Element" id="tension">
+          <P>
+            The Tension Gauge is the single most memorable UI moment in the entire app. It's the only place where animation is truly expressive. Everything else is still.
+          </P>
+
+          <SubSection title="Tension Gauge Specifications">
+            <div style={{ display: "flex", gap: "32px", alignItems: "flex-start", flexWrap: "wrap" }}>
+              <TensionGaugeMock tension={tensionDemo} pool={16} safeLimit={6}/>
+              <div style={{ flex: 1, minWidth: "200px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <SpecRow label="Shape" value="Circular radial gauge, 270° arc (open at bottom-left)" desc="Not a pie chart. More like a speedometer."/>
+                  <SpecRow label="Safe zone fill" value="--accent-thread (#c8843a) with SVG glow filter" desc="Fills from 0 to Safe Limit."/>
+                  <SpecRow label="Over-limit fill" value="--accent-burnout (#8b2a2a)" desc="Fills from Safe Limit to current Tension."/>
+                  <SpecRow label="Threshold line" value="A tick mark at the Safe Limit position" desc="Always visible, labeled 'SL'."/>
+                  <SpecRow label="Center text" value="Current tension (large JetBrains Mono), '/ TP' below" desc="Clicking the number opens a direct-edit input."/>
+                  <SpecRow label="Release animation" value="Gauge pulses outward in character's Signature color (0.3s)" desc="Only on the Release Tension action, not on spending."/>
+                  <SpecRow label="Snapback warning" value="Full red fill + pulsing at Thread Pool" desc="Once per turn the gauge visually 'lurches'."/>
+                </div>
+              </div>
+            </div>
+          </SubSection>
+
+          <SubSection title="Quick-Cast Panel (Actions Tab)">
+            <P>The most game-critical UI surface. Everything about casting is here — power level, strings, thread check result, tension application.</P>
+            <Alert type="warning">
+              Rule enforcements: PL selector grays out levels above Max Safe PL. Three-String weave doubles the cost display live. Four-String is disabled below Level 8. Harmony/Discord logic is computed and shown before rolling.
+            </Alert>
+            <UIPreview title="Quick-Cast Interface">
+              <div>
+                <div style={{ fontSize: "10px", color: "#9e9080", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.1em", marginBottom: "12px" }}>CAST MAGIC — STRIKER (Primary · Harmony)</div>
+                <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
+                  {["PL 1 · Flicker","PL 2 · Touch","PL 3 · Surge","PL 4 · Fierce","PL 5 · Breaking"].map((pl,i) => (
+                    <button key={pl} style={{
+                      padding: "6px 10px",
+                      background: i === 2 ? "#1e1a12" : i >= 3 ? "#141311" : "#1a1917",
+                      border: `1px solid ${i === 2 ? "#c8843a" : i >= 3 ? "#3a3530" : "#2e2b28"}`,
+                      color: i === 2 ? "#c8843a" : i >= 3 ? "#4a4540" : "#9e9080",
+                      borderRadius: "2px",
+                      fontSize: "11px",
+                      cursor: i < 4 ? "pointer" : "not-allowed",
+                      fontFamily: "JetBrains Mono, monospace",
+                    }}>{pl}</button>
+                  ))}
+                </div>
+                <div style={{ marginBottom: "14px" }}>
+                  <div style={{ fontSize: "11px", color: "#9e9080", fontFamily: "JetBrains Mono, monospace", marginBottom: "6px" }}>STRINGS</div>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    {["Combustion","Ember Form","Flash Point"].map((s,i) => (
+                      <div key={s} style={{ display: "flex", alignItems: "center", gap: "5px", background: i < 2 ? "#1a1512" : "#141311", border: `1px solid ${i < 2 ? "#c8843a" : "#2e2b28"}`, padding: "5px 10px", borderRadius: "2px", cursor: "pointer" }}>
+                        <span style={{ fontSize: "12px", color: i < 2 ? "#c8843a" : "#4a4540", fontFamily: "JetBrains Mono, monospace" }}>{i < 2 ? "✓" : "○"}</span>
+                        <span style={{ fontSize: "12px", color: i < 2 ? "#e8dcc8" : "#6e6460", fontFamily: "Inter, sans-serif" }}>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", marginBottom: "4px" }}>THREAD CHECK DC</div>
+                    <div style={{ fontSize: "22px", fontFamily: "JetBrains Mono, monospace", color: "#e8dcc8" }}>14</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", marginBottom: "4px" }}>TENSION COST</div>
+                    <div style={{ fontSize: "22px", fontFamily: "JetBrains Mono, monospace", color: "#c8843a" }}>+6</div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", marginBottom: "4px" }}>ROLL</div>
+                    <div style={{ fontSize: "14px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080" }}>2d20 (Harmony)</div>
+                  </div>
+                </div>
+                <button style={{ marginTop: "12px", width: "100%", background: "#c8843a", border: "none", color: "#0f0e0d", padding: "10px", borderRadius: "2px", fontSize: "13px", fontFamily: "Inter, sans-serif", fontWeight: 700, cursor: "pointer", letterSpacing: "0.05em" }}>
+                  ▶ ROLL THREAD CHECK
+                </button>
+              </div>
+            </UIPreview>
+          </SubSection>
+        </Section>
+
+        {/* HOMEBREW */}
+        <Section title="Homebrew Creator System" id="homebrew">
+          <P>Five homebrew content types: Affinities, Items, Feats, Backgrounds, and Techniques. Each has its own creator form at <Code>/homebrew/[type]/new</Code>. The form is a left-panel form + right-panel live preview.</P>
+
+          <SubSection title="Homebrew Content Types">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {[
+                { name: "Affinity", desc: "New leyline type for the world. Includes tier, flavor, and 5 suggested String templates.", tags: ["Common","Uncommon","Rare","Forbidden"], color: "amber" },
+                { name: "Item", desc: "Weapons, armor, gloves, talismans, wondrous items. Full modifier builder with charges system.", tags: ["Weapon","Armor","Talisman","Wondrous"], color: "teal" },
+                { name: "Feat", desc: "Character perks with prerequisites and a reusable modifier builder.", tags: ["Passive","Combat","Utility"], color: "blue" },
+                { name: "Background", desc: "New origin stories. Must match the official structure: attribute bonuses + 3 skills + optional guild rank.", tags: ["+4 pts total","3 skills"], color: "purple" },
+                { name: "Technique", desc: "New Mode techniques with tension cost modifiers and special tags.", tags: ["Reaction","Passive","Combat Only"], color: "gray" },
+              ].map(c => (
+                <div key={c.name} style={{ background: "#141311", border: `1px solid #2e2b28`, borderRadius: "4px", padding: "14px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "12px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "6px" }}>{c.name.toUpperCase()}</div>
+                  <div style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.5, marginBottom: "8px" }}>{c.desc}</div>
+                  <div>{c.tags.map((t,i) => <Tag key={i} color={c.color}>{t}</Tag>)}</div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="Publication Workflow">
+            <div style={{ display: "flex", gap: "0" }}>
+              {["DRAFT","→","PENDING","→","PUBLIC"].map((s, i) => (
+                <div key={i} style={{
+                  padding: "8px 14px",
+                  background: s === "PUBLIC" ? "#081a10" : s === "DRAFT" ? "#141311" : s === "PENDING" ? "#1a1200" : "transparent",
+                  border: s !== "→" ? `1px solid ${s === "PUBLIC" ? "#2e6b5a" : s === "DRAFT" ? "#2e2b28" : "#4a3000"}` : "none",
+                  color: s === "PUBLIC" ? "#4a9a82" : s === "DRAFT" ? "#6e6460" : s === "PENDING" ? "#c8843a" : "#4a4540",
+                  fontSize: "11px",
+                  fontFamily: "JetBrains Mono, monospace",
+                  borderRadius: s !== "→" ? "2px" : 0,
+                  margin: s === "→" ? "auto 4px" : 0,
+                }}>{s}</div>
+              ))}
+            </div>
+            <P style={{ marginTop: "8px" }}>PRIVATE is always available (not published). PENDING means submitted for Weavekeeper/admin review. PUBLIC means approved and findable in the Homebrew Hub.</P>
+          </SubSection>
+        </Section>
+
+        {/* WEAVEKEEPER */}
+        <Section title="Weavekeeper Tools" id="weavekeeper">
+          <P>The DM-facing workspace. Only users with <Code>role === 'weavekeeper'</Code> can access <Code>/weavekeeper</Code>. Players who navigate here see a styled permission error.</P>
+
+          <SubSection title="Campaign Dashboard">
+            <UIPreview title="Party Overview">
+              <div>
+                {[
+                  { name: "Aria Solforge", level: 3, affinity: "Fire", mode: "Striker", vp: "28/28", tension: 7, pool: 16, burnout: 2 },
+                  { name: "Tomas Grey", level: 3, affinity: "Water", mode: "Anchor", vp: "18/28", tension: 9, pool: 14, burnout: 2 },
+                ].map(char => (
+                  <div key={char.name} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px", marginBottom: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div style={{ width: "36px", height: "36px", background: "#252320", borderRadius: "2px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🔥</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <span style={{ fontFamily: "'Cinzel', serif", fontSize: "13px", color: "#e8dcc8" }}>{char.name}</span>
+                          <Tag color="gray">Lv.{char.level}</Tag>
+                          <Tag color="amber">{char.affinity}</Tag>
+                          <Tag color="blue">{char.mode}</Tag>
+                        </div>
+                        <div style={{ display: "flex", gap: "20px", fontSize: "12px", fontFamily: "JetBrains Mono, monospace" }}>
+                          <span style={{ color: "#4a9a82" }}>VP {char.vp}</span>
+                          <span style={{ color: char.tension > 6 ? "#8b2a2a" : "#c8843a" }}>T {char.tension}/{char.pool}</span>
+                          <span style={{ color: char.burnout > 0 ? "#8b2a2a" : "#4a4540" }}>B {char.burnout}/6</span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button style={{ background: "transparent", border: "1px solid #3a3530", color: "#9e9080", padding: "4px 10px", borderRadius: "2px", fontSize: "11px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>View Sheet</button>
+                        <button style={{ background: "#2a0808", border: "1px solid #8b2a2a", color: "#8b2a2a", padding: "4px 10px", borderRadius: "2px", fontSize: "11px", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>+ Corruption</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </UIPreview>
+          </SubSection>
+
+          <SubSection title="Weavekeeper-Only Tools">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {[
+                ["Corruption Applicator", "Select a character and apply 1–10 corruption points. Updates in real time if player is online."],
+                ["Rank Trial Tracker", "Structured skill challenge for guild rank advancement. Logs attempts with notes and outcome."],
+                ["Snapback Table Roller", "d12 + d6 quick rollers for Snapback and Mishap tables with auto-resolved effects."],
+                ["String Approver", "Review and approve/deny player-submitted Strings with notes. Visible only in builder DM view."],
+              ].map(([name, desc]) => (
+                <div key={name} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "11px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "6px" }}>{name}</div>
+                  <div style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+        </Section>
+
+        {/* ARCHITECTURE */}
+        <Section title="Technical Architecture" id="architecture">
+          <SubSection title="Database Schema (PostgreSQL)">
+            <P>All IDs are UUIDs. JSONB columns used for flexible arrays (equipment, wounds, conditions). Live-play state fields are separated from builder fields to allow efficient PATCH updates during sessions.</P>
+            <CodeBlock title="Key tables">
+{`-- users
+id UUID PK | username VARCHAR UNIQUE | password_hash VARCHAR
+display_name VARCHAR | role ENUM(player, weavekeeper)
+created_at | updated_at
+
+-- characters  
+id UUID PK | user_id FK | name VARCHAR | level INT(1-10)
+background_id VARCHAR | affinity_id VARCHAR
+primary_mode ENUM(striker|anchor|slider|binder|shearer|tensioner|imprinter|conductor)
+secondary_mode ENUM NULL | tertiary_mode ENUM NULL
+guild_affiliation VARCHAR NULL | guild_rank VARCHAR NULL
+portrait_url VARCHAR NULL | signature_visual TEXT | signature_auditory TEXT
+-- Attribute scores (raw, not modifiers)
+pot_score INT | ctr_score INT | res_score INT
+acu_score INT | pre_score INT | ths_score INT
+-- Live play state (updated via PATCH /characters/:id/live)
+current_vp INT | current_tension INT | burnout_level INT(0-6)
+fatigue_level INT(0-6) | corruption_points INT(0-10)
+-- JSONB fields
+equipment JSONB | active_wounds JSONB | active_conditions JSONB
+permanent_injuries JSONB
+-- Notes
+notes_backstory TEXT | notes_allies TEXT | notes_enemies TEXT
+-- Campaign
+campaign_id UUID FK NULL
+created_at | updated_at
+
+-- character_strings
+id | character_id FK | string_name | description TEXT
+is_unlocked BOOL | unlock_level INT(1,3,5,7,9) | sort_order INT
+weavekeeper_notes TEXT NULL
+
+-- character_techniques
+id | character_id FK | technique_name | mode ENUM
+description TEXT | sort_order INT
+
+-- character_attuned_skills
+id | character_id FK | skill_name ENUM (18 skills)`}
+            </CodeBlock>
+          </SubSection>
+
+          <SubSection title="State Management">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+              {[
+                { name: "React Context", scope: "Global auth state", fields: ["user", "isLoading", "login()", "logout()"], note: "Wraps entire app in <AuthProvider>" },
+                { name: "useReducer", scope: "Character builder", fields: ["draft character", "step state", "validation"], note: "Each step dispatches typed actions. Auto-saves to /api every 30s." },
+                { name: "Zustand", scope: "Live sheet play state", fields: ["currentVP", "currentTension", "burnoutLevel", "conditions"], note: "Debounced 2s save to PATCH /characters/:id/live" },
+              ].map(s => (
+                <div key={s.name} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "14px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "11px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "4px" }}>{s.name}</div>
+                  <div style={{ fontSize: "11px", color: "#6e6460", marginBottom: "8px", fontFamily: "Inter, sans-serif" }}>{s.scope}</div>
+                  {s.fields.map(f => <div key={f} style={{ fontSize: "11px", fontFamily: "JetBrains Mono, monospace", color: "#9e9080" }}>· {f}</div>)}
+                  <div style={{ fontSize: "11px", color: "#4a7c6b", fontFamily: "Inter, sans-serif", marginTop: "8px", lineHeight: 1.4 }}>{s.note}</div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="API Routes">
+            <CodeBlock title="REST API — /api/v1/">
+{`AUTH
+POST /auth/login      → { token }  (bcrypt check against seeded users)
+POST /auth/logout     → clears HttpOnly cookie
+POST /auth/refresh    → new token
+
+CHARACTERS
+GET    /characters              → list user's characters
+POST   /characters              → create from builder
+GET    /characters/:id          → full character + strings + techniques
+PUT    /characters/:id          → full update (builder save)
+PATCH  /characters/:id/live     → live play state only (tension, vp, burnout...)
+DELETE /characters/:id
+GET    /characters/:id/pdf      → returns PDF stream
+
+CHARACTER SUB-RESOURCES
+GET/POST   /characters/:id/strings
+PUT/DELETE /characters/:id/strings/:sid
+GET/POST   /characters/:id/techniques
+GET        /characters/:id/skills
+
+HOMEBREW
+GET/POST /homebrew/affinities
+PUT      /homebrew/affinities/:id
+POST     /homebrew/affinities/:id/publish
+GET/POST /homebrew/items
+PUT      /homebrew/items/:id
+GET/POST /homebrew/feats | backgrounds | techniques
+
+CAMPAIGNS (Weavekeeper only)
+GET/POST /campaigns
+GET/PUT  /campaigns/:id
+GET      /campaigns/:id/characters
+POST     /campaigns/:id/characters
+PATCH    /campaigns/:id/characters/:cid/corruption`}
+            </CodeBlock>
+          </SubSection>
+
+          <SubSection title="Live Play PATCH Payload">
+            <CodeBlock title="PATCH /characters/:id/live">
+{`{
+  "current_vp": 22,
+  "current_tension": 9,
+  "burnout_level": 2,
+  "fatigue_level": 0,
+  "corruption_points": 3,
+  "active_conditions": ["shaking_hands"],
+  "active_wounds": ["hand_injury"],
+  "gloves_equipped": true
+}
+
+// Only live-state fields. Never overwrites builder data.
+// Backend validates: current_vp <= max_vp, tension <= thread_pool
+// Returns the updated character's live state + any triggered effects`}
+            </CodeBlock>
+          </SubSection>
+        </Section>
+
+        {/* COMPONENTS */}
+        <Section title="Component Library" id="components">
+          <P>Build these 14 components first — they are used everywhere and determine the quality of the whole app.</P>
+          <div style={{ display: "grid", gap: "6px" }}>
+            {[
+              { name: "TensionGauge", props: "current, safeLimit, threadPool, signatureColor", desc: "The radial gauge. SVG-based, amber fill, glow filter. Pulses on Release action." },
+              { name: "BurnoutTrack / FatigueTrack", props: "level (0-6), onChange", desc: "6-circle tracker. Click N → set to N. Click filled N → set to N-1. Ominous 0.6s fill animation." },
+              { name: "VPBar", props: "current, max", desc: "Horizontal bar. Teal > 50%, amber 25-50%, red < 25%. Color transition on change." },
+              { name: "DiceRoller", props: "expression, label, dc?, advantage?", desc: "Modal/panel. Rolls client-side (rpg-dice-roller). Shows result vs DC. Handles Harmony/Discord." },
+              { name: "SkillRow", props: "skill, attuned, mod, rb", desc: "One row in skills tab. Click → opens DiceRoller with DC input. Locked skills greyed." },
+              { name: "StringCard", props: "string, isLocked, editMode", desc: "Card with name, description, lock state, Weavekeeper notes field." },
+              { name: "TechniqueCard", props: "technique, mode, tensionCost", desc: "Card with mode label, effect text, action type tag." },
+              { name: "ConditionPill", props: "condition, onRemove", desc: "Removable tag. Tooltip shows full condition rules." },
+              { name: "ModifierBuilder", props: "modifiers[], onChange", desc: "Reusable dynamic list for item/feat homebrew. Type + Target + Value rows." },
+              { name: "ModeCard", props: "mode, selected, onClick", desc: "One of 8 mode cards. Expandable technique checklist sub-panel." },
+              { name: "AttributeGrid", props: "scores, budget, onChange", desc: "6-attribute stepper grid with live budget counter and derived stats panel." },
+              { name: "StepSidebar", props: "steps[], activeStep, onNavigate", desc: "Builder step navigator. ✓/●/○ states. Clickable for completed steps." },
+              { name: "ThreadCheckPanel", props: "character, onApply", desc: "Full quick-cast interface with PL selector, string checkboxes, DC readout, roll button." },
+              { name: "HombrewCard", props: "item, onAddToCollection", desc: "Browse page card. Upvote button, creator tag, type badge, Add to Collection." },
+            ].map(c => (
+              <div key={c.name} style={{ display: "grid", gridTemplateColumns: "200px 200px 1fr", gap: "12px", padding: "8px 0", borderBottom: "1px solid #1a1917", alignItems: "start" }}>
+                <code style={{ fontSize: "12px", color: "#c8843a", fontFamily: "JetBrains Mono, monospace" }}>{`<${c.name}>`}</code>
+                <code style={{ fontSize: "10px", color: "#6e6460", fontFamily: "JetBrains Mono, monospace", lineHeight: 1.5 }}>{c.props}</code>
+                <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{c.desc}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* ANIMATIONS */}
+        <Section title="Animations & Polish" id="animations">
+          <Alert type="info">Only 3 animations are permitted. Adding a 4th is a design violation.</Alert>
+
+          <SubSection title="The 3 Permitted Animations">
+            <div style={{ display: "grid", gap: "12px" }}>
+              {[
+                {
+                  name: "Tension Gauge Fill / Drain",
+                  timing: "0.3s ease-out",
+                  trigger: "On any Tension change",
+                  impl: "SVG stroke-dasharray transition on the radial path. Release triggers an additional 'pulse' keyframe that scales the gauge 1.0 → 1.08 → 1.0 in the character's Signature color.",
+                  code: `@keyframes tension-pulse {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.08); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+/* Signature color as a CSS variable on the character element */
+.tension-release { animation: tension-pulse 0.4s ease-out; }`,
+                },
+                {
+                  name: "Tab Transition",
+                  timing: "0.15s fade",
+                  trigger: "On tab switch in character sheet",
+                  impl: "Opacity 1→0 on old tab content, then opacity 0→1 on new. No slide, no scale.",
+                  code: `.tab-content {
+  animation: tab-fade 0.15s ease-out;
+}
+@keyframes tab-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}`,
+                },
+                {
+                  name: "Burnout Circle Fill",
+                  timing: "0.6s ease-in",
+                  trigger: "When a Burnout circle is filled (added)",
+                  impl: "Ominous and slow. Radial fill using SVG clip path that reveals the red fill from the center outward. On unfill, instant — no animation.",
+                  code: `@keyframes burnout-fill {
+  from { r: 0; }
+  to   { r: 12; }  /* SVG circle radius */
+}
+.burnout-circle.filling .fill-circle {
+  animation: burnout-fill 0.6s ease-in forwards;
+}
+/* Instant removal — no animation on unfill */`,
+                },
+              ].map(a => (
+                <div key={a.name} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                    <span style={{ fontFamily: "'Cinzel', serif", fontSize: "12px", color: "#c8843a", letterSpacing: "0.08em" }}>{a.name}</span>
+                    <Tag color="amber">{a.timing}</Tag>
+                    <span style={{ fontSize: "11px", color: "#6e6460", fontFamily: "Inter, sans-serif" }}>{a.trigger}</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.6, margin: "0 0 10px" }}>{a.impl}</p>
+                  <CodeBlock>{a.code}</CodeBlock>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="Additional Polish (No New Animations)">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {[
+                ["Dice roll result pop", "When a dice roll is displayed, the result number animates with a counter effect (CountUp.js or CSS counter) from 1→result over 0.5s. Not a new animation — it's a number transition, not motion."],
+                ["VP color transition", "VP bar color changes (teal→amber→red) use CSS transition on the background property. 0.3s ease."],
+                ["Hover states", "Buttons: background lightens by 10% on hover (CSS filter: brightness(1.1)). Cards: border-color brightens to #3a3530. No scale, no shadow."],
+                ["Auto-save indicator", "Fades in 'Saved Xs ago' text when a save completes. Text transition only, 0.15s."],
+                ["Reduced motion", "All animations wrap in @media (prefers-reduced-motion: no-preference). Users who need it get instant transitions throughout."],
+              ].map(([name, desc]) => (
+                <div key={name} style={{ background: "#141311", border: "1px solid #2e2b28", borderRadius: "4px", padding: "12px" }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: "11px", color: "#c8843a", letterSpacing: "0.08em", marginBottom: "5px" }}>{name}</div>
+                  <div style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+        </Section>
+
+        {/* ACCESSIBILITY */}
+        <Section title="Accessibility & Mobile" id="accessibility">
+          <SubSection title="Core Requirements">
+            <div style={{ display: "grid", gap: "6px" }}>
+              {[
+                ["Keyboard navigation", "All interactive elements reachable via Tab in logical order. Burnout/Fatigue circles are <button> elements with aria-label: 'Burnout level 2 of 6. Press to set burnout to level 2.'"],
+                ["Screen reader", "Tension gauge announces: 'Tension: 7 out of 16. Currently above Safe Limit of 6. Strain Check active, DC 11.' on change."],
+                ["Color not sole indicator", "VP bar shows the number. Tension gauge shows the number. Burnout shows text effects below circles. Never color alone."],
+                ["Dice rolls via Enter", "All dice-roll buttons respond to Enter key. The DiceRoller modal auto-focuses the Roll button on open."],
+                ["Dark mode only", "The app is dark-mode only by design. A note on the login screen says: 'Threadcast is optimized for dark mode. Light mode is not supported.' No apology — it's intentional."],
+                ["Mobile layout", "Header collapses to name + VP bar + Tension gauge (the three most critical during play). Left column becomes a swipe-up drawer. Tab bar scrolls horizontally."],
+                ["Touch targets", "Minimum 44×44px touch targets on all interactive elements during play. Burnout/Fatigue circles are 36×36px with 8px spacing."],
+              ].map(([rule, desc]) => (
+                <div key={rule} style={{ display: "flex", gap: "12px", padding: "8px 0", borderBottom: "1px solid #1a1917", alignItems: "flex-start" }}>
+                  <Tag color="teal">{rule}</Tag>
+                  <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.6, flex: 1 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
+          <SubSection title="Rule Enforcement (Game Logic in UI)">
+            <Alert type="warning">These are not just nice-to-haves — they prevent rules errors at the table.</Alert>
+            <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
+              {[
+                ["Harmony/Discord display", "Quick-cast panel always shows 1d20, 2d20↑, or 2d20↓ based on all active modifiers. Multiple Harmony sources → still 2d20↑. Harmony + Discord → 1d20."],
+                ["Max Safe Power Level", "PL selector grays out levels above Max Safe PL. Tooltip: 'PL 4 is above your safe limit (PL 3) — this roll would be at Discord.'"],
+                ["Thread Pool breach", "Apply Tension button shows: '⚠ This exceeds your Thread Pool (16). Automatic Snapback.' and opens the Snapback d12 roller."],
+                ["Burnout casting effects", "If Burnout ≥ 2, Tension cost display shows +1 overlay. If Burnout ≥ 3, Safe Limit in all displays shows halved value with a ⚠ badge."],
+                ["Gloves + Thread Sense", "If gloves_equipped is true, any Thread Sense skill roll in DiceRoller automatically applies Discord with note: '(Gloves equipped)'"],
+                ["4-String Weave lock", "4th String checkbox is disabled below Level 8 with tooltip: '🔒 Requires Level 8'. Above Level 8, enables with a 'Very advanced maneuver' warning."],
+                ["Weaving cost display", "String cost updates live as strings are selected: 1 string = normal, 2 strings = normal, 3 strings = 2× cost + Discord badge appears, 4 strings = 3× cost."],
+              ].map(([rule, desc]) => (
+                <div key={rule} style={{ display: "flex", gap: "12px", padding: "8px 0", borderBottom: "1px solid #1a1917", alignItems: "flex-start" }}>
+                  <code style={{ minWidth: "180px", fontSize: "11px", color: "#c8843a", fontFamily: "JetBrains Mono, monospace", flexShrink: 0, lineHeight: 1.5 }}>{rule}</code>
+                  <span style={{ fontSize: "12px", color: "#9e9080", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+        </Section>
+
+        {/* Footer */}
+        <div style={{ borderTop: "1px solid #2e2b28", paddingTop: "2rem", marginTop: "2rem" }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: "10px", color: "#4a4540", letterSpacing: "0.15em", textAlign: "center" }}>
+            THREADCAST · CHARACTER BUILDER SPECIFICATION · THE WEAVE HOLDS US ALL
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

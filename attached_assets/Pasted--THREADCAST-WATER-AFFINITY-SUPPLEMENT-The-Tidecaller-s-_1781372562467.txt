@@ -1,0 +1,539 @@
+# THREADCAST — WATER AFFINITY SUPPLEMENT
+## *The Tidecaller's Complete Reference*
+
+> *"Water does not fight. It finds the path that everything else forgot."*
+> — Attributed to Solanarch Meren Vail, 3rd Age
+
+---
+
+# PART ONE: THE NATURE OF WATER LEYLINES
+
+Water leylines are among the oldest in Aethros — older than the guilds, older than Aedan's victory, woven into the world before names existed for what they were. They do not sit still. They pulse, ebb, shift direction, and resist every attempt to hold them at a fixed point.
+
+A water mage does not grip a leyline the way a fire mage does. Fire mages seize, yank, and release in a single violent arc. Water mages **negotiate**. The thread wants to move — so you learn to move with it, to redirect that motion rather than overcome it.
+
+This is why water affinity produces more Sliders and Anchors than any other affinity type. The leylines themselves teach the lesson: **control is more powerful than force**.
+
+## Physical Signature of Water Casting
+
+**Visual Component:** A pale blue-green luminescence at the hands and forearms during any casting above PL 1. At PL 3+, water droplets form in the air around the caster — drawn from ambient humidity — and orbit the hands like slow satellites before dissolving. At PL 5, the air within 10 feet becomes visibly humid; breath fogs; surfaces weep condensation.
+
+**Auditory Component:** A low, resonant tone — somewhere between a singing bowl and water moving through stone channels. At PL 2+, a secondary harmonic appears, slightly out of phase with the first. Experienced mages who know what to listen for can identify individual water mages by the exact interval between their two tones.
+
+**Tactile (for the caster):** Cold. Not uncomfortable at low levels — like plunging your hands into cold river water on a hot day. At PL 4–5, the cold becomes sharp enough to cause visible breath and numb the fingertips. This is normal. This is not damage. Yet.
+
+---
+
+# PART TWO: THE FIVE STRINGS OF WATER
+
+Water affinity does not mean water. It means every aspect of water — its chemistry, its physics, its patient violence, and what it leaves behind.
+
+---
+
+## STRING ONE — THE FLOW STRING
+*"Current. Movement. The river's will."*
+
+The most intuitive of water's threads. The Flow String governs water in motion — its direction, speed, and shape. This is where most water mages begin, and where many spend their entire careers.
+
+The Flow String feels like gripping a moving rope — you don't stop it, you steer it. Novices try to resist the pull and burn their hands doing it. Masters barely exert effort; they suggest, and the leyline agrees.
+
+### What the Flow String Can Do
+
+| Power Level | Name | Tension Cost | DC | Effect Description |
+|:-----------:|:----:|:------------:|:--:|:-------------------|
+| 1 | Flicker | 1 | 8 | Redirect existing water (a stream, a spilled cup, rain) within 10 ft. Change direction, slow a drip, guide flow. No water created. |
+| 2 | Touch | 3 | 11 | Create or move a controlled flow: a 5-ft-wide current through standing water, a directed stream from a source up to 30 ft away, or a surface current that moves a Medium creature 10 ft. |
+| 3 | Surge | 6 | 14 | A directed current strong enough to knock a creature Prone on a failed RES Check (DC 13). Move a body of water up to 20 ft in a direction (a pond shifts; a river's ford changes). Range 40 ft. |
+| 4 | Fierce | 10 | 17 | A sustained torrent. Creatures in a 30 ft line must succeed on a RES Check (DC 16) or be swept 20 ft and knocked Prone. Structures take 2d8 structural damage per round. |
+| 5 | Breaking | 15 | 20 | The leyline releases as a catastrophic swell. A 60 ft cone of rushing water deals 4d10 bludgeoning damage (RES Check DC 18 for half). Terrain in the area becomes difficult. Everything Prone. Range 60 ft. |
+
+### Flow String — Mishap Flavoring
+When you roll on the Mishap Table using the Flow String, interpret results as follows:
+- **Flinch:** The current reverses and hits you — 1d4 cold damage, you're pushed 5 ft.
+- **Backlash:** The water goes where you didn't aim — your ally, a door, a fire source.
+- **Wild Release:** A burst of water erupts from the nearest natural source toward the wrong target.
+- **Tension Spike:** The leyline surges — your current Tension spikes and you're Shaking Hands.
+
+### Flow String — Snapback Flavoring
+Water Snapback from the Flow String is **hydraulic pressure**. The leyline's kinetic energy releases through your body — internal fluid pressure damage, blood forced into the wrong places. Nosebleeds. Burst capillaries visible in the whites of the eyes. Fingers that ache in the cold for months.
+
+---
+
+## STRING TWO — THE PRESSURE STRING
+*"Depth. Weight. The ocean floor."*
+
+Water is heavier than it looks. A column of seawater ten meters deep can crush iron. The Pressure String accesses this fundamental truth — not water in motion, but water as **mass**, as **force concentrated inward**.
+
+This string feels different from the Flow String. Where Flow is a rope moving past you, Pressure is a wall leaning against you. You push back. You shape where that force concentrates. At high Power Levels, it becomes less about water specifically and more about compression itself.
+
+The Pressure String is the combat foundation of water magic.
+
+### What the Pressure String Can Do
+
+| Power Level | Name | Tension Cost | DC | Effect Description |
+|:-----------:|:----:|:------------:|:--:|:-------------------|
+| 1 | Flicker | 1 | 8 | Apply focused pressure to a small area — pop a lock, press a seal shut, slow a bleeding wound by compressing it. No visible water. |
+| 2 | Touch | 3 | 11 | Concentrated pressure burst: 2d6 + POT mod bludgeoning damage to one target within 30 ft. No projectile — the air compresses and strikes. Ward Rating applies. |
+| 3 | Surge | 6 | 14 | Sustained pressure field in a 10-ft radius: difficult terrain, 1d6 bludgeoning damage/round to creatures inside. Alternatively, one target takes 2d8 + POT mod and must make a RES Check (DC 14) or suffer the Pinned condition until they spend a Major Action breaking free. |
+| 4 | Fierce | 10 | 17 | Implosion field: one target within 50 ft takes 3d10 + POT mod damage as the pressure crushes inward. RES Check DC 16 or take the Wound roll immediately. On a natural success, the mage may choose not to deal a Wound. |
+| 5 | Breaking | 15 | 20 | Total pressure collapse. One target within 60 ft or all targets in a 20-ft sphere take 4d12 + POT mod. RES Check DC 19 or fall Unconscious immediately (not Incapacitated — this bypasses Death's Edge rolls for 1 round, then normal rules apply). Structures in the area suffer catastrophic compression damage. |
+
+### Pressure String — Mishap Flavoring
+- **Flinch:** The pressure rebounds to your own chest — RES Check DC 11 or lose your Major Action next turn, winded.
+- **Wild Release:** The implosion occurs at the wrong location — possibly drawing in a friendly.
+- **Tension Spike:** Pressure distributes randomly through the local area — furniture cracks, windows burst.
+
+### Pressure String — Snapback Flavoring
+Pressure Snapback is the most feared of the water sub-affinities. The kinetic compression releases **through the caster's body**. Ribs crack. Eardrums rupture. In severe cases: internal hemorrhage. In catastrophic cases: a Pressure Snapback at PL 4–5 has been known to stop a heart.
+
+*This is not hyperbole. Wear your gloves.*
+
+---
+
+## STRING THREE — THE STILL STRING
+*"Ice. Stasis. The lake in winter."*
+
+Water does not only move. It holds. The Still String governs water in its fixed states — ice, frost, the frozen moment before a drop falls. It is water stripped of its willingness to flow.
+
+Where the Flow String teaches you to work with the leyline's movement, the Still String teaches you to **stop** it. This feels like forcing a river into glass. The resistance is enormous. The effort shows — Still String casters sweat despite the cold, and their breath fogs regardless of temperature.
+
+The Still String has deep synergy with Anchor Mode. Anchors want to hold things in place. Still water is already in place. When you combine them, the result is a barrier that does not merely resist — it **refuses**.
+
+### What the Still String Can Do
+
+| Power Level | Name | Tension Cost | DC | Effect Description |
+|:-----------:|:----:|:------------:|:--:|:-------------------|
+| 1 | Flicker | 1 | 8 | Frost a surface (slippery, beautiful, non-damaging). Chill a drink or lower a room's temperature by a few degrees. Slow a bleeding wound by cold constriction. |
+| 2 | Touch | 3 | 11 | Freeze standing water up to a 10-ft area into solid ice, or create an ice surface on any wet terrain. Creatures crossing the ice must make an ACU Check DC 12 or fall Prone. Alternatively, deal 2d4 cold damage to one target within 20 ft. |
+| 3 | Surge | 6 | 14 | Create a 5-ft-thick wall of ice up to 20 ft long and 10 ft tall (VP 18, Ward Rating 15 against attempts to break through). Alternatively, encase one creature's legs in ice — they are Pinned until they break free (RES Check DC 14, Major Action). Cold damage: 2d8. |
+| 4 | Fierce | 10 | 17 | Flash-freeze a 20-ft radius area. All water becomes ice instantly. Creatures in the area make a RES Check DC 16 — on failure, they are Pinned and take 2d10 cold damage. On success, difficult terrain only. Ice walls created at this level have VP 30 and must be destroyed before they can be passed by most means. |
+| 5 | Breaking | 15 | 20 | Absolute Zero Event. A 30-ft radius centered on a point within 60 ft. Everything within the area takes 4d10 cold damage. Creatures that fail a RES Check DC 19 are encased in ice — fully Incapacitated until the ice is broken (VP 40 per creature) or the caster releases the effect. Terrain altered permanently. Fires extinguished. |
+
+### Still String — Mishap Flavoring
+- **Flinch:** Frost forms on your casting hand — Discord on Thread Checks and Swift Hands until your next Mend.
+- **Wild Release:** The freeze effect appears on the wrong location, possibly freezing a doorway shut, locking a mechanism, or coating an ally's weapon in ice.
+- **Tension Spike:** The cold you were externalizing turns inward — you take 1d6 cold damage per point of Tension over Safe Limit.
+
+### Still String — Snapback Flavoring
+Still String Snapback manifests as sudden, intense cold. Internal tissue damage from rapid temperature drop. The sensation survivors describe: *"Like being filled with ice water from the inside."* At high severity: frostbite to the hands, temporary paralysis of the casting arm, or — at Collapse and above — permanent cold sensitivity that never fades.
+
+---
+
+## STRING FOUR — THE VITAL STRING
+*"Blood. Healing. The water that lives inside."*
+
+Every living body is mostly water. The Vital String knows this. It does not move rivers or freeze lakes — it moves the water inside a creature's body, warms it or cools it, restores its proper pressure and flow, knits ruptured tissue closed.
+
+This is the most precise of water's threads, and the most controversial. The same skill that makes a Vital String practitioner a healer of extraordinary ability also makes them, theoretically, capable of the inverse. The guild licensing rules around Vital String specialization are the strictest of any water application.
+
+Access to the Vital String at character creation requires Weavekeeper approval. Most who possess it come from Temple-Raised or Scholar's Lineage backgrounds, or military medics from the Scaled Guard.
+
+### What the Vital String Can Do
+
+| Power Level | Name | Tension Cost | DC | Effect Description |
+|:-----------:|:----:|:------------:|:--:|:-------------------|
+| 1 | Flicker | 1 | 8 | Detect the internal health of a creature within touch range — pulse, hydration, fever, major injury. Sense internal bleeding. This is diagnostic only. |
+| 2 | Touch | 3 | 11 | Stabilize: a dying creature is stabilized automatically. Stop external bleeding. Reduce the severity of one Wound condition by one step (Wound remains but penalty halved) until fully healed. |
+| 3 | Surge | 6 | 14 | Heal 2d8 + CTR modifier VP to one creature within touch range. Alternatively, purge one toxic or foreign substance from a creature's bloodstream (Poison, Corrupted condition from minor contamination). DC increases by 2 for each Corruption Point. |
+| 4 | Fierce | 10 | 17 | Restore 3d10 + CTR modifier VP. Remove one Wound condition entirely (not just reduced). Alternatively, force a Wound onto a creature within touch range — RES Check DC 17 or suffer the Hand Injury or Internal Shock wound (Weavekeeper's choice). This use is ethically restricted and requires a Combat Mage or healer license to use offensively. |
+| 5 | Breaking | 15 | 20 | Full restoration: recover all VP and clear all Wound conditions for one creature. Reduce Burnout by 1 level. Alternatively — and this is the dark face of the Vital String — PL 5 offensive Vital use can force a RES Check DC 20 or cause cardiac shock: the creature falls Incapacitated for 1 minute and takes 4d12 damage that bypasses Guard and Ward Ratings entirely. This use is Guild-restricted and illegal without Combat authorization. |
+
+### Vital String — Mishap Flavoring
+- **Flinch:** You lose the thread and the healing abruptly stops — the patient takes 1d4 from the sudden interruption (like a surgeon's hand slipping).
+- **Wild Release:** The healing/damage applies to yourself instead of the target.
+- **Tension Spike:** The Vital thread intensifies without direction — the patient's heart rate surges dangerously; they gain 1 Wound on d6 (roll, but it's always 5 or 6 — Internal Shock or Serious Wound).
+
+### Vital String — Snapback Flavoring
+Vital Snapback is quiet and devastating. Rather than the dramatic kinetic feedback of the Pressure String, Vital Snapback enters the caster's body and does exactly what they were doing to someone else — to them. Internal bleeding. Interrupted blood flow to the extremities. At severe levels: brief cardiac arrest, reversed by the caster's own nervous system if their RES is high enough. At maximum severity: permanent nerve damage to the hands, reducing CTR permanently by 1.
+
+*The Vital String is not dangerous because the magic is unstable. It is dangerous because it knows exactly what it's doing.*
+
+---
+
+## STRING FIVE — THE TIDE STRING
+*"Salt. Depth. The memory of oceans."*
+
+The oldest of water's aspects. The Tide String does not move water so much as it **changes it** — its salinity, its chemistry, its fundamental relationship to the things around it. Salt draws water out of tissue. Acid dissolves stone. The ocean preserves some things and destroys others, and the Tide String decides which.
+
+Where the other four Strings are tools, the Tide String is a *philosophy*. It asks: what is the purpose of this water? And then it makes that purpose happen.
+
+This String unlocks last for most water mages (typically level 7 or 9), and the timing is appropriate. It requires significant experience not because it is mechanically complex, but because using it well requires nuanced judgment that young mages typically lack.
+
+### What the Tide String Can Do
+
+| Power Level | Name | Tension Cost | DC | Effect Description |
+|:-----------:|:----:|:------------:|:--:|:-------------------|
+| 1 | Flicker | 1 | 8 | Alter water's taste, clarity, or smell. Desalinate a cup of seawater. Detect contamination in a water source — poison, Hollowing taint, foreign chemical. |
+| 2 | Touch | 3 | 11 | Significantly alter the chemistry of water in a 10-ft area: render it undrinkable, neutralize an existing toxin, make it salt-dense enough to support unusual buoyancy. Alternatively, cause a creature that is mostly water to feel the salt-draw — 2d6 damage and disadvantage on PRE checks for 1 round. |
+| 3 | Surge | 6 | 14 | Salt extraction: pull water from a creature's tissue, dealing 2d8 + POT modifier necrotic damage and imposing 1 level of Fatigue. The target must make a RES Check DC 14 or also suffer Discord on physical attribute checks until they hydrate. Alternatively, purify a contaminated water source up to 100 gallons. |
+| 4 | Fierce | 10 | 17 | Corrosive tide: deal 3d10 necrotic damage to all creatures in a 15-ft radius (RES Check DC 16 for half). Metal equipment in the area begins corroding — subtract 1 from attack rolls made with affected weapons until repaired. Or: cleanse a moderate Hollowing contamination from an area (reduce Corruption Points by 2 in a 30-ft radius). |
+| 5 | Breaking | 15 | 20 | Desiccation: one creature within 60 ft takes 4d12 necrotic damage. On a failed RES Check DC 19, the creature also loses all use of one limb (permanent until magically healed — Vital String PL 4+ or equivalent). Alternatively: Purge up to 4 Corruption Points from one creature or cleanse a major contamination zone (60 ft radius). At PL 5, the Tide String is the most powerful anti-Hollowing tool available to a water mage. |
+
+### Tide String — Mishap Flavoring
+- **Flinch:** The chemical change happens in you — 1d4 necrotic damage, nausea (Fatigue 1 for 10 minutes).
+- **Wild Release:** The chemical effect propagates through the nearest large water source, potentially ruining a well or contaminating a stream.
+- **Tension Spike:** The salinity effect radiates from you as a small pulse — everything organic within 5 ft takes 1d6 necrotic.
+
+### Tide String — Snapback Flavoring
+Tide Snapback is corrosive, slow, and thorough. The chemistry you were directing turns on the caster. Skin dries. Joints ache. Eyes sting with what feels like seawater. At severe levels: rapid dehydration, mucous membrane damage, and — at Collapse and above — a permanent reduction in maximum VP as biological tissue is slowly compromised. *Tide mages who have snapped badly are recognizable: they always look slightly desiccated, even when healthy.*
+
+---
+
+# PART THREE: LEVEL PROGRESSION — THE WATER MAGE'S PATH
+
+This section details the expected development arc of a water mage from first awakening through mastery. String unlocks are suggestions — **always finalized with your Weavekeeper** based on your character's specific story and experiences.
+
+---
+
+## LEVEL 1 — FIRST TIDE
+
+*You have named your water. You have held it, guided it, felt it resist you and then yield.*
+
+**Starting Strings (choose 2):**
+Most water mages begin with the **Flow String** as their first (it's the most natural, the most forgiving). The second is biographical: a soldier might begin with Pressure. A healer's apprentice with Vital. A survivor of a winter catastrophe with Still.
+
+**Starting Techniques (choose 2 from your Primary Mode — see Part Four)**
+
+**Derived Stats (example build: POT 14, CTR 14, RES 12, ACU 12, PRE 10, THS 14):**
+- VP: 20
+- Thread Pool: 12
+- Safe Limit: 6
+- Ward Rating: 12
+- Guard Rating: 11
+
+**What You Can Do:**
+Two Strings means two musical notes. You are learning the instrument. PL 3 is achievable but strains you. PL 4 is ambition; PL 5 is danger. Your Flow String can redirect small water sources and push people around. Your second String opens one more dimension. You are not yet a threat to anything large — but you are useful, and you are learning.
+
+**The lesson of Level 1:** *You can feel more than you can do. This is correct. The feeling is data.*
+
+---
+
+## LEVEL 2 — BUILDING CURRENT
+
+*You have survived something. The Weavekeeper has decided you've changed.*
+
+**New Technique:** Choose one additional technique from your Primary Mode.
+
+**Stat Growth:**
+- +2 max VP
+- +1 to one Attribute Score
+
+**What Changes:**
+Your Thread Pool grows. PL 3 no longer feels like the edge of your capacity — it feels like your working range. You can chain two castings in a single encounter without hitting Burnout. You're starting to understand your Signature — when it appears, what it sounds like, how people react to it.
+
+At Level 2, most water mages make their first major choice: do I lean into offense (Pressure, Flow at high PL), defense (Still, Anchor Mode), or support (Vital, collaborative casting)?
+
+This is not a permanent choice. It is a first shape.
+
+---
+
+## LEVEL 3 — NEW STRING
+
+*The Weavekeeper has seen your character grow into something new. A third string becomes available.*
+
+**New String:** Work with your Weavekeeper. What has your character experienced since Level 1? If you began with Flow and Still and spent your early career in cold environments, perhaps the relationship between flowing water and frozen water has become intuitive — you unlock the **Pressure String** as you begin to understand what happens when water cannot go where it wants to go. The String selection should feel inevitable, not arbitrary.
+
+**Refinement Bonus increases to +3.**
+
+**What Changes:**
+Three Strings means you can Weave. Two-String Weaves are now accessible at normal Thread Checks. This is a significant power jump. Flow + Still can create churning ice slurry. Flow + Pressure creates a crushing current. Pressure + Still creates... something that feels like the bottom of the ocean. Discuss the specific emergent effects with your Weavekeeper.
+
+**Sample 2-String Weave — Flow + Still:**
+*"Shatterfall"* — A current of water that freezes on contact with the target. The effect hits as both bludgeoning (Flow's kinetic force) and cold (Still's temperature drop). Two-String Thread Check (normal). Damage: 2d8 + POT mod bludgeoning + 2d4 cold. Creatures hit must make a RES Check DC 13 or suffer Shaking Hands from the shock of cold (as if Snapback-adjacent).
+
+---
+
+## LEVEL 4 — SECONDARY MODE
+
+*You have begun to understand that how you interact with leylines is not fixed. There is more than one way to hold a thread.*
+
+**Secondary Mode Unlocked:** Normal rolls (no bonus or penalty). Paired with your Primary Mode's Harmony, you now have meaningful flexibility.
+
+**New Technique:** One from any unlocked Mode.
+
+**Recommended Secondary Mode Pairings for Water Mages:**
+
+| If Primary Mode is... | Good Secondary Mode choices |
+|:----------------------|:---------------------------|
+| Striker | Slider (precision to complement your force) or Anchor (barrier after the blast) |
+| Anchor | Conductor (self-healing to sustain long holds) or Binder (make the barrier conditional) |
+| Slider | Striker (add force when deflection isn't enough) or Imprinter (leave surprises) |
+| Conductor | Vital String + Conductor = extraordinary self-healing tank. Secondary Anchor for others. |
+| Binder | Imprinter (extend and trigger) or Anchor (stabilize your bindings) |
+
+---
+
+## LEVEL 5 — DEEPENING WATERS
+
+*Your third String unlock. The Weavekeeper has watched you grow. What have you earned?*
+
+**New String:** Your fourth String becomes available. For most water mages, this is either the **Vital String** (if they have been moving toward a healer/support role) or the **Tide String** (if their story has taken them toward Hollowing corruption, long ocean travel, or contact with the oldest magical scholarship).
+
+**Refinement Bonus increases to +4.**
+
+**What Changes:**
+PL 4 is now your working range when conditions are right. You have enough Strings to attempt Three-String Weaves (at Discord, double Tension cost — but achievable). Safe Limit has grown. You can take damage, push hard, and recover. You are starting to feel like a threat in a serious conflict.
+
+**Sample 3-String Weave — Flow + Pressure + Still:**
+*"The Crushing Tide"* — Three-String Thread Check at Discord, double Tension cost. You create a localized surge of pressurized water that freezes on impact. All targets in a 15-ft cone take 3d8 bludgeoning + 2d8 cold. Any creature that fails a RES Check DC 16 is Pinned in place by ice shards and suffers the Bruised Ribs wound. The ice persists for 1 minute. This is not a casual use of power.
+
+---
+
+## LEVEL 6 — THE PRACTICED CURRENT
+
+**New Technique:** From any unlocked Mode.
+
+**What Changes:**
+You are past the apprentice phase. By now, your RB is +4, which means Attuned skills contribute substantially. You know your Mode deeply. You are experimenting with your Weaving combinations. A Level 6 water mage in their Primary Mode with Harmony is landing PL 3 effects with consistency that would embarrass many senior guild members.
+
+This is the level at which the *Weavekeeper* should start giving your Signature social weight. NPCs recognize you. Mages know your tone. The double harmonic has become *your* sound.
+
+---
+
+## LEVEL 7 — THE FIFTH STRING
+
+*The Tide String. Or whichever you haven't taken yet. The last note of the instrument.*
+
+**New String:** Your fifth and final String is available. This should feel like the culmination of your magical identity, not an unlock on a checklist. The Weavekeeper should design a moment for it — a situation that calls for exactly this kind of magic, which your character finds they can suddenly do because they have *become* the kind of mage who can.
+
+**Tertiary Mode Unlocked.** Normal rolls.
+
+**Refinement Bonus increases to +5.**
+
+**What Changes:**
+All five Strings. You can Weave with any combination. The Five-String Weave (all of them) is technically possible at Level 8+ — and would be among the most dramatic magical effects a single mage can produce. Most water mages never attempt it. The ones who do tend to have Burnout scars to prove they tried.
+
+---
+
+## LEVEL 8 — FOUR-STRING WEAVES
+
+**New Technique:** From any unlocked Mode.
+
+**Four-String Weaves are now accessible** (per the core rules: Discord, triple Tension cost, Level 7+ requirement).
+
+**Sample 4-String Weave — Flow + Pressure + Still + Vital:**
+*"The Drowning Restoration"* — One target within touch range. Discord Thread Check, triple Tension cost (minimum 18). On success: you simultaneously purge toxins and Corruption (Tide-equivalent through Vital), restore 4d8 + CTR mod VP, remove all Wound conditions, and leave the target's body flooded with warmth that persists for 1 hour (they take half damage from cold sources and have Harmony on RES Checks). The name is ironic — it feels like drowning and then not drowning. Most patients report it as the most intense physical sensation of their lives.
+
+*Alternative 4-String — Flow + Pressure + Still + Tide:*
+*"The Ocean's Verdict"* — 40-ft cone, Discord Thread Check, triple Tension cost. Everything in the cone takes 4d8 bludgeoning + 2d6 cold + 2d6 necrotic. Terrain becomes difficult. Creatures must make RES Check DC 18 or be Prone, Pinned, and immediately roll for a Wound. Water mages who produce this effect are remembered by everyone present. Some are haunted by it.
+
+---
+
+## LEVEL 9 — THE TIDE THAT MOVES MOUNTAINS
+
+**Refinement Bonus increases to +6.**
+
+No new String (you have all five). No new Mode (tertiary already unlocked). What you gain instead:
+
+**Mastery Refinement:** Work with your Weavekeeper to define one **Signature Weave** — a named, specific combination of your Strings and Mode that is yours. It behaves like a Technique (it's available without needing to re-specify) and has been so practiced that you reduce its Tension cost by 3. This is your answer to "what does a Level 9 water mage who has been doing this for years actually *do* differently?" The answer is: they have a few things they do so well it barely costs them anything.
+
+**Example Signature Weave (Anchor Primary, Flow + Still):**
+*"The Tidal Lock"* — Normally a 3-String Weave at Discord. As your Signature Weave, it becomes a normal Thread Check for you. You create a dome-shaped ice-and-current barrier (15-ft radius, VP 40) that simultaneously pushes outward any creature trying to enter (Flow) and freezes the barrier surface to prevent climbing or penetration (Still). Tension cost: 9 instead of 12. Duration: concentration + 10 minutes after you release focus.
+
+---
+
+## LEVEL 10 — MASTERY
+
+**New Technique:** The capstone. Your last formal unlock.
+
+**Mastery Abilities** (choose one, finalized with Weavekeeper):
+
+**1. Tidal Sovereignty:** Once per Full Recovery, you may cast any single Thread Check at your maximum Power Level without generating Tension. The Weave flows through you as if you had finally learned what water always knew — that effort is resistance, and resistance is the thing that breaks. The effect happens; the Tension does not.
+
+**2. The Living Current:** Your two signature tones are now clearly audible to all within 30 ft when you cast. This cannot be suppressed. However: once per round when you roll a Mishap (fail a Thread Check), you may choose to interpret the result as a Flinch regardless of what the d6 shows. You have been doing this long enough that your failures are known failures — you've had them all, and you know how to minimize them.
+
+**3. Deep Water Reading:** Your Thread Sense for water leylines becomes extraordinary. You always know: the location and tension of every water leyline within 100 ft; the direction of any body of water within a mile; whether any creature within 30 ft is carrying a water affinity (including previously unknown awakened mages); and whether any water source within 60 ft has been altered — chemically, magically, or physically — within the last 24 hours. This works passively, without a Thread Check.
+
+---
+
+# PART FOUR: MODE INTERACTION GUIDE
+
+The same String behaves differently depending on how you grip it. Mode is *everything* for a water mage.
+
+## Striker + Water
+
+**Dominant Strings:** Flow, Pressure
+
+You are not graceful. You are a tide wall. Striker water mages yank the leyline sideways and release — the hydraulic shockwave hits harder than most physical weapons. The failure mode (Snapback) is brutal because the kinetic water force rebounding through flesh is extremely efficient at breaking things.
+
+**Striker Water — Signature Visual:** The casting tone becomes percussive at the moment of release — a short, cracking note rather than the usual sustained harmonic.
+
+**Best Techniques for Water Strikers:**
+- *Groundbreaker* (force directed downward into flooding)
+- *Focused Shot* (Pressure + Striker for localized implosion)
+- *Overclock* (PL 4 Pressure + Overclock = a single-target implosion that should terrify everyone in the room)
+
+**Flavor Note:** Striker water mages often have the most obvious physical wear. Their hands crack during cold weather. They have a slight permanent tremor in their dominant hand at higher levels — not debilitating, but visible.
+
+---
+
+## Anchor + Water
+
+**Dominant Strings:** Still, Flow (in combination)
+
+The natural home of water magic. Anchors hold things in place. Still water is already in place. The synergy is so intuitive that Anchor is the most common Primary Mode among water mages who come from defensive or healing backgrounds.
+
+**The Ice Anchor:** When an Anchor mage uses the Still String to reinforce their barrier, the barrier's VP gains +4 and it becomes immune to fire damage below PL 3. The tradeoff: when the Anchor collapses, the ice shatters — dealing 1d6 cold damage to everyone within 10 ft (allies included).
+
+**Best Techniques for Water Anchors:**
+- *Fortify* (creates a VP 40+ ice wall at high levels)
+- *Surge Absorb* (absorb incoming magical attacks by freezing the energy into the barrier)
+- *Shared Ground* (extend Still String protection to allies — they gain resistance to cold and Discord immunity on RES checks from cold effects)
+
+**Flavor Note:** Anchor water mages are cold. Not emotionally — their body temperature runs below normal because the Still String has slowly altered their baseline. Drinks they hold cool faster than expected. They sleep with extra blankets. In winter, their breath fogs even indoors.
+
+---
+
+## Slider + Water
+
+**Dominant Strings:** Flow, Pressure
+
+The most technically demanding combination. Slider mode is already unintuitive; water leylines already want to move. A Slider water mage has learned to slip between where the water goes and where it *wants* to go, and use that gap as a space to occupy.
+
+**The Redirect:** When a Slider water mage deflects an incoming attack using the Flow String, they can choose to *redirect* it as a water-form effect — a deflected blade strike becomes a burst of pressurized water in the same trajectory. Thread Check (CTR mod) vs. original attack roll. On success: the attacker takes half their own damage in water-pressure form.
+
+**Best Techniques for Water Sliders:**
+- *Phase Step* (moving through existing water sources — stepping into a river and emerging from another within range)
+- *Momentum Steal* (particularly effective when used on flowing water or creatures near water)
+- *Ghost Walk* (Sliders can suppress their Signature more easily than most — the double-tone vanishes to a single note during Ghost Walk)
+
+**Flavor Note:** Slider water mages are rarely still. They shift weight from foot to foot, their eyes track movement constantly, and they orient toward water sources in any room they enter. Former Slider students say their master knew exactly which direction every drain, pipe, and water source in the building was located at all times — without ever looking.
+
+---
+
+## Binder + Water
+
+**Dominant Strings:** Vital, Tide
+
+The rarest combination. Binder water mages create **conditional aquatic effects** — wards that activate when crossed, water that changes chemistry when disturbed, healing constructs that respond to injury. A Binder with the Vital String can create a **healing matrix** — a persistent enchantment that provides limited healing to anyone who passes through it. This is advanced medicine in a world that runs on leylines.
+
+**The Tidal Ward:** Using Flow + Tide + Binder, a mage can construct a "chemical ward" around an area — any creature that enters through water (including rain, puddles, or water surfaces) triggers an immediate Tide String effect (chosen when the ward is set). This requires a Binder Thread Check (ACU mod) with DC 14, costs 12 Tension, but once set, persists for Level + CTR modifier hours.
+
+**Best Techniques for Water Binders:**
+- *Conditional Lock* (a water trap that responds to specific creatures — most commonly used with Tide for contamination detection)
+- *Resilient Binding* (the binding VP equals CTR score — very hard to remove an Anchor-sealed water ward)
+- *Living Ward* (adapts to threats; if used with the Vital String, it shifts from healing to harm if the triggering creature is not recognized as friendly)
+
+**Flavor Note:** Binder water mages have a habit of touching water sources when they enter a room — fountains, cups, puddles. Old habit of feeling what leylines are available, what conditions are already in place, what the water here *remembers*.
+
+---
+
+## Conductor + Water
+
+**Dominant Strings:** Vital, Still, Flow
+
+The most dangerous combination — and the most breathtaking. A Conductor water mage routes water leylines through their own body. The results are extraordinary. The costs are significant.
+
+**Partial Water Transformation:** At PL 3+ Conductor, a water mage can begin to transform. At PL 3: skin becomes translucent at the hands and forearms, revealing blue-lit interior. At PL 4: physical blows that are not magical or cold-typed deal half damage (the body is becoming partially fluid). At PL 5: the mage can move through water-permeable spaces, split around obstacles, and regenerate 1d6 VP per round from water contact — but any fire or electrical damage dealt to them while transformed is amplified by 1 damage die.
+
+**Self-Healing Through Vital String + Conductor:** Combine these at PL 3 for a Minor Action: recover 2d8 + POT mod VP. This is significantly more efficient than normal Conductor healing, but it costs 6 Tension and produces an immediate Strain Check if above Safe Limit.
+
+**Failure Mode Warning:** Conductor + Water Snapback at maximum severity causes **partial liquefaction**. This is not immediately fatal. It is, however, deeply disturbing to witness and takes significant magical healing to reverse. Survivors do not speak of it.
+
+**Flavor Note:** Water Conductors are always faintly damp. Humidity gathers near them. Their hair moves oddly in still air. At high levels, they leave footprints that fill with water from no visible source.
+
+---
+
+# PART FIVE: THE TIDECALLER'S SNAPBACK TABLE
+
+When a water mage rolls a Natural 1 or fails a Strain Check, use the standard Snapback Table but interpret each result with water's specific character:
+
+| d12 | Standard Result | Water Mage Interpretation |
+|:---:|:---------------:|:--------------------------|
+| 1–2 | Flinch | 1d6 cold/pressure damage; your hands are numb — Discord on Thread Checks until Mend |
+| 3–4 | Burn | 2d8 hydraulic damage; hands are "burned" by pressure — same penalty as fire burn but it's blue-black bruising across the palms |
+| 5–6 | Rupture | 2d10 damage; the water pressure ruptures internally — RES Check DC 14 or suffer Shaking Hands condition |
+| 7–8 | Discharge | 3d10 damage; the water releases in a 15-ft burst of uncontrolled flow — everything in the area is soaked and pushed 10 ft (direction: d8) |
+| 9–10 | Overload | 3d12 damage; you are drenched to the bone from inside out; Stunned; all Tension resets to 0 as water erupts from every pore for a moment |
+| 11 | Collapse | 4d12 damage; fall Unconscious; the water affinity temporarily *numbs* — for 24 hours after waking, all Thread Checks are at Discord regardless of Mode |
+| 12 | Total Break | Maximum damage; roll Permanent Injury Table; additionally gain 1 level of permanent cold sensitivity (disadvantage on checks in freezing environments, cosmetic always-cold hands) |
+
+---
+
+# PART SIX: COLLABORATIVE CASTING — WATER AFFINITIES
+
+Water magic scales extraordinarily well in collaboration. These are the most common multi-mage water applications:
+
+## Two Water Mages — *Double Current*
+When two water mages combine their Thread Pools for a Flow String effect, the current extends its range by 50% and its damage die steps up by one (d8 → d10). The Lead makes all Thread Checks; the Supporting mage makes CTR Check DC 12 each round.
+
+## Water + Fire — *The Steam Wall*
+One mage generates heat; one generates water. The result is dense, scalding steam in a 20-ft radius. Difficult terrain, visibility reduced to 5 ft, 1d6 fire + 1d4 cold damage per round to creatures inside (the rapid temperature cycling is its own damage type). Cannot be easily dispelled — neither component is sufficient to counter both.
+
+## Water + Stone — *The Foundation*
+An Anchor water mage and any stone-affinity mage can create structures that are sealed against water infiltration and reinforced by it. Used by the Forgecrown for harbor infrastructure and by the Scaled Guard for flood defenses. Combined barrier VP equals the sum of both mages' individual barrier VP values.
+
+## Water + Lightning — *The Conduction Field*
+The most dangerous common collaboration. Water conducts electricity; combining these affinities creates a zone where any electrical damage is amplified by 1d8 for every creature already wet in the area. Used by military units as area denial. Both mages make CTR Checks DC 15 each round — if either fails, the conduction field arcs to them.
+
+---
+
+# PART SEVEN: WATER MAGIC IN THE WORLD
+
+## Who Uses Water Affinity
+
+**Solar Temple (Healing and Vital String):** The largest concentration of water mages in the guild system. Vital String + Anchor Mode is the most sought-after combination for temple healers. The Temple's rank of Gracehand typically requires at least PL 3 Vital String proficiency.
+
+**Scaled Guard (Pressure and Flow, combat-licensed):** Military water mages are typically Striker or Slider Primary Mode. Flow String for crowd control; Pressure String for targeted combat. A Scaled Guard Talonarch (rank 3) with water affinity is considered one of the most flexible combat assets available — capable of non-lethal restraint, lethal force, and field medic work with the same set of tools.
+
+**Forgecrown (Still String, specialized):** Ice is a construction material in the right climate. Forgecrown water mages with the Still String work in northern territories producing structures that are maintained magically — and occasionally produce ice-based magical artifacts, though these are fragile and expensive.
+
+**Civilian (all Strings):** Water mages are everywhere in civilian life. They run irrigation. They maintain ports. They work in sanitation. A water mage with the Tide String and a journeyman license is irreplaceable in municipal water management. Most people who encounter water magic in daily life encounter it in this context: practical, quiet, unglamorous, and essential.
+
+## Social Perception
+
+Water mages are generally regarded as **dependable and slightly underestimated**. Fire is dramatic. Lightning is flashy. Water is *useful* — and utility, in the social calculus of guild culture, rarely generates the same prestige as spectacle.
+
+This changes at high levels. A Level 7+ water mage with multiple Strings and a mastered Anchor or Conductor Mode is one of the most genuinely dangerous people in any room. The quiet is not limitation — it's patience. The mages who underestimate water affinity tend to learn this the hard way.
+
+---
+
+# APPENDIX: QUICK REFERENCE — WATER AFFINITY
+
+## The Five Strings at a Glance
+
+| String | Core Function | Best Mode Pairing | Primary Risk |
+|:------:|:-------------:|:-----------------:|:------------:|
+| Flow | Currents, movement, direction | Striker, Slider | Hydraulic backlash |
+| Pressure | Compression, impact, implosion | Striker, Anchor | Internal rupture |
+| Still | Ice, freezing, stasis | Anchor, Imprinter | Cold internalization |
+| Vital | Healing, biology, blood | Conductor, Binder | Self-targeting |
+| Tide | Chemistry, salinity, purification | Binder, Shearer | Corrosive rebound |
+
+## Level Unlock Summary
+
+| Level | New Unlock |
+|:-----:|:----------:|
+| 1 | 2 Strings, 2 Techniques, Primary Mode |
+| 2 | New Technique (Primary Mode), +2 VP, +1 Attribute |
+| 3 | Third String, RB +3 |
+| 4 | Secondary Mode, New Technique |
+| 5 | Fourth String, RB +4 |
+| 6 | New Technique (any unlocked Mode) |
+| 7 | Fifth String, Tertiary Mode, RB +5 |
+| 8 | New Technique, 4-String Weaves available |
+| 9 | Signature Weave (custom, Tension−3), RB +6 |
+| 10 | New Technique, Mastery Ability (choose 1 of 3) |
+
+## Common Weaving Combinations
+
+| Strings Combined | Result | Risk Level |
+|:----------------:|:------:|:----------:|
+| Flow + Still | Moving ice, slush wave | Medium |
+| Flow + Pressure | Crushing torrent | High |
+| Pressure + Vital | Controlled implosion-healing (surgical) | Very High |
+| Still + Tide | Salt-ice, chemical freeze | High |
+| Flow + Still + Pressure | Crushing Tide (see Level 5) | Extreme |
+| All Five | The Great Wave (Weavekeeper-designed) | Do not. |
+
+---
+
+> *Water does not ask permission to fill the space it finds. It does not apologize for the shape it takes. It remembers every shore it has ever touched.*
+>
+> *You are asking to borrow that memory. Use it well.*
+>
+> — Standard inscription above the door of the Water Affinity lecture hall, Lorehall, Eastern Branch
+
+---
+
+*THREADCAST Supplement — Water Affinity. All content derivative of the THREADCAST core system. For use with Polyhedral dice (d4, d6, d8, d10, d12, d20), one Weavekeeper, and players willing to get wet.*
