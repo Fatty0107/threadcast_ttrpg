@@ -9,13 +9,20 @@ import { RollLog } from "@/components/shared/RollLog";
 import Login from "@/pages/Login";
 import Characters from "@/pages/Characters";
 import CharacterSheet from "@/pages/CharacterSheet";
+import CharacterBuilder from "@/pages/CharacterBuilder";
 import Compendium from "@/pages/Compendium";
 import Weavekeeper from "@/pages/Weavekeeper";
 import Navbar from "@/components/layout/Navbar";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+});
 
-function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path: string }) {
+function ProtectedRoute({ component: Component, path, componentProps }: {
+  component: React.ComponentType<any>;
+  path: string;
+  componentProps?: Record<string, unknown>;
+}) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -27,13 +34,29 @@ function ProtectedRoute({ component: Component, path }: { component: React.Compo
       </Route>
     );
   }
-  if (!user) return <Route path={path}><Redirect to="/login" /></Route>;
+
+  if (!user) {
+    return <Route path={path}><Redirect to="/login" /></Route>;
+  }
 
   return (
     <Route path={path}>
       <Navbar />
-      <Component />
+      <Component {...(componentProps || {})} />
     </Route>
+  );
+}
+
+// Separate component so hooks are called at component level, not inside render callbacks
+function CharacterBuilderEditPage({ id }: { id: string }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground font-mono">LOADING...</div>;
+  if (!user) return <Redirect to="/login" />;
+  return (
+    <>
+      <Navbar />
+      <CharacterBuilder charId={id} />
+    </>
   );
 }
 
@@ -44,6 +67,10 @@ function Router() {
       <Route path="/" component={() => <Redirect to={user ? "/characters" : "/login"} />} />
       <Route path="/login" component={Login} />
       <ProtectedRoute path="/characters" component={Characters} />
+      <ProtectedRoute path="/build" component={CharacterBuilder} />
+      <Route path="/characters/:id/build">
+        {(params) => <CharacterBuilderEditPage id={params!.id} />}
+      </Route>
       <ProtectedRoute path="/characters/:id" component={CharacterSheet} />
       <ProtectedRoute path="/compendium" component={Compendium} />
       <ProtectedRoute path="/weavekeeper" component={Weavekeeper} />

@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   
-  const { data: me, isLoading, error } = useGetMe({ query: { retry: false } });
+  const { data: me, isLoading, error } = useGetMe({ query: { retry: false } as any });
   const logoutMutation = useLogout();
 
   useEffect(() => {

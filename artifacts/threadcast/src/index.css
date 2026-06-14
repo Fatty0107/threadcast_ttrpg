@@ -252,4 +252,24 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  .input-field {
+    width: 100%;
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    padding: 0.375rem 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .input-field:focus {
+    border-color: hsl(var(--primary));
+  }
+
+  .input-field::placeholder {
+    color: hsl(var(--muted-foreground) / 0.4);
+  }
 }

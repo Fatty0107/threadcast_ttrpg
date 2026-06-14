@@ -9,11 +9,11 @@ export default function CharacterSheet() {
   const characterId = params?.id ? parseInt(params.id) : 0;
   
   const { data: character, isLoading } = useGetCharacter(characterId, {
-    query: { enabled: !!characterId }
+    query: { enabled: !!characterId } as any
   });
   const updateMutation = useUpdateCharacter();
   
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleUpdate = useCallback((updateData: any) => {
     // Optimistic cache update would be ideal here, but for simplicity we'll just debounce the API call
