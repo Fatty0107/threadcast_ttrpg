@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import { DiceRollerProvider } from "@/components/shared/DiceRoller";
+import { RollLog } from "@/components/shared/RollLog";
 import Login from "@/pages/Login";
 import Characters from "@/pages/Characters";
 import CharacterSheet from "@/pages/CharacterSheet";
@@ -14,12 +15,20 @@ import Navbar from "@/components/layout/Navbar";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ component: Component, path }: { component: any, path: string }) {
+function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path: string }) {
   const { user, isLoading } = useAuth();
-  
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background text-foreground">Loading...</div>;
-  if (!user) return <Redirect to="/login" />;
-  
+
+  if (isLoading) {
+    return (
+      <Route path={path}>
+        <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground font-mono text-sm tracking-widest">
+          CONNECTING TO WEAVE...
+        </div>
+      </Route>
+    );
+  }
+  if (!user) return <Route path={path}><Redirect to="/login" /></Route>;
+
   return (
     <Route path={path}>
       <Navbar />
@@ -51,6 +60,7 @@ function App() {
           <DiceRollerProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
+              <RollLog />
             </WouterRouter>
           </DiceRollerProvider>
         </AuthProvider>
