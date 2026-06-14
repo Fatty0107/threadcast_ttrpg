@@ -52,8 +52,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     short: "Mental sharpness. Governs perception, knowledge, and analytical checks.",
   },
   presence: {
-    term: "Presence (PRE)",
-    short: "Force of personality and social influence.",
+    term: "Presence",
+    short: "PRE-based skill. Project force of personality, command attention, and exert social influence.",
+    detail: "Used to dominate social situations through sheer force of will. Differs from persuasion — Presence is about making people feel your weight in the room.",
   },
   threadsense: {
     term: "Threadsense (THS)",
@@ -223,6 +224,41 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     term: "Attuned",
     short: "Marked proficiency in a skill. Adds your Refinement Bonus to that skill's check.",
   },
+  corruption: {
+    term: "Corruption",
+    short: "Accumulated taint from Hollowing exposure or forbidden magic. Collapse at 10.",
+    detail: "Corruption accumulates through Hollowing environments and certain snapback effects. At 10, the character collapses into Thread Death or worse.",
+  },
+  fatigue: {
+    term: "Fatigue",
+    short: "Physical exhaustion from overexertion. Recovers on Long Rest.",
+    detail: "Fatigue 1–2 imposes Discord on physical checks. Fatigue 3+ adds Discord to all checks. Max 5.",
+  },
+  "thread reach": {
+    term: "Thread Reach",
+    short: "THS-based skill. Used to interact with, grip, and manipulate leyline threads at range.",
+    detail: "Thread Reach lets you extend your magical senses and physical grasp along leylines. Used for long-distance casting preparations and detecting thread nodes.",
+  },
+  surge: {
+    term: "Surge",
+    short: "POT-based skill. Used to channel raw bursts of magical power beyond normal limits.",
+    detail: "Surge lets you push more energy through a thread than it was designed for. High risk, high reward — used for overcasting and breaking through magical resistance.",
+  },
+  "signature suppression": {
+    term: "Signature Suppression",
+    short: "CTR-based skill. Used to conceal the visual, auditory, and tactile signs of your casting.",
+    detail: "Every weaver leaves a signature — color, sound, smell — that identifies them. Signature Suppression reduces or eliminates this tell during and after casting.",
+  },
+  "strand awareness": {
+    term: "Strand Awareness",
+    short: "THS-based skill. Passive magical alertness — detecting threads, auras, and ambient Weave activity.",
+    detail: "Strand Awareness lets you passively sense the magical environment. Used to detect woven traps, identify active magic nearby, and notice Hollowing encroachment.",
+  },
+  "swift hands": {
+    term: "Swift Hands",
+    short: "CTR-based skill. Used for precise physical dexterity, sleight of hand, and quick manipulation.",
+    detail: "Swift Hands covers pickpocketing, lock-picking, precise item handling under pressure, and any task requiring fine motor speed and control.",
+  },
   "weave reading": {
     term: "Weave Reading",
     short: "THS-based skill. Used to detect, analyze, and identify magical effects.",
@@ -233,7 +269,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "combat forms": {
     term: "Combat Forms",
-    short: "RES-based skill. Used for physical combat maneuvers and martial techniques.",
+    short: "ACU-based skill. Used for physical combat maneuvers and martial techniques.",
   },
   grit: {
     term: "Grit",
@@ -261,11 +297,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "trade craft": {
     term: "Trade Craft",
-    short: "CTR-based skill. Used for negotiation, bartering, appraisal, and commerce.",
+    short: "ACU-based skill. Used for negotiation, bartering, appraisal, and commerce.",
   },
   "anatomy of magic": {
     term: "Anatomy of Magic",
-    short: "THS-based skill. Used to understand how magic physically affects the body and world.",
+    short: "ACU-based skill. Used to understand how magic physically affects the body and world.",
   },
   inscription: {
     term: "Inscription",
