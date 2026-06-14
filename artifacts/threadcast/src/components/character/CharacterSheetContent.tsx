@@ -68,6 +68,8 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const [showFeatPicker, setShowFeatPicker] = useState(false);
   const [showInventoryPicker, setShowInventoryPicker] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
+  const [catalogCategory, setCatalogCategory] = useState("all");
+  const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
   const [recoveryDiceUsed, setRecoveryDiceUsed] = useState(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -159,8 +161,8 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
 
   // ---- Inventory helpers ----
   const filteredCatalog = CATALOG_ITEMS.filter(item =>
-    !inventory.find(i => i.id === item.id) &&
-    (inventorySearch === "" || item.name.toLowerCase().includes(inventorySearch.toLowerCase()))
+    (catalogCategory === "all" || item.category === catalogCategory) &&
+    (inventorySearch === "" || item.name.toLowerCase().includes(inventorySearch.toLowerCase()) || (item.subCategory || "").toLowerCase().includes(inventorySearch.toLowerCase()))
   );
 
   function addFromCatalog(item: typeof CATALOG_ITEMS[0]) {
@@ -778,23 +780,93 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
           {showInventoryPicker && (
             <div className="mb-4 border border-border bg-card p-3">
               <input
-                className="w-full bg-background border border-border px-3 py-1.5 font-mono text-sm mb-3 focus:outline-none focus:border-primary"
+                className="w-full bg-background border border-border px-3 py-1.5 font-mono text-sm mb-2 focus:outline-none focus:border-primary"
                 placeholder="Search items..."
                 value={inventorySearch}
                 onChange={e => setInventorySearch(e.target.value)}
               />
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {filteredCatalog.map(item => (
+              {/* Category filter */}
+              <div className="flex flex-wrap gap-1 mb-3">
+                {[
+                  { value: "all", label: "All" },
+                  { value: "weapon", label: "Weapons" },
+                  { value: "armor", label: "Armor" },
+                  { value: "casting", label: "Casting" },
+                  { value: "potion", label: "Potions" },
+                  { value: "consumable", label: "Consumables" },
+                  { value: "magical", label: "Magical" },
+                  { value: "kit", label: "Kits" },
+                  { value: "mount", label: "Mounts" },
+                ].map(cat => (
                   <button
-                    key={item.id}
-                    onClick={() => { addFromCatalog(item); }}
-                    className="w-full text-left p-2 border border-border hover:border-primary/50 flex items-baseline gap-2 transition-colors"
+                    key={cat.value}
+                    onClick={() => setCatalogCategory(cat.value)}
+                    className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors",
+                      catalogCategory === cat.value
+                        ? "border-primary text-primary bg-primary/10"
+                        : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    )}
                   >
-                    <span className={cn("text-[10px] font-mono w-16 flex-shrink-0", RARITY_COLORS[item.rarity])}>{RARITY_LABELS[item.rarity]}</span>
-                    <span className="font-mono text-sm text-foreground">{item.name}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground ml-auto">{item.category}</span>
+                    {cat.label}
                   </button>
                 ))}
+              </div>
+              {/* Item list */}
+              <div className="max-h-80 overflow-y-auto space-y-1">
+                {filteredCatalog.length === 0 && (
+                  <p className="text-xs font-mono text-muted-foreground text-center py-4">No items found.</p>
+                )}
+                {filteredCatalog.map(item => {
+                  const inPack = !!inventory.find(i => i.id === item.id);
+                  const isExpanded = expandedCatalogItem === item.id;
+                  return (
+                    <div key={item.id} className={cn("border transition-colors", isExpanded ? "border-primary/30 bg-primary/5" : "border-border/50 hover:border-border")}>
+                      {/* Row */}
+                      <div className="flex items-center gap-2 px-2 py-2">
+                        <button
+                          onClick={() => setExpandedCatalogItem(isExpanded ? null : item.id)}
+                          className="text-muted-foreground hover:text-foreground text-[10px] w-4 flex-shrink-0 transition-colors"
+                        >
+                          {isExpanded ? "▼" : "▶"}
+                        </button>
+                        <span className={cn("text-[10px] font-mono w-[68px] flex-shrink-0 truncate", RARITY_COLORS[item.rarity])}>
+                          {RARITY_LABELS[item.rarity]}
+                        </span>
+                        <span className="font-mono text-xs text-foreground flex-1 min-w-0 truncate">{item.name}</span>
+                        {item.subCategory && (
+                          <span className="text-[9px] font-mono text-muted-foreground/50 hidden sm:block flex-shrink-0">{item.subCategory}</span>
+                        )}
+                        {inPack ? (
+                          <span className="text-[10px] font-mono text-chart-2/80 border border-chart-2/30 px-1.5 py-0.5 flex-shrink-0">✓ PACK</span>
+                        ) : (
+                          <button
+                            onClick={() => addFromCatalog(item)}
+                            className="text-[10px] font-mono border border-primary/50 text-primary hover:bg-primary/10 px-1.5 py-0.5 flex-shrink-0 transition-colors"
+                          >
+                            + ADD
+                          </button>
+                        )}
+                      </div>
+                      {/* Expanded description */}
+                      {isExpanded && (
+                        <div className="px-7 pb-3 border-t border-border/20">
+                          <p className="text-[11px] font-mono text-muted-foreground leading-relaxed mt-2">{item.desc}</p>
+                          {item.mechanical && (
+                            <p className="text-[11px] font-mono text-primary/70 mt-1.5 leading-relaxed">{item.mechanical}</p>
+                          )}
+                          {!inPack && (
+                            <button
+                              onClick={() => { addFromCatalog(item); setExpandedCatalogItem(null); }}
+                              className="mt-2.5 text-[10px] font-mono border border-primary/50 text-primary hover:bg-primary/10 px-3 py-1 transition-colors"
+                            >
+                              + ADD TO INVENTORY
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -987,8 +1059,10 @@ function CastStringPanel({
   const mod = calcMod(attrScore);
   const [expanded, setExpanded] = useState(true);
   const [castPL, setCastPL] = useState<CastPL | null>(null);
-  const [isRolling, setIsRolling] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<ModeOption | null>(null);
+  const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
   const [castResult, setCastResult] = useState<CastResult | null>(null);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const normalModes = new Set([...secondaryModes, ...tertiaryModes]);
@@ -1003,22 +1077,44 @@ function CastStringPanel({
 
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
     setCastPL({ pl, cost, dc, effect });
+    setSelectedMode(null);
     setCastResult(null);
+    if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
+    setAnimDice(null);
   }
 
-  function selectModeAndRoll(modeName: string, rollType: "HARMONY" | "NORMAL" | "DISCORD", cost: number, dc: number) {
-    onCast(cost);
-    setIsRolling(true);
+  function closeOverlay() {
+    setCastPL(null);
+    setSelectedMode(null);
+    setCastResult(null);
+    if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
+    setAnimDice(null);
+  }
+
+  function doRoll() {
+    if (!selectedMode || !castPL) return;
+    const mode = selectedMode;
+    const pl = castPL;
+    onCast(pl.cost);
+    setSelectedMode(null);
+
+    const needs2 = mode.rollType !== "NORMAL";
+    setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
+    animRef.current = setInterval(() => {
+      setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
+    }, 60);
+
     setTimeout(() => {
+      if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
       const d1 = Math.floor(Math.random() * 20) + 1;
       let d2: number | undefined;
       let finalDie = d1;
-      if (rollType === "HARMONY") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.max(d1, d2); }
-      if (rollType === "DISCORD") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.min(d1, d2); }
+      if (mode.rollType === "HARMONY") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.max(d1, d2); }
+      if (mode.rollType === "DISCORD") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.min(d1, d2); }
       const total = finalDie + mod;
-      setIsRolling(false);
-      setCastResult({ d1, d2, finalDie, total, rollType, chosenMode: modeName, dc });
-    }, 700);
+      setAnimDice(null);
+      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: pl.dc });
+    }, 1100);
   }
 
   const rollTypeBadge = (rt: string) => ({
@@ -1026,6 +1122,12 @@ function CastStringPanel({
     NORMAL: "text-muted-foreground bg-muted/30 border-border",
     DISCORD: "text-destructive bg-destructive/10 border-destructive/30",
   }[rt] ?? "");
+
+  const diceColor = (rt: "HARMONY" | "NORMAL" | "DISCORD") => ({
+    HARMONY: "border-chart-2 text-chart-2",
+    NORMAL: "border-border text-foreground",
+    DISCORD: "border-destructive text-destructive",
+  }[rt]);
 
   return (
     <div className="border border-border bg-background">
@@ -1046,92 +1148,173 @@ function CastStringPanel({
           {/* Cast Overlay */}
           {castPL && (
             <div className="mb-4 border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center justify-between mb-3">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs text-primary uppercase tracking-widest">
-                  {str.name} PL{castPL.pl} — DC {castPL.dc}
+                  {str.name} · PL{castPL.pl} · DC {castPL.dc} · {castPL.cost} TP
                 </span>
-                <button
-                  onClick={() => { setCastPL(null); setCastResult(null); }}
-                  className="text-muted-foreground hover:text-foreground text-xs font-mono"
-                >
+                <button onClick={closeOverlay} className="text-muted-foreground hover:text-foreground text-xs font-mono transition-colors">
                   CLOSE ✕
                 </button>
               </div>
 
-              {isRolling ? (
-                <div className="h-16 flex items-center justify-center">
-                  <div className="text-3xl text-primary animate-spin">⬡</div>
+              {/* ── ROLLING ANIMATION ── */}
+              {animDice ? (
+                <div className="py-4 text-center">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <div className={cn("w-24 h-24 border-2 flex items-center justify-center text-5xl font-mono font-bold transition-none select-none", diceColor(animDice.rollType))}>
+                      {animDice.d1}
+                    </div>
+                    {animDice.d2 !== undefined && (
+                      <>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">
+                            {animDice.rollType === "HARMONY" ? "keep highest" : "keep lowest"}
+                          </span>
+                          <span className="text-muted-foreground font-mono text-lg">⟷</span>
+                        </div>
+                        <div className={cn("w-24 h-24 border-2 flex items-center justify-center text-5xl font-mono font-bold transition-none select-none", diceColor(animDice.rollType))}>
+                          {animDice.d2}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest animate-pulse">
+                    {animDice.rollType === "HARMONY" ? "weaving harmony…" : animDice.rollType === "DISCORD" ? "embracing discord…" : "threading the weave…"}
+                  </p>
                 </div>
+
               ) : castResult ? (
-                /* RESULT */
-                <div className={cn("p-3 border", castResult.finalDie === 1 ? "border-destructive/50 bg-destructive/5" : castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" : "border-border bg-muted/10")}>
-                  <div className="flex items-center justify-between mb-2 font-mono text-xs text-muted-foreground">
-                    <span>
-                      {castResult.chosenMode} · {castResult.rollType}
-                      {castResult.d2 !== undefined
-                        ? ` [${castResult.d1}, ${castResult.d2}]`
-                        : ` [${castResult.d1}]`}
-                      {" "}{fmtMod(mod)} =
-                    </span>
-                    <span className={cn("text-2xl font-bold font-mono",
-                      castResult.finalDie === 1 ? "text-destructive" :
-                      castResult.finalDie === 20 ? "text-primary" :
-                      castResult.total >= castResult.dc ? "text-chart-2" : "text-muted-foreground"
-                    )}>
-                      {castResult.total}
+                /* ── RESULT ── */
+                <div>
+                  <div className={cn("p-4 border mb-3",
+                    castResult.finalDie === 1 ? "border-destructive/50 bg-destructive/5" :
+                    castResult.finalDie === 20 ? "border-primary/50 bg-primary/5" :
+                    castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" :
+                    "border-border bg-muted/10"
+                  )}>
+                    {/* Die faces row */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={cn("w-14 h-14 border-2 flex items-center justify-center text-3xl font-mono font-bold",
+                        castResult.finalDie === castResult.d1 && castResult.d1 !== castResult.d2 ? diceColor(castResult.rollType) : "border-border/40 text-muted-foreground"
+                      )}>
+                        {castResult.d1}
+                      </div>
+                      {castResult.d2 !== undefined && (
+                        <>
+                          <span className="text-muted-foreground/50 font-mono text-xs">{castResult.rollType === "HARMONY" ? "▲HI" : "▼LO"}</span>
+                          <div className={cn("w-14 h-14 border-2 flex items-center justify-center text-3xl font-mono font-bold",
+                            castResult.finalDie === castResult.d2 && castResult.d1 !== castResult.d2 ? diceColor(castResult.rollType) : "border-border/40 text-muted-foreground"
+                          )}>
+                            {castResult.d2}
+                          </div>
+                        </>
+                      )}
+                      <div className="ml-auto text-right">
+                        <div className="text-[10px] font-mono text-muted-foreground">
+                          {castResult.chosenMode} · {castResult.rollType}
+                          {" + "}{fmtMod(mod)}
+                        </div>
+                        <div className={cn("text-4xl font-bold font-mono",
+                          castResult.finalDie === 1 ? "text-destructive" :
+                          castResult.finalDie === 20 ? "text-primary" :
+                          castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground"
+                        )}>
+                          {castResult.total}
+                        </div>
+                        <div className="text-[10px] font-mono text-muted-foreground">vs DC {castResult.dc}</div>
+                      </div>
+                    </div>
+                    {/* Outcome */}
+                    {castResult.finalDie === 20 && (
+                      <div className="font-mono text-xs text-primary font-bold mb-2 tracking-wide">✦ THREAD BREAK — Exceptional effect!</div>
+                    )}
+                    {castResult.finalDie === 1 ? (
+                      <div>
+                        <div className="font-mono text-xs text-destructive font-bold mb-1">✸ MISFIRE — SNAPBACK</div>
+                        <div className="font-mono text-xs text-muted-foreground leading-relaxed">{str.snapback}</div>
+                      </div>
+                    ) : castResult.total >= castResult.dc ? (
+                      <div>
+                        <div className="font-mono text-xs text-chart-2 font-bold mb-1">SUCCESS</div>
+                        <div className="font-mono text-xs text-foreground leading-relaxed">{castPL.effect}</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="font-mono text-xs text-muted-foreground font-bold mb-1">MISHAP — not enough</div>
+                        <div className="font-mono text-xs text-muted-foreground leading-relaxed">{str.mishap}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setCastResult(null)} className="px-3 py-1.5 text-[10px] font-mono border border-border/50 text-muted-foreground hover:text-foreground transition-colors">
+                      ← SELECT MODE AGAIN
+                    </button>
+                    <button onClick={closeOverlay} className="px-3 py-1.5 text-[10px] font-mono border border-border/50 text-muted-foreground hover:text-foreground transition-colors ml-auto">
+                      CLOSE ✕
+                    </button>
+                  </div>
+                </div>
+
+              ) : selectedMode ? (
+                /* ── CONFIRM & ROLL ── */
+                <div>
+                  <div className="flex items-center gap-3 mb-4 p-3 border border-border bg-background">
+                    <div>
+                      <div className="font-mono text-sm text-foreground">{selectedMode.name}</div>
+                      {selectedMode.tier !== "Other" && (
+                        <div className="text-[10px] font-mono text-muted-foreground">{selectedMode.tier} Mode</div>
+                      )}
+                    </div>
+                    <span className={cn("text-[10px] font-mono px-2 py-0.5 border ml-auto", rollTypeBadge(selectedMode.rollType))}>
+                      {selectedMode.rollType}
                     </span>
                   </div>
-                  {castResult.finalDie === 20 && (
-                    <div className="font-mono text-xs text-primary font-bold mb-1">✦ THREAD BREAK — Exceptional effect!</div>
-                  )}
-                  {castResult.finalDie === 1 ? (
-                    <div>
-                      <div className="font-mono text-xs text-destructive font-bold mb-1">✸ MISFIRE — SNAPBACK</div>
-                      <div className="font-mono text-xs text-muted-foreground leading-relaxed">{str.snapback}</div>
-                    </div>
-                  ) : castResult.total >= castResult.dc ? (
-                    <div>
-                      <div className="font-mono text-xs text-chart-2 font-bold mb-1">SUCCESS (vs DC {castResult.dc})</div>
-                      <div className="font-mono text-xs text-foreground leading-relaxed">{castPL.effect}</div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="font-mono text-xs text-muted-foreground font-bold mb-1">MISHAP — DC {castResult.dc} not met</div>
-                      <div className="font-mono text-xs text-muted-foreground leading-relaxed">{str.mishap}</div>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setCastResult(null)}
-                    className="mt-3 text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/40 px-2 py-0.5"
-                  >
-                    ← SELECT MODE AGAIN
-                  </button>
+                  <div className="text-[10px] font-mono text-muted-foreground mb-5 leading-relaxed">
+                    {selectedMode.rollType === "HARMONY" && "Rolling 2d20 — keep highest. "}
+                    {selectedMode.rollType === "NORMAL" && "Rolling 1d20. "}
+                    {selectedMode.rollType === "DISCORD" && "Rolling 2d20 — keep lowest. "}
+                    Thread Check: {str.checkAttr?.toUpperCase()} {fmtMod(mod)}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setSelectedMode(null)} className="px-4 py-2.5 text-xs font-mono border border-border text-muted-foreground hover:text-foreground transition-colors">
+                      ← CHANGE
+                    </button>
+                    <button
+                      onClick={doRoll}
+                      className={cn(
+                        "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors",
+                        selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" :
+                        selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" :
+                        "border-primary text-primary hover:bg-primary/10"
+                      )}
+                    >
+                      ⚄ ROLL THE THREAD
+                    </button>
+                  </div>
                 </div>
+
               ) : (
-                /* MODE SELECTION */
+                /* ── MODE SELECTION GRID ── */
                 <div>
-                  {availableModes.length === 0 ? (
-                    <p className="text-xs font-mono text-muted-foreground">No modes configured. Set your Primary Mode in the Background tab.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-2">Select casting mode:</p>
-                      {availableModes.map(m => (
-                        <button
-                          key={m.name}
-                          onClick={() => selectModeAndRoll(m.name, m.rollType, castPL.cost, castPL.dc)}
-                          className="w-full text-left p-3 border border-border hover:border-primary/50 bg-background flex items-center justify-between transition-colors"
-                        >
-                          <div>
-                            <span className="font-mono text-sm text-foreground">{m.name}</span>
-                            {m.tier !== "Other" && <span className="ml-2 text-[10px] font-mono text-muted-foreground">{m.tier} Mode</span>}
-                          </div>
-                          <span className={cn("text-[10px] font-mono px-2 py-0.5 border", rollTypeBadge(m.rollType))}>
-                            {m.rollType}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-3">Select casting mode:</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {availableModes.map(m => (
+                      <button
+                        key={m.name}
+                        onClick={() => setSelectedMode(m)}
+                        className="text-left p-2.5 border border-border hover:border-primary/50 bg-background transition-colors group"
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-mono text-xs text-foreground group-hover:text-primary transition-colors">{m.name}</span>
+                          <span className={cn("text-[9px] font-mono px-1.5 py-0.5 border", rollTypeBadge(m.rollType))}>{m.rollType}</span>
+                        </div>
+                        {m.tier !== "Other" && (
+                          <span className="text-[9px] font-mono text-muted-foreground/60">{m.tier}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
