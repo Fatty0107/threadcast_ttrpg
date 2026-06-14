@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Character } from "@workspace/api-client-react";
 import {
-  ATTRIBUTE_DEFS, ALL_SKILLS, FEATS, CATALOG_ITEMS, BURNOUT_LEVELS,
+  ATTRIBUTE_DEFS, ALL_SKILLS, ALL_MODES, FEATS, CATALOG_ITEMS, BURNOUT_LEVELS,
   RARITY_COLORS, RARITY_LABELS, type ItemRarity,
   calcMod, fmtMod, getRefinementBonus,
   calcVPMax, calcThreadPool, calcSafeLimit, calcGuardRating, calcWardRating,
@@ -990,12 +990,16 @@ function CastStringPanel({
   const [isRolling, setIsRolling] = useState(false);
   const [castResult, setCastResult] = useState<CastResult | null>(null);
 
-  type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" };
-  const availableModes: ModeOption[] = [
-    ...(primaryMode ? [{ name: primaryMode, rollType: "HARMONY" as const, tier: "Primary" as const }] : []),
-    ...(level >= 4 ? secondaryModes.map(m => ({ name: m, rollType: "NORMAL" as const, tier: "Secondary" as const })) : []),
-    ...(level >= 7 ? tertiaryModes.map(m => ({ name: m, rollType: "DISCORD" as const, tier: "Tertiary" as const })) : []),
-  ];
+  type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
+  const normalModes = new Set([...secondaryModes, ...tertiaryModes]);
+  const availableModes: ModeOption[] = ALL_MODES.map(m => {
+    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: "HARMONY" as const, tier: "Primary" as const };
+    if (normalModes.has(m.name)) {
+      const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
+      return { name: m.name, rollType: "NORMAL" as const, tier };
+    }
+    return { name: m.name, rollType: "DISCORD" as const, tier: "Other" as const };
+  });
 
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
     setCastPL({ pl, cost, dc, effect });
@@ -1119,7 +1123,7 @@ function CastStringPanel({
                         >
                           <div>
                             <span className="font-mono text-sm text-foreground">{m.name}</span>
-                            <span className="ml-2 text-[10px] font-mono text-muted-foreground">{m.tier} Mode</span>
+                            {m.tier !== "Other" && <span className="ml-2 text-[10px] font-mono text-muted-foreground">{m.tier} Mode</span>}
                           </div>
                           <span className={cn("text-[10px] font-mono px-2 py-0.5 border", rollTypeBadge(m.rollType))}>
                             {m.rollType}
