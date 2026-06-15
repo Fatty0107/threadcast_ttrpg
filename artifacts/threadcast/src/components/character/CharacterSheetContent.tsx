@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Character } from "@workspace/api-client-react";
 import {
   ATTRIBUTE_DEFS, ALL_SKILLS, ALL_MODES, FEATS, CATALOG_ITEMS, BURNOUT_LEVELS,
-  RARITY_COLORS, RARITY_LABELS, type ItemRarity,
+  RARITY_COLORS, RARITY_LABELS, ITEM_BONUS, KIT_CONTENTS,
+  type ItemRarity,
   calcMod, fmtMod, getRefinementBonus,
   calcVPMax, calcThreadPool, calcSafeLimit, calcGuardRating, calcWardRating,
   calcRecoveryDice,
@@ -16,6 +17,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 // ---- Types ----
+interface SubItem {
+  name: string;
+  charges: number;
+  maxCharges: number;
+  desc?: string;
+  canEquip?: boolean;
+  equipped?: boolean;
+}
+
+interface InventoryEntry {
+  id: string;
+  name: string;
+  quantity: number;
+  rarity: ItemRarity;
+  notes?: string;
+  desc?: string;
+  mechanical?: string;
+  category?: string;
+  subCategory?: string;
+  equipped?: boolean;
+  subItems?: SubItem[];
+}
+
 interface SheetData {
   avatarDataUrl?: string;
   attributes?: Record<string, number>;
@@ -44,17 +68,16 @@ interface SheetData {
   signature?: string;
   woundsNotes?: string;
   notes?: string;
+  notesBackstory?: string;
+  notesAppearance?: string;
+  notesPersonality?: string;
+  notesBonds?: string;
+  notesFlaws?: string;
+  notesGoals?: string;
+  notesAllies?: string;
+  notesSession?: string;
   recoveryDiceCurrent?: number;
-}
-
-interface InventoryEntry {
-  id: string;
-  name: string;
-  quantity: number;
-  rarity: ItemRarity;
-  notes?: string;
-  desc?: string;
-  mechanical?: string;
+  featCharges?: Record<string, number>;
 }
 
 interface Props {
@@ -72,6 +95,7 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
   const [recoveryDiceUsed, setRecoveryDiceUsed] = useState(0);
+  const [expandedKitItem, setExpandedKitItem] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -103,15 +127,32 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const corruption = localData.corruption || 0;
   const level = character.level || 1;
   const rb = getRefinementBonus(level);
-  const maxVP = calcVPMax(attrs.res || 10, level);
-  const maxPool = calcThreadPool(level, attrs.ths || 10);
-  const safeLimit = calcSafeLimit(level, attrs.ctr || 10);
-  const guardRating = calcGuardRating(attrs.res || 10);
-  const wardRating = calcWardRating(attrs.ctr || 10);
-  const maxRecoveryDice = calcRecoveryDice(attrs.res || 10);
-  const recoveryDiceCurrent = localData.recoveryDiceCurrent ?? maxRecoveryDice;
   const feats = localData.feats || [];
   const inventory = localData.inventory || [];
+
+  // Feat passive bonuses
+  const featVpBonus    = feats.includes("Iron Constitution")    ? 4 : 0;
+  const featWardBonus  = feats.includes("Ward Specialist")      ? 2 : 0;
+  const featPoolBonus  = feats.includes("Extended Thread Pool") ? 4 : 0;
+  const featSLBonus    = feats.includes("Extended Thread Pool") ? 2 : 0;
+
+  // Equipped item bonuses
+  const equippedItems = inventory.filter(i => i.equipped);
+  const equippedGR = equippedItems.reduce((s, i) => s + (ITEM_BONUS[i.id]?.guardRating  || 0), 0);
+  const equippedWR = equippedItems.reduce((s, i) => s + (ITEM_BONUS[i.id]?.wardRating   || 0), 0);
+
+  const maxVP          = calcVPMax(attrs.res || 10, level) + featVpBonus;
+  const maxPool        = calcThreadPool(level, attrs.ths || 10) + featPoolBonus;
+  const safeLimit      = calcSafeLimit(level, attrs.ctr || 10) + featSLBonus;
+  const guardRating    = calcGuardRating(attrs.res || 10) + equippedGR;
+  const wardRating     = calcWardRating(attrs.ctr || 10) + featWardBonus + equippedWR;
+  const maxRecoveryDice = calcRecoveryDice(attrs.res || 10);
+  const recoveryDiceCurrent = localData.recoveryDiceCurrent ?? maxRecoveryDice;
+
+  // Equipped weapons for Actions tab
+  const equippedWeapons = equippedItems.filter(i => ITEM_BONUS[i.id]?.attackAttr);
+  // Per-rest feats that are active on this character
+  const activeCombatFeats = FEATS.filter(f => f.usesPerRest && feats.includes(f.name));
 
   const attunedSkills: string[] = localData.attunedSkills
     || (localData.skills || []).filter(s => s.attuned).map(s => s.name)
@@ -120,14 +161,27 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const featSlots = Math.floor(level / 2);
   const featSlotsRemaining = featSlots - feats.length;
 
+  // ---- Feat charge helpers ----
+  function isFeatAvailable(name: string): boolean {
+    return (localData.featCharges || {})[name] !== 0;
+  }
+  function useFeat(name: string) {
+    patch({ featCharges: { ...(localData.featCharges || {}), [name]: 0 } });
+  }
+
   // ---- Mend handler ----
   function doMend() {
     const diceRoll = recoveryDiceUsed * (Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1);
     const healed = Math.min(diceRoll, maxVP - vp.current);
+    const resetCharges = { ...(localData.featCharges || {}) };
+    FEATS.filter(f => f.usesPerRest && (f.restType === "mend" || f.restType === "combat")).forEach(f => {
+      delete resetCharges[f.name];
+    });
     patch({
       tension: { ...tension, current: 0 },
       vitalityPoints: { ...vp, current: Math.min(maxVP, vp.current + healed) },
       recoveryDiceCurrent: Math.max(0, recoveryDiceCurrent - recoveryDiceUsed),
+      featCharges: resetCharges,
     });
     setRecoveryDiceUsed(0);
     setShowMendPanel(false);
@@ -140,6 +194,7 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
       fatigue: Math.max(0, fatigue - 1),
       burnout: Math.max(0, burnout - 1),
       recoveryDiceCurrent: maxRecoveryDice,
+      featCharges: {},
     });
   }
 
@@ -166,7 +221,20 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   );
 
   function addFromCatalog(item: typeof CATALOG_ITEMS[0]) {
-    patch({ inventory: [...inventory, { id: item.id, name: item.name, quantity: 1, rarity: item.rarity, desc: item.desc, mechanical: item.mechanical }] });
+    const kc = KIT_CONTENTS[item.id];
+    const newEntry: InventoryEntry = {
+      id: item.id,
+      name: item.name,
+      quantity: 1,
+      rarity: item.rarity,
+      desc: item.desc,
+      mechanical: item.mechanical,
+      category: item.category,
+      subCategory: item.subCategory,
+      equipped: false,
+      ...(kc ? { subItems: kc.map(si => ({ ...si })) } : {}),
+    };
+    patch({ inventory: [...inventory, newEntry] });
   }
   function addCustomItem() {
     const newItem: InventoryEntry = {
@@ -184,6 +252,35 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   function removeItem(id: string) {
     patch({ inventory: inventory.filter(i => i.id !== id) });
   }
+  function toggleEquip(id: string) {
+    patch({ inventory: inventory.map(i => i.id === id ? { ...i, equipped: !i.equipped } : i) });
+  }
+  function useConsumable(id: string) {
+    const item = inventory.find(i => i.id === id);
+    if (!item) return;
+    if (item.quantity > 1) updateItem(id, { quantity: item.quantity - 1 });
+    else removeItem(id);
+  }
+  function useSubItem(itemId: string, subIdx: number) {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item?.subItems?.[subIdx] || item.subItems[subIdx].charges <= 0) return;
+    patch({
+      inventory: inventory.map(i => i.id === itemId ? {
+        ...i,
+        subItems: i.subItems!.map((s, idx) => idx === subIdx ? { ...s, charges: s.charges - 1 } : s),
+      } : i),
+    });
+  }
+  function toggleSubItemEquip(itemId: string, subIdx: number) {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item?.subItems?.[subIdx]) return;
+    patch({
+      inventory: inventory.map(i => i.id === itemId ? {
+        ...i,
+        subItems: i.subItems!.map((s, idx) => idx === subIdx ? { ...s, equipped: !s.equipped } : s),
+      } : i),
+    });
+  }
 
   // ---- PDF Export ----
   function handleExportPDF() {
@@ -197,39 +294,54 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     const trackDots = (val: number, max: number, filled: string) =>
       Array.from({ length: max }).map((_, i) => `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #444;background:${i < val ? filled : "transparent"};margin-right:2px;"></span>`).join("");
 
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${character.name} — Character Sheet</title>
+    const checkBox = (filled: boolean) =>
+      `<span style="display:inline-block;width:11px;height:11px;border:1px solid #555;background:${filled?"#333":"transparent"};margin-right:2px;vertical-align:middle;"></span>`;
+    const checkBoxes = (filled: number, total: number) =>
+      Array.from({length:total}).map((_,i) => checkBox(i < filled)).join("");
+    const restBadge = (feat: typeof activeFeatDefsAll[0]) =>
+      feat.usesPerRest ? `<span style="font-family:monospace;font-size:7pt;border:1px solid #777;padding:1px 4px;margin-left:6px;color:#555;">${feat.restType==="mend"?"1/MEND":feat.restType==="long"?"1/LONG REST":"1/COMBAT"} ${checkBox(!isFeatAvailable(feat.name))}</span>` : "";
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${character.name} — THREADCAST Sheet</title>
 <style>
-@page{size:A4;margin:18mm}
+@page{size:A4;margin:14mm 16mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Georgia,serif;font-size:10pt;color:#111;line-height:1.45}
-h1{font-size:20pt;letter-spacing:.04em;margin-bottom:3px}
-h2{font-size:12pt;border-bottom:1.5px solid #222;padding-bottom:3px;margin:18px 0 8px}
-h3{font-size:9pt;text-transform:uppercase;letter-spacing:.1em;color:#555;margin-bottom:4px}
-.page{page-break-before:always;padding-top:4px}
+body{font-family:'Georgia',serif;font-size:9.5pt;color:#111;line-height:1.45}
+h1{font-size:18pt;letter-spacing:.05em;margin-bottom:2px;font-family:Georgia,serif}
+h2{font-size:10pt;border-bottom:1.5px solid #222;padding-bottom:2px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.08em;font-family:monospace}
+h3{font-size:8pt;text-transform:uppercase;letter-spacing:.1em;color:#555;margin-bottom:3px;font-family:monospace}
+.page{page-break-before:always;padding-top:2px}
 .page:first-child{page-break-before:auto}
-.header{display:flex;align-items:flex-start;gap:14px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px}
-.portrait{width:60px;height:60px;object-fit:cover;border:1px solid #333;flex-shrink:0}
-.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
-.pill{font-family:monospace;font-size:7.5pt;border:1px solid #555;padding:1px 5px;color:#333;border-radius:2px}
-.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.stat-box{border:1px solid #ccc;padding:5px;text-align:center}
-.stat-lbl{font-family:monospace;font-size:7pt;color:#666;text-transform:uppercase;letter-spacing:.07em}
-.stat-val{font-family:monospace;font-size:13pt;font-weight:bold}
-.stat-mod{font-family:monospace;font-size:8.5pt;color:#444}
-table{width:100%;border-collapse:collapse;font-size:9pt}
-th{font-family:monospace;font-size:7pt;text-align:left;padding:3px 5px;border-bottom:1px solid #333;color:#555;text-transform:uppercase}
-td{padding:3px 5px;border-bottom:1px solid #e0e0e0;vertical-align:middle}
-.at{color:#8b5e00;font-weight:bold}
-.feat-block{border:1px solid #ccc;padding:6px 8px;margin-bottom:5px}
-.feat-nm{font-family:monospace;font-size:9pt;font-weight:bold}
-.feat-cat{font-family:monospace;font-size:7pt;color:#777}
-.feat-desc{font-size:8.5pt;color:#333;margin-top:2px;line-height:1.5}
-.feat-mech{font-family:monospace;font-size:8pt;color:#555;border-left:2px solid #a07030;padding-left:5px;margin-top:3px}
-.notes-box{border:1px solid #ccc;padding:8px;min-height:70px;font-size:9pt;white-space:pre-wrap}
-.section-label{font-family:monospace;font-size:7pt;text-transform:uppercase;letter-spacing:.1em;color:#666;margin-bottom:2px}
+.header{display:flex;align-items:flex-start;gap:12px;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:12px}
+.portrait{width:56px;height:56px;object-fit:cover;border:1px solid #333;flex-shrink:0}
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.pill{font-family:monospace;font-size:7pt;border:1px solid #555;padding:1px 5px;color:#333}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.stat-box{border:1px solid #bbb;padding:4px;text-align:center}
+.stat-lbl{font-family:monospace;font-size:6.5pt;color:#666;text-transform:uppercase;letter-spacing:.06em}
+.stat-val{font-family:monospace;font-size:12pt;font-weight:bold}
+.stat-mod{font-family:monospace;font-size:8pt;color:#444}
+.track-box{display:inline-block;width:14px;height:14px;border:1px solid #555;margin-right:2px;vertical-align:middle;text-align:center;line-height:14px;font-size:9pt}
+table{width:100%;border-collapse:collapse;font-size:8.5pt}
+th{font-family:monospace;font-size:6.5pt;text-align:left;padding:2px 4px;border-bottom:1px solid #333;color:#555;text-transform:uppercase}
+td{padding:2px 4px;border-bottom:1px solid #ddd;vertical-align:middle}
+.at{color:#7a4e00;font-weight:bold}
+.feat-block{border:1px solid #bbb;padding:5px 7px;margin-bottom:4px;break-inside:avoid}
+.feat-nm{font-family:monospace;font-size:8.5pt;font-weight:bold}
+.feat-cat{font-family:monospace;font-size:6.5pt;color:#777}
+.feat-desc{font-size:8pt;color:#333;margin-top:2px;line-height:1.45}
+.feat-mech{font-family:monospace;font-size:7.5pt;color:#555;border-left:2px solid #9a6020;padding-left:4px;margin-top:2px}
+.passive-badge{font-family:monospace;font-size:6.5pt;color:#2a6030;border:1px solid #2a6030;padding:1px 4px;margin-left:6px}
+.notes-section{border:1px solid #ccc;padding:6px;min-height:60px;font-size:8.5pt;white-space:pre-wrap;word-break:break-word}
+.lined-box{border:1px solid #ccc;padding:6px 7px;min-height:65px;background-image:repeating-linear-gradient(to bottom,transparent,transparent 19px,#e8e8e8 20px);font-size:8.5pt;white-space:pre-wrap}
+.action-row{display:flex;justify-content:space-between;align-items:flex-start;border:1px solid #ccc;padding:4px 7px;margin-bottom:3px;gap:8px}
+.item-row{display:flex;align-items:baseline;gap:6px;border-bottom:1px solid #eee;padding:2px 0}
+.equip-badge{font-family:monospace;font-size:6.5pt;border:1px solid #2a6030;color:#2a6030;padding:0 3px}
 </style></head><body>
+
+<!-- PAGE 1: IDENTITY + ATTRIBUTES + VITALS -->
 <div class="header">
   ${localData.avatarDataUrl ? `<img src="${localData.avatarDataUrl}" class="portrait" alt="Portrait">` : ""}
   <div style="flex:1">
@@ -237,12 +349,13 @@ td{padding:3px 5px;border-bottom:1px solid #e0e0e0;vertical-align:middle}
     <div class="pills">
       <span class="pill">Level ${level}</span>
       ${character.affinity ? `<span class="pill">${character.affinity} Affinity</span>` : ""}
-      ${localData.primaryMode ? `<span class="pill">${localData.primaryMode} (Primary)</span>` : ""}
-      ${localData.secondaryMode ? `<span class="pill">${localData.secondaryMode}${localData.secondaryMode2 ? " / " + localData.secondaryMode2 : ""} (Secondary)</span>` : ""}
-      ${localData.tertiaryMode ? `<span class="pill">${localData.tertiaryMode}${localData.tertiaryMode2 ? " / " + localData.tertiaryMode2 : ""} (Tertiary)</span>` : ""}
+      ${localData.primaryMode ? `<span class="pill">${localData.primaryMode} Primary</span>` : ""}
+      ${localData.secondaryMode ? `<span class="pill">${localData.secondaryMode}${localData.secondaryMode2 ? " / "+localData.secondaryMode2:""} Secondary</span>` : ""}
+      ${localData.tertiaryMode ? `<span class="pill">${localData.tertiaryMode}${localData.tertiaryMode2 ? " / "+localData.tertiaryMode2:""} Tertiary</span>` : ""}
       ${localData.background ? `<span class="pill">${localData.background}</span>` : ""}
-      ${localData.guild ? `<span class="pill">${localData.guild}${localData.guildRank ? " · " + localData.guildRank : ""}</span>` : ""}
+      ${localData.guild ? `<span class="pill">${localData.guild}${localData.guildRank ? " · "+localData.guildRank:""}</span>` : ""}
     </div>
+    ${localData.signature ? `<div style="margin-top:4px;font-family:monospace;font-size:7.5pt;color:#555">Sig: ${localData.signature}</div>` : ""}
   </div>
 </div>
 
@@ -251,35 +364,51 @@ td{padding:3px 5px;border-bottom:1px solid #e0e0e0;vertical-align:middle}
 ${ATTRIBUTE_DEFS.map(a => {
   const score = attrs[a.key] || 10;
   const mod = calcMod(score);
-  return `<div class="stat-box"><div class="stat-lbl">${a.abbr}</div><div class="stat-val">${score}</div><div class="stat-mod">${mod >= 0 ? "+" : ""}${mod}</div></div>`;
+  return `<div class="stat-box"><div class="stat-lbl">${a.abbr}</div><div class="stat-val">${score}</div><div class="stat-mod">${mod>=0?"+":""}${mod}</div></div>`;
 }).join("")}
 </div>
 
-<div class="g2" style="margin-bottom:14px">
+<div class="g2" style="margin-bottom:10px">
 <div>
-<h3>Vital Statistics</h3>
-<div class="g3" style="margin-top:5px">
-  <div class="stat-box"><div class="stat-lbl">VP</div><div class="stat-val" style="font-size:11pt">${vp.current}/${vp.max || maxVP}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Thread Pool</div><div class="stat-val" style="font-size:11pt">${tension.current}/${tension.pool || maxPool}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Safe Limit</div><div class="stat-val" style="font-size:11pt">${tension.safeLimit || safeLimit}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Guard</div><div class="stat-val" style="font-size:11pt">${localData.guardRating ?? guardRating}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Ward</div><div class="stat-val" style="font-size:11pt">${localData.wardRating ?? wardRating}</div></div>
+<h3>Vital Points &amp; Tension</h3>
+<div class="g4" style="margin-top:4px">
+  <div class="stat-box"><div class="stat-lbl">VP Current</div><div class="stat-val" style="font-size:11pt">${vp.current}</div></div>
+  <div class="stat-box"><div class="stat-lbl">VP Max</div><div class="stat-val" style="font-size:11pt">${vp.max||maxVP}${featVpBonus?` <span style="color:#2a6030;font-size:7pt">+${featVpBonus}</span>`:"" }</div></div>
+  <div class="stat-box"><div class="stat-lbl">Tension</div><div class="stat-val" style="font-size:11pt">${tension.current}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Thread Pool</div><div class="stat-val" style="font-size:11pt">${tension.pool||maxPool}${featPoolBonus?` <span style="color:#2a6030;font-size:7pt">+${featPoolBonus}</span>`:""}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Safe Limit</div><div class="stat-val" style="font-size:11pt">${safeLimit}${featSLBonus?` <span style="color:#2a6030;font-size:7pt">+${featSLBonus}</span>`:""}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Guard</div><div class="stat-val" style="font-size:11pt">${guardRating}${equippedGR?` <span style="color:#2a6030;font-size:7pt">+${equippedGR}</span>`:""}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Ward</div><div class="stat-val" style="font-size:11pt">${wardRating}${(featWardBonus+equippedWR)?` <span style="color:#2a6030;font-size:7pt">+${featWardBonus+equippedWR}</span>`:""}</div></div>
   <div class="stat-box"><div class="stat-lbl">Ref. Bonus</div><div class="stat-val" style="font-size:11pt">+${rb}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Recovery Dice</div><div class="stat-val" style="font-size:11pt">${recoveryDiceCurrent}/${maxRecoveryDice}</div></div>
-  <div class="stat-box"><div class="stat-lbl">Fatigue</div><div class="stat-val" style="font-size:11pt">${fatigue}/5</div></div>
-  <div class="stat-box"><div class="stat-lbl">Corruption</div><div class="stat-val" style="font-size:11pt">${corruption}/10</div></div>
 </div>
 </div>
 <div>
-<h3>Burnout</h3>
-<div style="margin-top:5px">${trackDots(burnout, 6, "#8b0000")} <span style="font-family:monospace;font-size:8pt;margin-left:4px">${burnout}/6 — ${burnoutLabel}</span></div>
-${localData.signature ? `<h3 style="margin-top:12px">Weaver Signature</h3><div style="font-size:8.5pt;margin-top:3px;border:1px solid #ccc;padding:5px">${localData.signature}</div>` : ""}
-${localData.woundsNotes ? `<h3 style="margin-top:10px">Wounds &amp; Conditions</h3><div style="font-size:8.5pt;margin-top:3px;border:1px solid #ccc;padding:5px;white-space:pre-wrap">${localData.woundsNotes}</div>` : ""}
+<h3>Condition Tracks</h3>
+<div style="margin-top:5px;font-family:monospace;font-size:8pt">
+  <div style="margin-bottom:5px"><strong>Burnout</strong> (${burnout}/6 — ${burnoutLabel})<br>${checkBoxes(burnout,6)} <span style="color:#8b0000">${burnoutLabel}</span></div>
+  <div style="margin-bottom:5px"><strong>Recovery Dice</strong> ${recoveryDiceCurrent}/${maxRecoveryDice}<br>${checkBoxes(recoveryDiceCurrent,maxRecoveryDice)}</div>
+  <div style="margin-bottom:5px"><strong>Fatigue</strong> ${fatigue}/5<br>${checkBoxes(fatigue,5)}</div>
+  <div><strong>Corruption</strong> ${corruption}/10<br>${checkBoxes(corruption,10)}</div>
+</div>
+${localData.woundsNotes ? `<div style="margin-top:6px"><h3>Wounds &amp; Conditions</h3><div style="border:1px solid #ccc;padding:4px;font-size:8pt;white-space:pre-wrap;margin-top:2px">${localData.woundsNotes}</div></div>` : ""}
 </div>
 </div>
 
-<!-- PAGE 2: SKILLS & STRINGS -->
+<!-- PAGE 2: ACTIONS + SKILLS + STRINGS -->
 <div class="page">
+<h2>Actions</h2>
+<div class="action-row">
+  <div style="flex:1"><strong style="font-family:monospace">Unarmed Strike</strong> <span style="font-family:monospace;font-size:7.5pt;color:#555">Melee · RES</span><br><span style="font-size:7.5pt;color:#555">1 + RES mod (min 1) bludgeoning</span></div>
+  <div style="font-family:monospace;font-size:8pt;flex-shrink:0">ATK ${fmtMod(calcMod(attrs.res||10))} &nbsp; DMG 1${fmtMod(Math.max(1,calcMod(attrs.res||10)))} blunt</div>
+</div>
+${equippedWeapons.map(item => {
+  const bonus = ITEM_BONUS[item.id];
+  const atkKey = bonus?.attackAttr || "res";
+  const atkMod = calcMod((attrs as Record<string,number>)[atkKey] || 10);
+  const dmgStr = `${bonus?.damageDice||"1d6"}${fmtMod(atkMod)}${bonus?.damageBonusDice?" "+bonus.damageBonusDice:""}`;
+  return `<div class="action-row"><div style="flex:1"><strong style="font-family:monospace">${item.name}</strong> <span style="font-family:monospace;font-size:7.5pt;color:#555">${bonus?.range||"Melee"} · ${atkKey.toUpperCase()}${bonus?.twoHanded?" · 2H":""}</span>${item.mechanical?`<br><span style="font-size:7.5pt;color:#777">${item.mechanical}</span>`:""}</div><div style="font-family:monospace;font-size:8pt;flex-shrink:0">ATK ${fmtMod(atkMod)} &nbsp; DMG ${dmgStr}</div></div>`;
+}).join("")}
+
 <h2>Skills</h2>
 <table><thead><tr><th>Skill</th><th>Attr</th><th>Attuned</th><th>Modifier</th><th>Total</th></tr></thead><tbody>
 ${ALL_SKILLS.map(skill => {
@@ -287,28 +416,50 @@ ${ALL_SKILLS.map(skill => {
   const mod = calcMod(attrScore);
   const isAt = attunedSkills.includes(skill.name);
   const total = mod + (isAt ? rb : 0);
-  return `<tr><td class="${isAt ? "at" : ""}">${skill.name}</td><td style="font-family:monospace;font-size:8pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${isAt ? "●" : "○"}</td><td style="font-family:monospace">${mod >= 0 ? "+" : ""}${mod}${isAt ? " +"+rb : ""}</td><td style="font-family:monospace;font-weight:bold">${total >= 0 ? "+" : ""}${total}</td></tr>`;
+  return `<tr><td class="${isAt?"at":""}">${skill.name}</td><td style="font-family:monospace;font-size:7.5pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${isAt?"●":"○"}</td><td style="font-family:monospace">${mod>=0?"+":""}${mod}${isAt?" +"+rb:""}</td><td style="font-family:monospace;font-weight:bold">${total>=0?"+":""}${total}</td></tr>`;
 }).join("")}
 </tbody></table>
 
-${totalStr > 0 ? `<h2>Strings (${totalStr})</h2><div style="font-size:9pt">${(localData.strings || []).map((s: string) => `<div style="border:1px solid #ccc;padding:4px 7px;margin-bottom:4px;font-family:Georgia,serif">${s}</div>`).join("")}</div>` : ""}
+${totalStr > 0 ? `<h2>Strings (${totalStr})</h2><div>${(localData.strings||[]).map((s:string)=>`<div style="border:1px solid #bbb;padding:3px 7px;margin-bottom:3px;font-size:9pt">${s}</div>`).join("")}</div>` : ""}
 </div>
 
-<!-- PAGE 3: FEATS, BACKGROUND & NOTES -->
+<!-- PAGE 3: FEATS + INVENTORY -->
 <div class="page">
-${activeFeatDefsAll.length > 0 ? `<h2>Feats (${activeFeatDefsAll.length}/${Math.floor(level/2)} slots)</h2>${activeFeatDefsAll.map(feat => `<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px"><span class="feat-nm">${feat.name}</span><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div></div>`).join("")}` : ""}
+${activeFeatDefsAll.length > 0 ? `<h2>Feats (${activeFeatDefsAll.length}/${Math.floor(level/2)} slots)</h2>
+<div class="g2">${activeFeatDefsAll.map(feat => `<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;flex-wrap:wrap;gap:3px"><span class="feat-nm">${feat.name}</span><div style="display:flex;align-items:center;gap:4px"><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span>${restBadge(feat)}${feat.passiveBonus?`<span class="passive-badge">PASSIVE</span>`:""}</div></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div></div>`).join("")}</div>` : ""}
 
-<h2>Background &amp; Identity</h2>
-<div class="g2" style="font-size:9pt">
-<div>
-  ${localData.background ? `<div><strong>Background:</strong> ${localData.background}</div>` : ""}
-  ${localData.guild ? `<div style="margin-top:3px"><strong>Guild:</strong> ${localData.guild}</div>` : ""}
-  ${localData.guildRank ? `<div style="margin-top:3px"><strong>Rank:</strong> ${localData.guildRank}</div>` : ""}
-</div>
-<div></div>
+<h2>Inventory (${inventory.length} items)</h2>
+${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+${inventory.map(item => {
+  const equipBonus = ITEM_BONUS[item.id];
+  const bonusStr = item.equipped && equipBonus ? [
+    equipBonus.guardRating ? `+${equipBonus.guardRating}GR` : "",
+    equipBonus.wardRating  ? `+${equipBonus.wardRating}WR`  : "",
+    equipBonus.attackAttr  ? `${equipBonus.damageDice}` : "",
+  ].filter(Boolean).join(" ") : "";
+  return `<tr><td><strong>${item.name}</strong>${item.category?`<span style="font-family:monospace;font-size:6.5pt;color:#888;margin-left:4px">${item.subCategory||item.category}</span>`:""}</td><td style="font-family:monospace;font-size:7.5pt">${RARITY_LABELS[item.rarity]||item.rarity}</td><td style="text-align:center;font-family:monospace">${item.quantity}</td><td style="font-family:monospace;font-size:7.5pt">${item.equipped?`<span style="color:#2a6030">EQUIP${bonusStr?" ("+bonusStr+")":""}</span>`:"—"}</td><td style="font-size:7.5pt;color:#555">${item.notes||""}</td></tr>`;
+}).join("")}
+</tbody></table>` : "<p style='font-size:8.5pt;color:#888;margin-top:4px'>No items.</p>"}
 </div>
 
-${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</div>` : ""}
+<!-- PAGE 4: NOTES & CHARACTER DEPTH -->
+<div class="page">
+<h2>Character Notes</h2>
+<div class="g2" style="gap:10px">
+${([
+  {key:"notesBackstory",label:"Backstory"},
+  {key:"notesAppearance",label:"Appearance"},
+  {key:"notesPersonality",label:"Personality & Quirks"},
+  {key:"notesBonds",label:"Bonds & Loyalties"},
+  {key:"notesFlaws",label:"Flaws & Fears"},
+  {key:"notesGoals",label:"Goals & Ambitions"},
+  {key:"notesAllies",label:"Allies & Rivals"},
+  {key:"notesSession",label:"Session Log"},
+] as const).map(({key,label}) => {
+  const val = (localData as Record<string,string>)[key] || "";
+  return `<div><h3 style="margin-bottom:3px">${label}</h3><div class="lined-box">${val}</div></div>`;
+}).join("")}
+</div>
 </div>
 
 <script>window.onload=()=>{window.print()}</script>
@@ -444,7 +595,7 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
       {/* ===== TABS ===== */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full rounded-none border-b border-border bg-card h-11 justify-start overflow-x-auto">
-          {["overview","skills","strings","feats","inventory","background","notes"].map(tab => (
+          {["overview","actions","skills","strings","feats","inventory","background","notes"].map(tab => (
             <TabsTrigger
               key={tab}
               value={tab}
@@ -556,6 +707,115 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ===== ACTIONS ===== */}
+        <TabsContent value="actions" className="p-4 m-0 space-y-5">
+          {/* Unarmed Strike — always present */}
+          <div>
+            <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Basic Attacks</h3>
+            <div className="border border-border p-3 bg-card flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">Unarmed Strike</span>
+                  <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">Melee</span>
+                  <span className="text-[10px] font-mono text-muted-foreground">RES</span>
+                </div>
+                <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">
+                  1 + RES mod (min 1) bludgeoning · May follow up for free after hitting with another attack
+                </p>
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                <button
+                  className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                  onClick={() => openRoll("Unarmed Strike — Attack", calcMod(attrs.res || 10), character.name)}
+                >ATK {fmtMod(calcMod(attrs.res || 10))}</button>
+                <button
+                  className="px-2.5 py-1.5 text-xs font-mono border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors"
+                  onClick={() => openRoll("Unarmed Strike — Damage", Math.max(1, calcMod(attrs.res || 10)), character.name)}
+                >1{fmtMod(Math.max(1, calcMod(attrs.res || 10)))} blunt</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Equipped Weapons */}
+          {equippedWeapons.length > 0 && (
+            <div>
+              <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Equipped Weapons</h3>
+              <div className="space-y-2">
+                {equippedWeapons.map(item => {
+                  const bonus = ITEM_BONUS[item.id];
+                  const atkKey = bonus?.attackAttr || "res";
+                  const atkMod = calcMod((attrs as Record<string, number>)[atkKey] || 10);
+                  return (
+                    <div key={item.id} className="border border-border p-3 bg-card flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">{item.name}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">{bonus?.range || "Melee"}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">{atkKey.toUpperCase()}</span>
+                          {bonus?.twoHanded && <span className="text-[10px] font-mono text-primary/50 border border-primary/20 px-1">2H</span>}
+                          {bonus?.damageType && <span className="text-[10px] font-mono text-muted-foreground/50">{bonus.damageType}</span>}
+                        </div>
+                        {item.mechanical && <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">{item.mechanical}</p>}
+                      </div>
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                          className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                          onClick={() => openRoll(`${item.name} — Attack`, atkMod, character.name)}
+                        >ATK {fmtMod(atkMod)}</button>
+                        <button
+                          className="px-2.5 py-1.5 text-xs font-mono border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors"
+                          onClick={() => openRoll(`${item.name} — Damage`, atkMod, character.name)}
+                        >{bonus?.damageDice || "1d6"}{fmtMod(atkMod)}{bonus?.damageBonusDice ? ` ${bonus.damageBonusDice}` : ""}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Per-Rest Combat Abilities */}
+          {activeCombatFeats.length > 0 && (
+            <div>
+              <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Combat Abilities</h3>
+              <div className="space-y-2">
+                {activeCombatFeats.map(feat => {
+                  const avail = isFeatAvailable(feat.name);
+                  return (
+                    <div key={feat.name} className={cn("border p-3 bg-card flex items-start justify-between gap-3 transition-opacity", avail ? "border-border" : "border-border/30 opacity-60")}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">{feat.name}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">
+                            {feat.restType === "mend" ? "1/MEND" : feat.restType === "long" ? "1/LONG REST" : "1/COMBAT"}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-primary/70 leading-relaxed">{feat.mechanical}</p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {avail ? (
+                          <button
+                            className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                            onClick={() => useFeat(feat.name)}
+                          >USE</button>
+                        ) : (
+                          <span className="px-2.5 py-1.5 text-xs font-mono text-muted-foreground/40 border border-border/20">USED</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {equippedWeapons.length === 0 && activeCombatFeats.length === 0 && (
+            <p className="text-center font-mono text-sm text-muted-foreground py-8">
+              Equip weapons in the Inventory tab · Per-rest feats appear once selected in the Feats tab
+            </p>
+          )}
         </TabsContent>
 
         {/* ===== SKILLS ===== */}
@@ -743,7 +1003,7 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
                 >
                   × Remove
                 </button>
-                <div className="flex items-baseline gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="font-[family-name:'Cinzel',serif] text-foreground">{feat.name}</span>
                   <span className={cn("text-[10px] font-mono px-1.5 py-0.5",
                     feat.category === "combat" ? "bg-destructive/20 text-destructive" :
@@ -751,6 +1011,30 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
                     feat.category === "magic" ? "bg-primary/20 text-primary" :
                     "bg-muted text-muted-foreground"
                   )}>{feat.category}</span>
+                  {feat.usesPerRest && (
+                    <button
+                      className={cn("text-[10px] font-mono px-2 py-0.5 border transition-colors",
+                        isFeatAvailable(feat.name)
+                          ? "border-primary/50 text-primary hover:bg-primary/10"
+                          : "border-border/30 text-muted-foreground/40 cursor-default"
+                      )}
+                      onClick={() => isFeatAvailable(feat.name) && useFeat(feat.name)}
+                    >
+                      {isFeatAvailable(feat.name) ? "✓ " : "× "}
+                      {feat.restType === "mend" ? "1/MEND" : feat.restType === "long" ? "1/LONG REST" : "1/COMBAT"}
+                    </button>
+                  )}
+                  {feat.passiveBonus && (
+                    <span className="text-[10px] font-mono text-chart-2/80 px-1.5 py-0.5 border border-chart-2/30 bg-chart-2/5">
+                      PASSIVE: {[
+                        feat.passiveBonus.vpMax      ? `+${feat.passiveBonus.vpMax} VP Max`       : null,
+                        feat.passiveBonus.wardRating ? `+${feat.passiveBonus.wardRating} Ward`     : null,
+                        feat.passiveBonus.threadPool ? `+${feat.passiveBonus.threadPool} TP Max`   : null,
+                        feat.passiveBonus.safeLimit  ? `+${feat.passiveBonus.safeLimit} Safe Lmt`  : null,
+                        feat.passiveBonus.guardRating? `+${feat.passiveBonus.guardRating} Guard`   : null,
+                      ].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs font-mono text-muted-foreground leading-relaxed mb-2">{feat.desc}</p>
                 <p className="text-xs font-mono text-primary/70 bg-primary/5 border border-primary/10 px-2 py-1">{feat.mechanical}</p>
@@ -876,45 +1160,125 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
           )}
 
           <div className="space-y-2">
-            {inventory.map(item => (
-              <div key={item.id} className="border border-border p-3 bg-card group flex gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-0.5">
-                    <input
-                      className="bg-transparent font-mono text-sm text-foreground focus:outline-none border-b border-transparent focus:border-border"
-                      value={item.name}
-                      onChange={e => updateItem(item.id, { name: e.target.value })}
-                    />
-                    <select
-                      className="bg-transparent font-mono text-[10px] border-none focus:outline-none cursor-pointer"
-                      value={item.rarity}
-                      onChange={e => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
-                    >
-                      {(Object.keys(RARITY_LABELS) as ItemRarity[]).map(r => (
-                        <option key={r} value={r}>{RARITY_LABELS[r]}</option>
-                      ))}
-                    </select>
+            {inventory.map(item => {
+              const canEquip = ["weapon", "armor", "casting", "magical"].includes(item.category || "");
+              const isConsumable = ["potion", "consumable"].includes(item.category || "");
+              const isKit = item.category === "kit";
+              const hasSubItems = (item.subItems || []).length > 0;
+              const equipBonus = ITEM_BONUS[item.id];
+              const isExpanded = expandedKitItem === item.id;
+              return (
+                <div key={item.id} className={cn("border bg-card group transition-colors", item.equipped ? "border-chart-2/40" : "border-border")}>
+                  <div className="p-3 flex gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        {item.equipped && <span className="text-[9px] font-mono text-chart-2 border border-chart-2/40 px-1 py-0.5">EQUIPPED</span>}
+                        <input
+                          className="bg-transparent font-mono text-sm text-foreground focus:outline-none border-b border-transparent focus:border-border"
+                          value={item.name}
+                          onChange={e => updateItem(item.id, { name: e.target.value })}
+                        />
+                        <select
+                          className="bg-transparent font-mono text-[10px] border-none focus:outline-none cursor-pointer"
+                          value={item.rarity}
+                          onChange={e => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
+                        >
+                          {(Object.keys(RARITY_LABELS) as ItemRarity[]).map(r => (
+                            <option key={r} value={r}>{RARITY_LABELS[r]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {item.desc && <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">{item.desc}</p>}
+                      {item.mechanical && <p className="text-[11px] font-mono text-primary/60 mt-0.5">{item.mechanical}</p>}
+                      {equipBonus && item.equipped && (
+                        <div className="flex gap-3 mt-1 text-[10px] font-mono text-chart-2/80">
+                          {equipBonus.guardRating ? <span>+{equipBonus.guardRating} GR</span> : null}
+                          {equipBonus.wardRating  ? <span>+{equipBonus.wardRating} WR</span>  : null}
+                          {equipBonus.attackAttr  ? (
+                            <span>{equipBonus.damageDice}{fmtMod(calcMod((attrs as Record<string,number>)[equipBonus.attackAttr] || 10))} {equipBonus.damageType}</span>
+                          ) : null}
+                        </div>
+                      )}
+                      <input
+                        className="mt-1 w-full bg-transparent font-mono text-xs text-muted-foreground placeholder:text-muted-foreground/30 focus:outline-none border-b border-transparent focus:border-border/30"
+                        placeholder="Notes..."
+                        value={item.notes || ""}
+                        onChange={e => updateItem(item.id, { notes: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                      {canEquip && (
+                        <button
+                          className={cn("px-2 py-1 text-[10px] font-mono border transition-colors",
+                            item.equipped
+                              ? "border-chart-2/50 text-chart-2 bg-chart-2/10 hover:bg-chart-2/20"
+                              : "border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                          )}
+                          onClick={() => toggleEquip(item.id)}
+                        >{item.equipped ? "UNEQUIP" : "EQUIP"}</button>
+                      )}
+                      {isConsumable && (
+                        <button
+                          className="px-2 py-1 text-[10px] font-mono border border-destructive/40 text-destructive/70 hover:bg-destructive/10 transition-colors"
+                          onClick={() => useConsumable(item.id)}
+                        >USE ×{item.quantity}</button>
+                      )}
+                      {isKit && hasSubItems && (
+                        <button
+                          className="px-2 py-1 text-[10px] font-mono border border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                          onClick={() => setExpandedKitItem(isExpanded ? null : item.id)}
+                        >{isExpanded ? "CLOSE" : "CONTENTS"}</button>
+                      )}
+                      {!isConsumable && (
+                        <div className="flex items-center gap-1">
+                          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: Math.max(1, item.quantity - 1) })}>−</button>
+                          <span className="w-5 text-center font-mono text-xs">{item.quantity}</span>
+                          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: item.quantity + 1 })}>+</button>
+                        </div>
+                      )}
+                      <button onClick={() => removeItem(item.id)} className="text-muted-foreground/30 hover:text-destructive text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity">× DEL</button>
+                    </div>
                   </div>
-                  {item.desc && <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">{item.desc}</p>}
-                  {item.mechanical && <p className="text-[11px] font-mono text-primary/60 mt-0.5">{item.mechanical}</p>}
-                  <input
-                    className="mt-1 w-full bg-transparent font-mono text-xs text-muted-foreground placeholder:text-muted-foreground/30 focus:outline-none border-b border-transparent focus:border-border/30"
-                    placeholder="Notes..."
-                    value={item.notes || ""}
-                    onChange={e => updateItem(item.id, { notes: e.target.value })}
-                  />
+                  {isExpanded && hasSubItems && (
+                    <div className="border-t border-border/30 px-3 pb-3 pt-2 bg-background/50">
+                      <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-2">Kit Contents</p>
+                      <div className="space-y-1">
+                        {(item.subItems || []).map((sub, subIdx) => (
+                          <div key={subIdx} className={cn("flex items-center gap-2 py-1 px-2 border text-xs font-mono", sub.charges === 0 ? "border-border/20 opacity-40" : "border-border/40")}>
+                            <span className="flex-1 text-foreground truncate">{sub.name}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {sub.maxCharges > 1 && (
+                                <div className="flex gap-0.5">
+                                  {Array.from({ length: sub.maxCharges }).map((_, ci) => (
+                                    <span key={ci} className={cn("w-2.5 h-2.5 border text-[7px] flex items-center justify-center",
+                                      ci < sub.charges ? "border-primary/50 bg-primary/20" : "border-border/30"
+                                    )}>{ci < sub.charges ? "●" : ""}</span>
+                                  ))}
+                                </div>
+                              )}
+                              <span className="text-[10px] text-muted-foreground/50">{sub.charges}/{sub.maxCharges}</span>
+                              {sub.canEquip && (
+                                <button
+                                  className={cn("px-1.5 py-0.5 text-[9px] border transition-colors",
+                                    sub.equipped ? "border-chart-2/50 text-chart-2" : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                                  )}
+                                  onClick={() => toggleSubItemEquip(item.id, subIdx)}
+                                >{sub.equipped ? "EQP" : "EQ?"}</button>
+                              )}
+                              <button
+                                className="px-1.5 py-0.5 text-[9px] border border-destructive/30 text-destructive/60 hover:bg-destructive/10 disabled:opacity-30 transition-colors"
+                                onClick={() => useSubItem(item.id, subIdx)}
+                                disabled={sub.charges === 0}
+                              >USE</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-mono text-muted-foreground">Qty</span>
-                  <div className="flex items-center gap-1">
-                    <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: Math.max(1, item.quantity - 1) })}>−</button>
-                    <span className="w-6 text-center font-mono text-sm">{item.quantity}</span>
-                    <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: item.quantity + 1 })}>+</button>
-                  </div>
-                  <button onClick={() => removeItem(item.id)} className="text-muted-foreground/30 hover:text-destructive text-[10px] font-mono mt-1 opacity-0 group-hover:opacity-100 transition-opacity">× DEL</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
 
@@ -979,13 +1343,39 @@ ${localData.notes ? `<h2>Notes</h2><div class="notes-box">${localData.notes}</di
         </TabsContent>
 
         {/* ===== NOTES ===== */}
-        <TabsContent value="notes" className="p-0 m-0 flex flex-col" style={{ minHeight: 400 }}>
-          <textarea
-            className="flex-1 w-full min-h-[500px] bg-transparent p-5 font-mono text-sm focus:outline-none resize-none placeholder:text-muted-foreground/30"
-            value={localData.notes || ""}
-            onChange={e => patch({ notes: e.target.value })}
-            placeholder={"Character notes, campaign log, inventory ideas, NPC names, session summaries...\n\n"}
-          />
+        <TabsContent value="notes" className="p-4 m-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {([
+              { key: "notesBackstory"   as const, label: "Backstory",          placeholder: "Where did you come from? What shaped you?" },
+              { key: "notesAppearance"  as const, label: "Appearance",          placeholder: "Height, build, notable features, how others see you..." },
+              { key: "notesPersonality" as const, label: "Personality & Quirks", placeholder: "Mannerisms, habits, how you handle pressure..." },
+              { key: "notesBonds"       as const, label: "Bonds & Loyalties",   placeholder: "Who or what do you protect? What can't you walk away from?" },
+              { key: "notesFlaws"       as const, label: "Flaws & Fears",       placeholder: "What holds you back? What haunts you?" },
+              { key: "notesGoals"       as const, label: "Goals & Ambitions",   placeholder: "What are you working toward? What would make this worth it?" },
+              { key: "notesAllies"      as const, label: "Allies & Rivals",     placeholder: "Contacts, friends, enemies — important names..." },
+              { key: "notesSession"     as const, label: "Session Log",         placeholder: "Quick notes per session — what happened, what changed..." },
+            ]).map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label className="block text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{label}</label>
+                <textarea
+                  className="w-full bg-background border border-border px-3 py-2 font-mono text-sm focus:outline-none focus:border-primary resize-none min-h-[100px] leading-relaxed"
+                  value={localData[key] || ""}
+                  onChange={e => patch({ [key]: e.target.value } as Partial<SheetData>)}
+                  placeholder={placeholder}
+                />
+              </div>
+            ))}
+          </div>
+          {localData.notes && (
+            <div className="mt-4 border-t border-border/30 pt-4">
+              <label className="block text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Legacy Notes (migrate to sections above)</label>
+              <textarea
+                className="w-full bg-background border border-border/30 px-3 py-2 font-mono text-xs focus:outline-none resize-none min-h-[80px] text-muted-foreground/60 leading-relaxed"
+                value={localData.notes}
+                onChange={e => patch({ notes: e.target.value })}
+              />
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

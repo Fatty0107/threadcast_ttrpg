@@ -213,6 +213,15 @@ export interface Feat {
   prerequisites: string;
   desc: string;
   mechanical: string;
+  usesPerRest?: number;
+  restType?: "mend" | "long" | "combat";
+  passiveBonus?: {
+    vpMax?: number;
+    wardRating?: number;
+    threadPool?: number;
+    safeLimit?: number;
+    guardRating?: number;
+  };
 }
 
 export const FEATS: Feat[] = [
@@ -257,6 +266,8 @@ export const FEATS: Feat[] = [
     prerequisites: "None",
     desc: "Once per Mend, cast at PL one above your safe maximum without automatic Discord.",
     mechanical: "1/Mend: +1 PL over safe max without Discord penalty. Still Discord if +2 over max.",
+    usesPerRest: 1,
+    restType: "mend",
   },
   {
     name: "Thread Strike",
@@ -273,6 +284,8 @@ export const FEATS: Feat[] = [
     prerequisites: "None",
     desc: "Casting PL 1–2 as a Minor Action becomes a free action once per round.",
     mechanical: "1/round: PL 1–2 cast = free action (not Minor Action). Get full Minor Action still.",
+    usesPerRest: 1,
+    restType: "combat",
   },
   {
     name: "Pressured Casting",
@@ -281,6 +294,8 @@ export const FEATS: Feat[] = [
     prerequisites: "RES 14+",
     desc: "Once per round, cast normally despite Shaking Hands, Stunned, or Wound — costs 1 extra Tension.",
     mechanical: "1/round: ignore condition Discord on Thread Check. +1 Tension cost.",
+    usesPerRest: 1,
+    restType: "combat",
   },
   {
     name: "Precision Weave",
@@ -289,6 +304,8 @@ export const FEATS: Feat[] = [
     prerequisites: "CTR 16+",
     desc: "Two-String Weaves are made at Harmony. First two-String Weave per Mend costs 1 less Tension.",
     mechanical: "Two-String Weave Thread Check at Harmony. 1st per Mend: −1 Tension cost.",
+    usesPerRest: 1,
+    restType: "mend",
   },
   {
     name: "Breach Striker",
@@ -329,6 +346,8 @@ export const FEATS: Feat[] = [
     prerequisites: "None",
     desc: "Once per Full Recovery: drop to 1 VP instead of 0. Next Thread Check at Harmony, max damage on hit.",
     mechanical: "1/Full Recovery: survive lethal damage at 1 VP. Next roll: Harmony + max damage.",
+    usesPerRest: 1,
+    restType: "long",
   },
   // DEFENSIVE FEATS
   {
@@ -338,6 +357,7 @@ export const FEATS: Feat[] = [
     prerequisites: "RES 13+",
     desc: "Maximum VP +4. When spending a Recovery Die during a Mend, recover maximum value instead of rolling.",
     mechanical: "+4 VP max. Recovery Dice = max value, no roll needed.",
+    passiveBonus: { vpMax: 4 },
   },
   {
     name: "Burnout Resistance",
@@ -354,6 +374,7 @@ export const FEATS: Feat[] = [
     prerequisites: "CTR 14+, Attuned: Ward Craft",
     desc: "+2 Ward Rating. When a magical attack misses you, use Reaction to absorb 1d6+CTR mod as free Tension (up to Safe Limit).",
     mechanical: "+2 Ward Rating. Reaction: missed magic → 1d6+CTR mod free TP (≤ Safe Limit).",
+    passiveBonus: { wardRating: 2 },
   },
   {
     name: "Pain Tolerance",
@@ -386,6 +407,8 @@ export const FEATS: Feat[] = [
     prerequisites: "RES 14+",
     desc: "Once per combat, Minor Action + 2 Tension: recover VP equal to your full RES score.",
     mechanical: "1/combat: Minor Action + 2 Tension → +RES score VP. Ignores Wounds/conditions.",
+    usesPerRest: 1,
+    restType: "combat",
   },
   {
     name: "Elemental Adaptation",
@@ -402,6 +425,8 @@ export const FEATS: Feat[] = [
     prerequisites: "Anchor Primary Mode",
     desc: "Reaction + 2 Tension: teleport to ally within 30ft and intercept an attack targeting them. 1/round.",
     mechanical: "Reaction + 2 TP: swap to ally's position, become target. 1/round.",
+    usesPerRest: 1,
+    restType: "combat",
   },
   {
     name: "Void Resistance",
@@ -443,6 +468,8 @@ export const FEATS: Feat[] = [
     prerequisites: "CTR 13+, Attuned: Signature Suppression",
     desc: "Once per round when casting, spend 2 extra Tension to fully suppress your Signature. Detection DC = 14+CTR mod.",
     mechanical: "1/round: +2 Tension → invisible signature. Detection DC 14+CTR mod.",
+    usesPerRest: 1,
+    restType: "combat",
   },
   {
     name: "Resonance Harmony",
@@ -459,6 +486,7 @@ export const FEATS: Feat[] = [
     prerequisites: "None",
     desc: "Thread Pool maximum +4. Safe Limit +2.",
     mechanical: "+4 Thread Pool max. +2 Safe Limit.",
+    passiveBonus: { threadPool: 4, safeLimit: 2 },
   },
   {
     name: "Steady Grip",
@@ -507,6 +535,8 @@ export const FEATS: Feat[] = [
     prerequisites: "THS 20",
     desc: "Once per Full Recovery, one Thread Check costs 0 Tension regardless of PL or String.",
     mechanical: "1/Full Recovery: one cast at 0 Tension cost.",
+    usesPerRest: 1,
+    restType: "long",
   },
 ];
 
@@ -671,3 +701,115 @@ export const DC_TABLE = [
   { dc: 23, label: "Extreme", desc: "Upper edge of mortal capability" },
   { dc: 26, label: "Near-Impossible", desc: "Legends are made of this" },
 ];
+
+// --- ITEM BONUS TABLE ---
+// Stat bonuses and attack data for equipped items (keyed by item ID)
+export type ItemBonus = {
+  guardRating?: number;
+  wardRating?: number;
+  vpMax?: number;
+  threadPool?: number;
+  safeLimit?: number;
+  attackAttr?: string;
+  damageDice?: string;
+  damageType?: string;
+  damageBonusDice?: string;
+  range?: string;
+  twoHanded?: boolean;
+};
+
+export const ITEM_BONUS: Record<string, ItemBonus> = {
+  // Melee weapons
+  "w1":  { attackAttr: "acu", damageDice: "1d6",  damageType: "piercing",    range: "Melee / 20 ft" },
+  "w2":  { attackAttr: "acu", damageDice: "1d6",  damageType: "slashing",    range: "Melee" },
+  "w3":  { attackAttr: "res", damageDice: "1d8",  damageType: "piercing",    range: "Melee / 10 ft" },
+  "w4":  { attackAttr: "res", damageDice: "1d8",  damageType: "slashing",    range: "Melee" },
+  "w5":  { attackAttr: "res", damageDice: "1d8",  damageType: "slashing",    range: "Melee" },
+  "w6":  { attackAttr: "res", damageDice: "1d10", damageType: "slashing",    range: "Melee", twoHanded: true },
+  "w7":  { attackAttr: "res", damageDice: "1d10", damageType: "bludgeoning", range: "Melee", twoHanded: true },
+  "w8":  { attackAttr: "acu", damageDice: "1d6",  damageType: "piercing",    range: "Melee" },
+  "w9":  { attackAttr: "res", damageDice: "1d8",  damageType: "bludgeoning", range: "Melee", twoHanded: true, wardRating: 1 },
+  // Ranged weapons
+  "wr1": { attackAttr: "acu", damageDice: "1d6",  damageType: "piercing",    range: "80/320 ft",   twoHanded: true },
+  "wr2": { attackAttr: "acu", damageDice: "1d8",  damageType: "piercing",    range: "150/600 ft",  twoHanded: true },
+  "wr3": { attackAttr: "acu", damageDice: "1d6",  damageType: "piercing",    range: "30/120 ft" },
+  "wr4": { attackAttr: "acu", damageDice: "1d10", damageType: "piercing",    range: "100/400 ft",  twoHanded: true },
+  "wr5": { attackAttr: "acu", damageDice: "1d4",  damageType: "piercing",    range: "30 ft" },
+  // Enchanted weapons
+  "we1":  { attackAttr: "res", damageDice: "1d8",  damageType: "slashing",    range: "Melee", wardRating: 1 },
+  "we2":  { attackAttr: "acu", damageDice: "1d6",  damageType: "piercing",    range: "Melee", damageBonusDice: "+1d4 fire" },
+  "we3":  { attackAttr: "res", damageDice: "1d8",  damageType: "piercing",    range: "Melee" },
+  "we4":  { attackAttr: "acu", damageDice: "1d6",  damageType: "slashing",    range: "Melee" },
+  "we5":  { attackAttr: "res", damageDice: "1d10", damageType: "slashing",    range: "Melee" },
+  "we6":  { attackAttr: "res", damageDice: "1d8",  damageType: "slashing",    range: "Melee", damageBonusDice: "+1d4 cold" },
+  "we7":  { attackAttr: "res", damageDice: "1d8",  damageType: "magical",     range: "Melee", damageBonusDice: "+2d6 magical" },
+  "we8":  { attackAttr: "res", damageDice: "1d8",  damageType: "psychic",     range: "Melee", damageBonusDice: "+1d10 disorientation" },
+  "we9":  { attackAttr: "res", damageDice: "1d10", damageType: "bludgeoning", range: "Melee", damageBonusDice: "+2d6 charged" },
+  "we10": { attackAttr: "acu", damageDice: "1d6",  damageType: "void",        range: "Melee", damageBonusDice: "+2d6 necrotic" },
+  // Legendary + mythical weapons
+  "wl1": { attackAttr: "acu", damageDice: "1d8",  damageType: "piercing",    range: "Unlimited", twoHanded: true },
+  "wl2": { attackAttr: "res", damageDice: "1d10", damageType: "Affinity",    range: "Melee",     twoHanded: true, damageBonusDice: "+2d8 Affinity" },
+  "wm1": { attackAttr: "res", damageDice: "2d12", damageType: "slashing",    range: "Melee" },
+  // Armor (Guard Rating bonuses)
+  "a1":  { guardRating: 1 },
+  "a2":  { guardRating: 2 },
+  "a3":  { guardRating: 4 },
+  "a4":  { guardRating: 2 },
+  "a5":  { guardRating: 2 },
+  "a6":  { guardRating: 2 },
+  "a7":  { wardRating: 2 },
+  "a8":  { guardRating: 1 },
+  "a9":  { guardRating: 4 },
+  "a10": { guardRating: 1 },
+  "a11": { guardRating: 5 },
+};
+
+// --- KIT CONTENTS ---
+export type KitSubItem = {
+  name: string;
+  charges: number;
+  maxCharges: number;
+  desc?: string;
+  canEquip?: boolean;
+};
+
+export const KIT_CONTENTS: Record<string, KitSubItem[]> = {
+  "k1": [
+    { name: "Burn Salve",       charges: 3, maxCharges: 3, desc: "Apply to Snapback burns (Minor Action)." },
+    { name: "Bandages",         charges: 5, maxCharges: 5, desc: "Stabilize wounds. Anatomy DC 8." },
+    { name: "Tension Counter",  charges: 1, maxCharges: 1, desc: "Track Tension total.", canEquip: true },
+    { name: "Mage Light Stone", charges: 1, maxCharges: 1, desc: "Lantern-level light, indefinite.", canEquip: true },
+    { name: "Flash Powder",     charges: 3, maxCharges: 3, desc: "Throw 20ft: Discord on next action (ACU DC 13)." },
+    { name: "Whistle",          charges: 1, maxCharges: 1, desc: "Emergency signal, audible 500ft.", canEquip: true },
+    { name: "Field Journal",    charges: 1, maxCharges: 1, desc: "Blank journal for notes and maps.", canEquip: true },
+  ],
+  "k2": [
+    { name: "Bandages",         charges: 4, maxCharges: 4, desc: "Standard wound dressing." },
+    { name: "Splints",          charges: 2, maxCharges: 2, desc: "Set broken bones (+2 Anatomy check)." },
+    { name: "Antiseptic",       charges: 3, maxCharges: 3, desc: "Prevent infection, treat minor wounds." },
+    { name: "Burn Treatment",   charges: 2, maxCharges: 2, desc: "Treat Snapback burns and heat wounds." },
+    { name: "Bone-Set Tools",   charges: 1, maxCharges: 1, desc: "Professional bone realignment kit.", canEquip: true },
+  ],
+  "k3": [
+    { name: "Heavy Warded Gloves",       charges: 1, maxCharges: 1, desc: "Snapback −1d6 while worn.", canEquip: true },
+    { name: "Eye Protection",            charges: 1, maxCharges: 1, desc: "Shields from magical flash.", canEquip: true },
+    { name: "Grounding Talisman",        charges: 1, maxCharges: 1, desc: "Reduces Corruption accumulation.", canEquip: true },
+    { name: "Contamination Neutralizer", charges: 2, maxCharges: 2, desc: "Flush contaminated magical residue." },
+    { name: "Tension Flush",             charges: 1, maxCharges: 1, desc: "Clear 2 Tension safely as Minor Action." },
+  ],
+  "k4": [
+    { name: "Silence Dust",          charges: 2, maxCharges: 2, desc: "Silence 15ft zone for 2 rounds." },
+    { name: "Sig. Suppressor Pin",   charges: 1, maxCharges: 1, desc: "Suppress Signature for 1 hour.", canEquip: true },
+    { name: "Throwing Knives ×3",    charges: 3, maxCharges: 3, desc: "1d4+ACU mod | Range 30ft." },
+    { name: "Weave Tracer Ink",      charges: 1, maxCharges: 1, desc: "Reveals 1hr of leyline activity." },
+    { name: "Warded Rope (50ft)",    charges: 1, maxCharges: 1, desc: "Magically reinforced rope.", canEquip: true },
+    { name: "Lockpicks",             charges: 1, maxCharges: 1, desc: "Guild-quality lockpicks.", canEquip: true },
+    { name: "Disguise Kit",          charges: 1, maxCharges: 1, desc: "Cosmetic disguise materials.", canEquip: true },
+  ],
+  "k5": [
+    { name: "Binder's Inks",     charges: 1, maxCharges: 1, desc: "+1 Binder Thread Checks.", canEquip: true },
+    { name: "Inscription Desk",  charges: 1, maxCharges: 1, desc: "−2 DC on Binder work.", canEquip: true },
+    { name: "Rune Templates",    charges: 5, maxCharges: 5, desc: "Pre-drawn; skip rune design step." },
+    { name: "Thread Anchor Stone", charges: 1, maxCharges: 1, desc: "+2 Safe Limit in 30ft workspace.", canEquip: true },
+  ],
+};
