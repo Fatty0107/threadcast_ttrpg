@@ -1,0 +1,302 @@
+The Scaled Guard
+
+Military and law enforcement. Discipline, chain of command, and the right to controlled violence.
+
+Rank 7 — Ashborn (entry rank)
+
+
+Stat Bonuses: +1 Resilience, +1 Acuity
+Attunement: Combat Forms, Grit
+Feat: Iron Constitution or Burnout Resistance
+
+
+Rank 6 — Embercloak
+
+
+Stat Bonuses: +1 Resilience
+Attunement: Grit
+Feat: Snapback Veteran or Overcaster
+
+
+Rank 5 — Ironbrand
+
+
+Stat Bonuses: +1 Resilience, +1 Control
+Attunement: Ward Craft
+Feat: Pressured Casting or War Weaver
+
+
+Rank 4 — Steelfang
+
+
+Stat Bonuses: +1 Potency, +1 Resilience
+Attunement: Surge
+Feat: Pain Tolerance or Precision Weave
+
+
+Rank 3 — Talonarch
+
+
+Stat Bonuses: +1 Potency, +1 Presence
+Attunement: Guild Protocol
+Feat: Thread Strike or Breach Striker
+
+
+Rank 2 — Drakeward
+
+
+Stat Bonuses: +1 Potency, +1 Resilience, +1 Presence
+Attunement: Presence
+Feat: Command Presence or Thread Sense Fighter
+
+
+Rank 1 — Wyrmlord
+
+
+Stat Bonuses: +2 Potency, +1 Resilience
+Attunement: Surge, Strand Awareness
+Feat: Thread of Fate or Catastrophic Release
+
+
+
+The Thaumatarch
+
+Mage specialists and researchers. Academic excellence, dangerous-application licenses, and the pursuit of magical theory.
+
+Rank 6 — Spark (entry rank)
+
+
+Stat Bonuses: +1 Thread Sense, +1 Acuity
+Attunement: Weave Reading, Lore
+Feat: Thread Reader or Efficient Caster
+
+
+Rank 5 — Gleamer
+
+
+Stat Bonuses: +1 Thread Sense
+Attunement: Anatomy of Magic
+Feat: Signature Suppression or Scholar's Eye
+
+
+Rank 4 — Sigilist
+
+
+Stat Bonuses: +1 Thread Sense, +1 Control
+Attunement: Inscription
+Feat: Extended Thread Pool or Steady Grip
+
+
+Rank 3 — Runecaller
+
+
+Stat Bonuses: +1 Control, +1 Acuity
+Attunement: Strand Awareness
+Feat: Third String Attunement or Twin String Draw
+
+
+Rank 2 — Magister
+
+
+Stat Bonuses: +1 Control, +1 Thread Sense, +1 Acuity
+Attunement: Weave Reading
+Feat: Leyline Sight or Catastrophic Precision
+
+
+Rank 1 — Archon
+
+
+Stat Bonuses: +2 Thread Sense, +1 Control
+Attunement: Thread Reach, Surge
+Feat: String Communion or Legacy Technique
+
+
+
+The Solar Temple
+
+Healing and spiritual guidance. The sacred cost of magic, care over destruction, and the long war against Hollowing corruption.
+
+Rank 8 — Ashpetal (entry rank)
+
+
+Stat Bonuses: +1 Presence, +1 Thread Sense
+Attunement: Anatomy of Magic, Discernment
+Feat: Combat Medic or Burnout Resistance
+
+
+Rank 7 — Whisperkin
+
+
+Stat Bonuses: +1 Presence
+Attunement: Ward Craft
+Feat: Efficient Caster or Iron Constitution
+
+
+Rank 6 — Gracehand
+
+
+Stat Bonuses: +1 Control, +1 Presence
+Attunement: Anatomy of Magic
+Feat: Conductor's Grace or Scarhanded
+
+
+Rank 5 — Lightbearer
+
+
+Stat Bonuses: +1 Presence, +1 Control
+Attunement: Guild Protocol
+Feat: Second Wind or Void Resistance
+
+
+Rank 4 — Flameward
+
+
+Stat Bonuses: +1 Presence, +1 Resilience
+Attunement: Signature Suppression
+Feat: Living Shield or The Still Eye
+
+
+Rank 3 — Dawnseer
+
+
+Stat Bonuses: +1 Thread Sense, +1 Acuity, +1 Presence
+Attunement: Strand Awareness
+Feat: Soul of the Weave or Leyline Sight
+
+
+Rank 2 — Luminary
+
+
+Stat Bonuses: +1 Presence, +1 Thread Sense, +1 Control
+Attunement: Presence
+Feat: Command Presence or Marked by Magic
+
+
+Rank 1 — Solanarch
+
+
+Stat Bonuses: +2 Presence, +1 Thread Sense
+Attunement: Weave Reading, Anatomy of Magic
+Feat: Thread of Fate or Legend in the Making
+
+
+
+The Lorehall
+
+Knowledge preservation and research. Precision, record-keeping, and the belief that understanding is its own form of power.
+
+Rank 7 — Loreling (entry rank)
+
+
+Stat Bonuses: +1 Acuity, +1 Thread Sense
+Attunement: Lore, Weave Reading
+Feat: Scholar's Eye or Thread Reader
+
+
+Rank 6 — Quillborn
+
+
+Stat Bonuses: +1 Acuity
+Attunement: Inscription
+Feat: Efficient Caster or Signature Suppression
+
+
+Rank 5 — Glyphscribe
+
+
+Stat Bonuses: +1 Acuity, +1 Control
+Attunement: Inscription
+Feat: Crafter's Hand or Steady Grip
+
+
+Rank 4 — Pagewarden
+
+
+Stat Bonuses: +1 Acuity, +1 Thread Sense
+Attunement: Strand Awareness
+Feat: Extended Thread Pool or Quick Study
+
+
+Rank 3 — Inkwright
+
+
+Stat Bonuses: +1 Acuity, +1 Control, +1 Thread Sense
+Attunement: Weave Reading
+Feat: Third String Attunement or Leyline Sight
+
+
+Rank 2 — Scriptor
+
+
+Stat Bonuses: +1 Acuity, +1 Thread Sense, +1 Presence
+Attunement: Lore
+Feat: Soul of the Weave or Deep Cover
+
+
+Rank 1 — Archivarch
+
+
+Stat Bonuses: +2 Acuity, +1 Thread Sense
+Attunement: Thread Reach, Strand Awareness
+Feat: String Communion or Legend in the Making
+
+
+
+The Forgecrown
+
+Magical crafting and enchantment. Practical mastery over materials, enchantment, and the belief that the best magic is the kind you can hold in your hands.
+
+Rank 7 — Sparkwright (entry rank)
+
+
+Stat Bonuses: +1 Control, +1 Acuity
+Attunement: Trade Craft, Inscription
+Feat: Crafter's Hand or Efficient Caster
+
+
+Rank 6 — Cindertouch
+
+
+Stat Bonuses: +1 Control
+Attunement: Trade Craft
+Feat: Scarhanded or Burnout Resistance
+
+
+Rank 5 — Shapebinder
+
+
+Stat Bonuses: +1 Control, +1 Potency
+Attunement: Ward Craft
+Feat: Steady Grip or Twin String Draw
+
+
+Rank 4 — Metalmind
+
+
+Stat Bonuses: +1 Control, +1 Acuity
+Attunement: Inscription
+Feat: Precision Weave or Extended Thread Pool
+
+
+Rank 3 — Glyphmason
+
+
+Stat Bonuses: +1 Control, +1 Potency, +1 Acuity
+Attunement: Strand Awareness
+Feat: Third String Attunement or Catastrophic Precision
+
+
+Rank 2 — Artifex
+
+
+Stat Bonuses: +1 Potency, +1 Control, +1 Thread Sense
+Attunement: Trade Craft
+Feat: Soul of the Weave or Arcane Recovery
+
+
+Rank 1 — Forgeheart
+
+
+Stat Bonuses: +2 Control, +1 Potency
+Attunement: Surge, Ward Craft
+Feat: Legacy Technique or String Communion
