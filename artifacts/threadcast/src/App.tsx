@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import { DiceRollerProvider } from "@/components/shared/DiceRoller";
 import { RollLog } from "@/components/shared/RollLog";
+import { HomebrewProvider } from "@/contexts/HomebrewContext";
 import Login from "@/pages/Login";
 import Characters from "@/pages/Characters";
 import CharacterSheet from "@/pages/CharacterSheet";
@@ -47,7 +48,6 @@ function ProtectedRoute({ component: Component, path, componentProps }: {
   );
 }
 
-// Separate component so hooks are called at component level, not inside render callbacks
 function CharacterBuilderEditPage({ id }: { id: string }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground font-mono">LOADING...</div>;
@@ -84,12 +84,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <DiceRollerProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-              <RollLog />
-            </WouterRouter>
-          </DiceRollerProvider>
+          <HomebrewProvider>
+            <DiceRollerProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+                <RollLog />
+              </WouterRouter>
+            </DiceRollerProvider>
+          </HomebrewProvider>
         </AuthProvider>
         <Toaster />
       </TooltipProvider>

@@ -813,3 +813,127 @@ export const KIT_CONTENTS: Record<string, KitSubItem[]> = {
     { name: "Thread Anchor Stone", charges: 1, maxCharges: 1, desc: "+2 Safe Limit in 30ft workspace.", canEquip: true },
   ],
 };
+
+// ============================================================
+// GUILD RANKS
+// ============================================================
+
+export interface GuildRank {
+  rank: number;
+  title: string;
+  statBonuses: Partial<Record<AttrKey, number>>;
+  attunements: string[];
+  featChoices: [string, string];
+}
+
+export interface GuildWithRanks {
+  name: string;
+  desc: string;
+  entryRank: number;
+  ranks: GuildRank[];
+}
+
+export const GUILD_RANKS_DATA: GuildWithRanks[] = [
+  {
+    name: "The Scaled Guard",
+    desc: "Military and law enforcement. Discipline, chain of command, and the right to controlled violence.",
+    entryRank: 7,
+    ranks: [
+      { rank: 7, title: "Ashborn",   statBonuses: { res: 1, acu: 1 },           attunements: ["Combat Forms", "Grit"],             featChoices: ["Iron Constitution", "Burnout Resistance"] },
+      { rank: 6, title: "Embercloak", statBonuses: { res: 1 },                   attunements: ["Grit"],                             featChoices: ["Snapback Veteran", "Overcaster"] },
+      { rank: 5, title: "Ironbrand", statBonuses: { res: 1, ctr: 1 },            attunements: ["Ward Craft"],                       featChoices: ["Pressured Casting", "War Weaver"] },
+      { rank: 4, title: "Steelfang", statBonuses: { pot: 1, res: 1 },            attunements: ["Surge"],                            featChoices: ["Pain Tolerance", "Precision Weave"] },
+      { rank: 3, title: "Talonarch", statBonuses: { pot: 1, pre: 1 },            attunements: ["Guild Protocol"],                   featChoices: ["Thread Strike", "Breach Striker"] },
+      { rank: 2, title: "Drakeward", statBonuses: { pot: 1, res: 1, pre: 1 },    attunements: ["Presence"],                         featChoices: ["Command Presence", "Thread Sense Fighter"] },
+      { rank: 1, title: "Wyrmlord",  statBonuses: { pot: 2, res: 1 },            attunements: ["Surge", "Strand Awareness"],        featChoices: ["Thread of Fate", "Catastrophic Release"] },
+    ],
+  },
+  {
+    name: "The Thaumatarch",
+    desc: "Mage specialists and researchers. Academic excellence, dangerous-application licenses, and the pursuit of magical theory.",
+    entryRank: 6,
+    ranks: [
+      { rank: 6, title: "Spark",      statBonuses: { ths: 1, acu: 1 },           attunements: ["Weave Reading", "Lore"],             featChoices: ["Thread Reader", "Efficient Caster"] },
+      { rank: 5, title: "Gleamer",    statBonuses: { ths: 1 },                   attunements: ["Anatomy of Magic"],                 featChoices: ["Signature Suppression", "Scholar's Eye"] },
+      { rank: 4, title: "Sigilist",   statBonuses: { ths: 1, ctr: 1 },           attunements: ["Inscription"],                      featChoices: ["Extended Thread Pool", "Steady Grip"] },
+      { rank: 3, title: "Runecaller", statBonuses: { ctr: 1, acu: 1 },           attunements: ["Strand Awareness"],                 featChoices: ["Third String Attunement", "Twin String Draw"] },
+      { rank: 2, title: "Magister",   statBonuses: { ctr: 1, ths: 1, acu: 1 },  attunements: ["Weave Reading"],                    featChoices: ["Leyline Sight", "Catastrophic Precision"] },
+      { rank: 1, title: "Archon",     statBonuses: { ths: 2, ctr: 1 },           attunements: ["Thread Reach", "Surge"],            featChoices: ["String Communion", "Legacy Technique"] },
+    ],
+  },
+  {
+    name: "The Solar Temple",
+    desc: "Healing and spiritual guidance. The sacred cost of magic, care over destruction, and the long war against Hollowing corruption.",
+    entryRank: 8,
+    ranks: [
+      { rank: 8, title: "Ashpetal",   statBonuses: { pre: 1, ths: 1 },           attunements: ["Anatomy of Magic", "Discernment"],  featChoices: ["Combat Medic", "Burnout Resistance"] },
+      { rank: 7, title: "Whisperkin", statBonuses: { pre: 1 },                   attunements: ["Ward Craft"],                       featChoices: ["Efficient Caster", "Iron Constitution"] },
+      { rank: 6, title: "Gracehand",  statBonuses: { ctr: 1, pre: 1 },           attunements: ["Anatomy of Magic"],                 featChoices: ["Conductor's Grace", "Scarhanded"] },
+      { rank: 5, title: "Lightbearer",statBonuses: { pre: 1, ctr: 1 },           attunements: ["Guild Protocol"],                   featChoices: ["Second Wind", "Void Resistance"] },
+      { rank: 4, title: "Flameward",  statBonuses: { pre: 1, res: 1 },           attunements: ["Signature Suppression"],            featChoices: ["Living Shield", "The Still Eye"] },
+      { rank: 3, title: "Dawnseer",   statBonuses: { ths: 1, acu: 1, pre: 1 },  attunements: ["Strand Awareness"],                 featChoices: ["Soul of the Weave", "Leyline Sight"] },
+      { rank: 2, title: "Luminary",   statBonuses: { pre: 1, ths: 1, ctr: 1 },  attunements: ["Presence"],                         featChoices: ["Command Presence", "Marked by Magic"] },
+      { rank: 1, title: "Solanarch",  statBonuses: { pre: 2, ths: 1 },           attunements: ["Weave Reading", "Anatomy of Magic"],featChoices: ["Thread of Fate", "Legend in the Making"] },
+    ],
+  },
+  {
+    name: "The Lorehall",
+    desc: "Knowledge preservation and research. Precision, record-keeping, and the belief that understanding is its own form of power.",
+    entryRank: 7,
+    ranks: [
+      { rank: 7, title: "Loreling",   statBonuses: { acu: 1, ths: 1 },           attunements: ["Lore", "Weave Reading"],            featChoices: ["Scholar's Eye", "Thread Reader"] },
+      { rank: 6, title: "Quillborn",  statBonuses: { acu: 1 },                   attunements: ["Inscription"],                      featChoices: ["Efficient Caster", "Signature Suppression"] },
+      { rank: 5, title: "Glyphscribe",statBonuses: { acu: 1, ctr: 1 },           attunements: ["Inscription"],                      featChoices: ["Crafter's Hand", "Steady Grip"] },
+      { rank: 4, title: "Pagewarden", statBonuses: { acu: 1, ths: 1 },           attunements: ["Strand Awareness"],                 featChoices: ["Extended Thread Pool", "Quick Study"] },
+      { rank: 3, title: "Inkwright",  statBonuses: { acu: 1, ctr: 1, ths: 1 },  attunements: ["Weave Reading"],                    featChoices: ["Third String Attunement", "Leyline Sight"] },
+      { rank: 2, title: "Scriptor",   statBonuses: { acu: 1, ths: 1, pre: 1 },  attunements: ["Lore"],                             featChoices: ["Soul of the Weave", "Deep Cover"] },
+      { rank: 1, title: "Archivarch", statBonuses: { acu: 2, ths: 1 },           attunements: ["Thread Reach", "Strand Awareness"], featChoices: ["String Communion", "Legend in the Making"] },
+    ],
+  },
+  {
+    name: "The Forgecrown",
+    desc: "Magical crafting and enchantment. Practical mastery over materials, enchantment, and the belief that the best magic is the kind you can hold in your hands.",
+    entryRank: 7,
+    ranks: [
+      { rank: 7, title: "Sparkwright",statBonuses: { ctr: 1, acu: 1 },           attunements: ["Trade Craft", "Inscription"],       featChoices: ["Crafter's Hand", "Efficient Caster"] },
+      { rank: 6, title: "Cindertouch",statBonuses: { ctr: 1 },                   attunements: ["Trade Craft"],                      featChoices: ["Scarhanded", "Burnout Resistance"] },
+      { rank: 5, title: "Shapebinder",statBonuses: { ctr: 1, pot: 1 },           attunements: ["Ward Craft"],                       featChoices: ["Steady Grip", "Twin String Draw"] },
+      { rank: 4, title: "Metalmind",  statBonuses: { ctr: 1, acu: 1 },           attunements: ["Inscription"],                      featChoices: ["Precision Weave", "Extended Thread Pool"] },
+      { rank: 3, title: "Glyphmason", statBonuses: { ctr: 1, pot: 1, acu: 1 },  attunements: ["Strand Awareness"],                 featChoices: ["Third String Attunement", "Catastrophic Precision"] },
+      { rank: 2, title: "Artifex",    statBonuses: { pot: 1, ctr: 1, ths: 1 },  attunements: ["Trade Craft"],                      featChoices: ["Soul of the Weave", "Arcane Recovery"] },
+      { rank: 1, title: "Forgeheart", statBonuses: { ctr: 2, pot: 1 },           attunements: ["Surge", "Ward Craft"],              featChoices: ["Legacy Technique", "String Communion"] },
+    ],
+  },
+  {
+    name: "The Highblood Circles",
+    desc: "Nobility and governance. Rank structure, bloodline politics, and the weight of inherited expectation.",
+    entryRank: 5,
+    ranks: [
+      { rank: 5, title: "Circlet",      statBonuses: { pre: 1, acu: 1 },         attunements: ["Guild Protocol", "Discernment"],    featChoices: ["Scholar's Eye", "Deep Cover"] },
+      { rank: 4, title: "Gildthane",    statBonuses: { pre: 1, ctr: 1 },         attunements: ["Discernment"],                      featChoices: ["Command Presence", "Efficient Caster"] },
+      { rank: 3, title: "Bloodwarden",  statBonuses: { pre: 1, acu: 1 },         attunements: ["Presence"],                         featChoices: ["Soul of the Weave", "Thread Reader"] },
+      { rank: 2, title: "Circle Regent",statBonuses: { pre: 1, ths: 1 },         attunements: ["Lore"],                             featChoices: ["Marked by Magic", "Leyline Sight"] },
+      { rank: 1, title: "High Circle",  statBonuses: { pre: 2, acu: 1 },         attunements: ["Weave Reading", "Guild Protocol"],  featChoices: ["Thread of Fate", "Legend in the Making"] },
+    ],
+  },
+];
+
+export function getGuildWithRanks(guildName: string): GuildWithRanks | undefined {
+  return GUILD_RANKS_DATA.find(g => g.name === guildName);
+}
+
+export function getGuildRanksForGuild(guildName: string): GuildRank[] {
+  return getGuildWithRanks(guildName)?.ranks ?? [];
+}
+
+export function getGuildRankData(guildName: string, rankTitle: string): GuildRank | undefined {
+  const guild = getGuildWithRanks(guildName);
+  return guild?.ranks.find(r => r.title === rankTitle);
+}
+
+export function getGuildEntryRankTitle(guildName: string): string {
+  const guild = getGuildWithRanks(guildName);
+  if (!guild) return "";
+  const entryRankNum = guild.entryRank;
+  return guild.ranks.find(r => r.rank === entryRankNum)?.title ?? "";
+}

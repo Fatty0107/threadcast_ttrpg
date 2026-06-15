@@ -7,12 +7,15 @@ const router = Router();
 
 router.use(requireAuth);
 
+function isWeavekeeper(req: any): boolean {
+  return req.user?.role === "weavekeeper";
+}
+
 router.get("/", async (req, res) => {
   const user = (req as any).user;
-  const characters = await db
-    .select()
-    .from(charactersTable)
-    .where(eq(charactersTable.userId, user.id));
+  const characters = isWeavekeeper(req)
+    ? await db.select().from(charactersTable)
+    : await db.select().from(charactersTable).where(eq(charactersTable.userId, user.id));
   res.json(characters);
 });
 
@@ -45,11 +48,11 @@ router.get("/:id", async (req, res) => {
   const user = (req as any).user;
   const id = parseInt(req.params.id ?? "0");
 
-  const [character] = await db
-    .select()
-    .from(charactersTable)
-    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, user.id)))
-    .limit(1);
+  const query = isWeavekeeper(req)
+    ? db.select().from(charactersTable).where(eq(charactersTable.id, id)).limit(1)
+    : db.select().from(charactersTable).where(and(eq(charactersTable.id, id), eq(charactersTable.userId, user.id))).limit(1);
+
+  const [character] = await query;
 
   if (!character) {
     res.status(404).json({ error: "Character not found" });
@@ -63,11 +66,11 @@ router.patch("/:id", async (req, res) => {
   const user = (req as any).user;
   const id = parseInt(req.params.id ?? "0");
 
-  const [existing] = await db
-    .select()
-    .from(charactersTable)
-    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, user.id)))
-    .limit(1);
+  const query = isWeavekeeper(req)
+    ? db.select().from(charactersTable).where(eq(charactersTable.id, id)).limit(1)
+    : db.select().from(charactersTable).where(and(eq(charactersTable.id, id), eq(charactersTable.userId, user.id))).limit(1);
+
+  const [existing] = await query;
 
   if (!existing) {
     res.status(404).json({ error: "Character not found" });
@@ -107,10 +110,7 @@ router.delete("/:id", async (req, res) => {
     return;
   }
 
-  await db
-    .delete(charactersTable)
-    .where(eq(charactersTable.id, id));
-
+  await db.delete(charactersTable).where(eq(charactersTable.id, id));
   res.status(204).end();
 });
 

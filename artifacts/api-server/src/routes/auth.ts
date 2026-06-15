@@ -7,18 +7,16 @@ import { requireAuth } from "../middlewares/requireAuth";
 const router = Router();
 
 const HARDCODED_USERS = [
-  {
-    username: "aria_solforge",
-    password: "embersong",
-    displayName: "Aria Solforge",
-    role: "player",
-  },
-  {
-    username: "weavekeeper_dm",
-    password: "threadpuller",
-    displayName: "The Weavekeeper",
-    role: "weavekeeper",
-  },
+  { username: "aria_solforge", password: "embersong", displayName: "Aria Solforge", role: "player" },
+  { username: "maya", password: "7777", displayName: "Maya", role: "player" },
+  { username: "eternal", password: "0002", displayName: "Eternal", role: "player" },
+  { username: "mike", password: "1317", displayName: "Mike", role: "player" },
+  { username: "julia", password: "4806", displayName: "Julia", role: "player" },
+  { username: "kit", password: "1872", displayName: "Kit", role: "player" },
+  { username: "qis", password: "0905", displayName: "Qis", role: "player" },
+  { username: "falisha", password: "1302", displayName: "Falisha", role: "player" },
+  { username: "tifani", password: "7534", displayName: "Tifani", role: "player" },
+  { username: "weavekeeper", password: "1268", displayName: "The Weavekeeper", role: "weavekeeper" },
 ] as const;
 
 async function seedUsers() {
@@ -37,6 +35,8 @@ async function seedUsers() {
       });
     }
   }
+  // Remove legacy DM account if it still exists
+  await db.delete(usersTable).where(eq(usersTable.username, "weavekeeper_dm"));
 }
 
 let seeded = false;

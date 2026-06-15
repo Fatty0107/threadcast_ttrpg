@@ -105,9 +105,10 @@ export const WATER_STRINGS: AffinityString[] = [
   },
 ];
 
-export function findString(name: string): AffinityString | undefined {
+export function findString(name: string, extraStrings: AffinityString[] = []): AffinityString | undefined {
+  const all = [...WATER_STRINGS, ...extraStrings];
   const n = name.toLowerCase();
-  return WATER_STRINGS.find(
+  return all.find(
     s => n.includes(s.id) || n.includes(s.shortName.toLowerCase()) || n === s.name.toLowerCase()
   );
 }
