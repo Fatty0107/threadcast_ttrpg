@@ -169,6 +169,57 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+.light {
+  --button-outline: rgba(0,0,0, .06);
+  --badge-outline: rgba(0,0,0, .04);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .06);
+
+  --background: 40 22% 96%;
+  --foreground: 28 30% 16%;
+  --border: 28 14% 70%;
+  --card: 38 18% 98%;
+  --card-foreground: 28 30% 16%;
+  --card-border: 28 12% 72%;
+  --sidebar: 40 18% 94%;
+  --sidebar-foreground: 28 20% 38%;
+  --sidebar-border: 28 12% 72%;
+  --sidebar-primary: 28 55% 38%;
+  --sidebar-primary-foreground: 40 22% 96%;
+  --sidebar-accent: 38 14% 90%;
+  --sidebar-accent-foreground: 28 30% 16%;
+  --sidebar-ring: 28 55% 38%;
+  --popover: 38 18% 98%;
+  --popover-foreground: 28 30% 16%;
+  --popover-border: 28 12% 72%;
+  --primary: 28 55% 38%;
+  --primary-foreground: 40 22% 96%;
+  --secondary: 38 14% 90%;
+  --secondary-foreground: 28 25% 18%;
+  --muted: 35 10% 84%;
+  --muted-foreground: 28 14% 42%;
+  --accent: 162 25% 33%;
+  --accent-foreground: 40 22% 96%;
+  --destructive: 0 58% 36%;
+  --destructive-foreground: 40 22% 96%;
+  --input: 35 10% 90%;
+  --ring: 28 55% 38%;
+  --chart-1: 28 55% 38%;
+  --chart-2: 162 25% 33%;
+  --chart-3: 0 58% 36%;
+  --chart-4: 210 40% 40%;
+  --chart-5: 270 30% 42%;
+
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -177,8 +228,16 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
-  html {
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+
+  html:not(.light) {
     color-scheme: dark;
   }
 }

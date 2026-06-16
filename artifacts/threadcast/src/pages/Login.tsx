@@ -101,9 +101,6 @@ export default function Login() {
           )}
         </form>
 
-        <p className="text-center text-xs font-mono text-muted-foreground/40 mt-8 tracking-wider">
-          AETHROS WEAVE NETWORK v2.4
-        </p>
       </div>
     </div>
   );

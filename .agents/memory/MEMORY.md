@@ -1,0 +1,4 @@
+- [Express body limit for avatar uploads](express-body-limit.md) — default 100kb breaks base64 image uploads; raised to 15mb in app.ts.
+- [TanStack Query cache invalidation pattern](tanstack-cache-invalidation.md) — Orval-generated hooks have NO auto-invalidation; must call queryClient.invalidateQueries manually on mutation success.
+- [JSX string attribute escaping](jsx-string-escaping.md) — escaped quotes inside JSX attribute strings cause parse errors; use double-quotes or avoid apostrophes in placeholder/attribute values.
+- [ThemeContext light mode](theme-context.md) — ThemeProvider toggles dark/light class on html; .light {} CSS block at index.css line ~175 overrides all HSL vars; html.light sets color-scheme: light.

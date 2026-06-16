@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/components/auth/AuthContext";
 import { DiceRollerProvider } from "@/components/shared/DiceRoller";
 import { RollLog } from "@/components/shared/RollLog";
 import { HomebrewProvider } from "@/contexts/HomebrewContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Login from "@/pages/Login";
 import Characters from "@/pages/Characters";
 import CharacterSheet from "@/pages/CharacterSheet";
@@ -83,16 +84,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <HomebrewProvider>
-            <DiceRollerProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-                <RollLog />
-              </WouterRouter>
-            </DiceRollerProvider>
-          </HomebrewProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <HomebrewProvider>
+              <DiceRollerProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <Router />
+                  <RollLog />
+                </WouterRouter>
+              </DiceRollerProvider>
+            </HomebrewProvider>
+          </AuthProvider>
+        </ThemeProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

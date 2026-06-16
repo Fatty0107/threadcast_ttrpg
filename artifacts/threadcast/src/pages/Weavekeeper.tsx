@@ -9,7 +9,7 @@ import { ATTRIBUTE_DEFS } from "@/lib/ttrpg-data";
 import { type AffinityString } from "@/lib/affinity-data";
 import {
   Users, Scroll, Plus, Trash2, Eye, EyeOff, Edit3, Globe,
-  ShieldHalf, Swords, Flame, Hammer,
+  ShieldHalf, Swords, Flame, Hammer, ChevronDown, ChevronRight, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,14 @@ const DEMO_CHARACTER: Character = {
   }
 };
 
-// ── Wizard Types ──────────────────────────────────────────────────────────
+const ALL_MODES = ["Striker", "Anchor", "Slider", "Binder", "Shearer", "Tensioner", "Imprinter", "Conductor"];
+const ALL_SKILLS = [
+  "Thread Reach","Surge","Weave Reading","Signature Suppression","Strand Awareness",
+  "Ward Craft","Inscription","Anatomy of Magic","Combat Forms","Swift Hands",
+  "Grit","Discernment","Lore","Guild Protocol","Street Sense","Survival","Presence","Trade Craft",
+];
+
+// ── Wizard Types ────────────────────────────────────────────────────────────
 
 interface StringDraft {
   name: string; shortName: string; quote: string; flavor: string;
@@ -57,14 +64,84 @@ const defaultStringDraft = (): StringDraft => ({
   ],
 });
 
-// ── Affinity Wizard ───────────────────────────────────────────────────────
+function WizardShell({ title, steps, step, onClose, canBack, onBack, canNext, onNext, saveLabel, onSave, saving, children }: {
+  title: string; steps: string[]; step: number; onClose: () => void;
+  canBack?: boolean; onBack: () => void;
+  canNext?: boolean; onNext: () => void;
+  saveLabel?: string; onSave: () => void; saving: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 bg-background/90 backdrop-blur z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-2xl bg-card border border-border shadow-2xl max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div>
+            <h2 className="font-[family-name:'Cinzel',serif] text-lg">{title}</h2>
+            <div className="flex gap-2 mt-1 flex-wrap">
+              {steps.map((s, i) => (
+                <span key={s} className={cn(
+                  "text-[10px] font-mono transition-colors",
+                  i === step ? "text-primary" : i < step ? "text-muted-foreground" : "text-muted-foreground/30"
+                )}>
+                  {i < step ? "✓" : `${i+1}.`} {s}
+                </span>
+              ))}
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">{children}</div>
+        <div className="flex justify-between p-4 border-t border-border gap-2">
+          <button
+            onClick={() => step > 0 ? onBack() : onClose()}
+            className="px-4 py-2 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors"
+          >
+            {step === 0 ? "Cancel" : "← Back"}
+          </button>
+          {step < steps.length - 1 ? (
+            <button
+              onClick={onNext}
+              disabled={!canNext}
+              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors"
+            >
+              Continue →
+            </button>
+          ) : (
+            <button
+              onClick={onSave}
+              disabled={saving || !canNext}
+              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors"
+            >
+              {saving ? "Saving..." : saveLabel || "Save Draft"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block mb-1">{children}</label>;
+}
+
+// ── Affinity Wizard ─────────────────────────────────────────────────────────
 
 function AffinityWizard({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
-  const [wizStep, setWizStep] = useState(0);
+  const [step, setStep] = useState(0);
   const [activeStringIdx, setActiveStringIdx] = useState(0);
-  const [draft, setDraft] = useState({ name: "", description: "", strings: [defaultStringDraft()] });
   const [saving, setSaving] = useState(false);
-  const WIZ_STEPS = ["Basic Info", "Strings", "Power Levels", "Review"];
+  const [draft, setDraft] = useState({
+    name: "", description: "", category: "Common", innateCantrip: "",
+    compatibleModes: [] as string[], snapbackType: "Elemental",
+    strings: [defaultStringDraft()],
+  });
+
+  const STEPS = ["Basic Info", "Strings", "Power Levels", "Advanced", "Review"];
+  const CATEGORIES = ["Common", "Uncommon", "Rare", "Unique (Homebrewed)"];
+  const SNAPBACK_TYPES = ["Elemental", "Force", "Necrotic", "Psychic", "Fire", "Cold", "Lightning", "Acid", "Radiant"];
 
   function updateString(idx: number, patch: Partial<StringDraft>) {
     const next = [...draft.strings]; next[idx] = { ...next[idx], ...patch };
@@ -75,12 +152,18 @@ function AffinityWizard({ onClose, onSave }: { onClose: () => void; onSave: () =
     levels[li] = { ...levels[li], ...patch }; next[si] = { ...next[si], levels };
     setDraft({ ...draft, strings: next });
   }
+  function toggleMode(mode: string) {
+    const modes = draft.compatibleModes;
+    setDraft({ ...draft, compatibleModes: modes.includes(mode) ? modes.filter(m => m !== mode) : [...modes, mode] });
+  }
 
   async function handleSave() {
     setSaving(true);
     try {
       const data = {
-        description: draft.description,
+        description: draft.description, category: draft.category,
+        innateCantrip: draft.innateCantrip, compatibleModes: draft.compatibleModes,
+        snapbackType: draft.snapbackType,
         strings: draft.strings.map(s => ({
           id: s.shortName.toLowerCase().replace(/\s+/g, "_") || s.name.toLowerCase().replace(/\s+/g, "_"),
           name: s.name, shortName: s.shortName, quote: s.quote, flavor: s.flavor,
@@ -98,198 +181,256 @@ function AffinityWizard({ onClose, onSave }: { onClose: () => void; onSave: () =
   const activeStr = draft.strings[activeStringIdx];
 
   return (
-    <div className="fixed inset-0 bg-background/90 backdrop-blur z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-card border border-border shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+    <WizardShell
+      title="New Affinity" steps={STEPS} step={step} onClose={onClose}
+      onBack={() => setStep(s => s - 1)} onNext={() => setStep(s => s + 1)}
+      canNext={step === 0 ? !!draft.name.trim() : true}
+      onSave={handleSave} saving={saving}
+    >
+      {step === 0 && (
+        <div className="space-y-4">
           <div>
-            <h2 className="font-[family-name:'Cinzel',serif] text-lg">New Affinity</h2>
-            <div className="flex gap-3 mt-1">
-              {WIZ_STEPS.map((s, i) => (
-                <span key={s} className={cn("text-[10px] font-mono", i === wizStep ? "text-primary" : i < wizStep ? "text-muted-foreground" : "text-muted-foreground/30")}>
-                  {i < wizStep ? "✓ " : `${i+1}. `}{s}
-                </span>
+            <FieldLabel>Affinity Name *</FieldLabel>
+            <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="e.g., Fire, Shadow, Storm, Glass..." />
+          </div>
+          <div>
+            <FieldLabel>Rarity Category</FieldLabel>
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map(c => (
+                <button key={c} type="button" onClick={() => setDraft({...draft, category: c})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.category === c ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>
+                  {c}
+                </button>
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground font-mono w-6 h-6 flex items-center justify-center">✕</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {wizStep === 0 && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Affinity Name</label>
-                <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="e.g., Fire, Shadow, Storm..." />
-              </div>
-              <div>
-                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Description</label>
-                <textarea className="input-field min-h-[80px] resize-none" value={draft.description} onChange={e => setDraft({...draft, description: e.target.value})} placeholder="What is this affinity about?" />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Strings ({draft.strings.length}/5)</label>
-                  {draft.strings.length < 5 && (
-                    <button type="button" onClick={() => setDraft({...draft, strings: [...draft.strings, defaultStringDraft()]})}
-                      className="text-xs font-mono text-primary hover:text-primary/80 flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Add String
+          <div>
+            <FieldLabel>Description — What element, concept, or force does this channel?</FieldLabel>
+            <textarea className="input-field min-h-[80px] resize-none" value={draft.description} onChange={e => setDraft({...draft, description: e.target.value})} placeholder="Describe the affinity's nature, thematic feel, and where it comes from in the world..." />
+          </div>
+          <div>
+            <FieldLabel>Innate Cantrip — Safe, zero-cost ability (no rolls, no Tension)</FieldLabel>
+            <textarea className="input-field min-h-[60px] resize-none" value={draft.innateCantrip} onChange={e => setDraft({...draft, innateCantrip: e.target.value})} placeholder="e.g., Conjure a small flame in your palm at will, light a candle, or feel heat sources within 5ft..." />
+          </div>
+          <div>
+            <FieldLabel>Strings — Define up to 13 strings for this affinity</FieldLabel>
+            <div className="space-y-1.5">
+              {draft.strings.map((s, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input className="flex-1 input-field text-sm" value={s.name} onChange={e => updateString(i, {name: e.target.value})} placeholder={`String ${i+1} full name (e.g., "The Flow String")...`} />
+                  <input className="w-32 input-field text-sm" value={s.shortName} onChange={e => updateString(i, {shortName: e.target.value})} placeholder="Short name" />
+                  {draft.strings.length > 1 && (
+                    <button type="button" onClick={() => setDraft({...draft, strings: draft.strings.filter((_,j)=>j!==i)})} className="text-destructive/40 hover:text-destructive transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
-                {draft.strings.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-1">
-                    <input className="flex-1 input-field text-sm" value={s.name} onChange={e => updateString(i, {name: e.target.value})} placeholder={`String ${i+1} full name...`} />
-                    <input className="w-32 input-field text-sm" value={s.shortName} onChange={e => updateString(i, {shortName: e.target.value})} placeholder="Short name..." />
-                    {draft.strings.length > 1 && (
-                      <button type="button" onClick={() => setDraft({...draft, strings: draft.strings.filter((_,j)=>j!==i)})} className="text-destructive/50 hover:text-destructive">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {wizStep === 1 && (
-            <div className="space-y-4">
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {draft.strings.map((s, i) => (
-                  <button key={i} type="button" onClick={() => setActiveStringIdx(i)}
-                    className={cn("px-3 py-1 text-xs font-mono border flex-shrink-0 transition-colors", i === activeStringIdx ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/50")}>
-                    {s.shortName || `String ${i+1}`}
-                  </button>
-                ))}
-              </div>
-              {activeStr && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Quote</label>
-                    <textarea className="input-field min-h-[50px] resize-none text-sm" value={activeStr.quote} onChange={e => updateString(activeStringIdx, {quote: e.target.value})} placeholder='"A flavor quote for this string..."' />
-                  </div>
-                  <div>
-                    <label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Flavor / Description</label>
-                    <textarea className="input-field min-h-[60px] resize-none text-sm" value={activeStr.flavor} onChange={e => updateString(activeStringIdx, {flavor: e.target.value})} placeholder="What does this string do thematically?" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Check Attribute</label>
-                    <div className="flex gap-2">
-                      {(["ths","ctr","pot"] as const).map(attr => (
-                        <button key={attr} type="button" onClick={() => updateString(activeStringIdx, {checkAttr: attr})}
-                          className={cn("flex-1 py-2 text-xs font-mono border uppercase transition-colors", activeStr.checkAttr === attr ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>
-                          {attr}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-mono text-muted-foreground block mb-1">Mishap (Nat 1)</label>
-                      <textarea className="input-field min-h-[50px] resize-none text-xs" value={activeStr.mishap} onChange={e => updateString(activeStringIdx, {mishap: e.target.value})} placeholder="Effect on a natural 1..." />
-                    </div>
-                    <div>
-                      <label className="text-xs font-mono text-muted-foreground block mb-1">Snapback</label>
-                      <textarea className="input-field min-h-[50px] resize-none text-xs" value={activeStr.snapback} onChange={e => updateString(activeStringIdx, {snapback: e.target.value})} placeholder="Critical failure effect..." />
-                    </div>
-                  </div>
-                </div>
+              ))}
+              {draft.strings.length < 13 && (
+                <button type="button" onClick={() => setDraft({...draft, strings: [...draft.strings, defaultStringDraft()]})}
+                  className="mt-1 text-xs font-mono text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+                  <Plus className="w-3 h-3" /> Add String ({draft.strings.length}/13)
+                </button>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {wizStep === 2 && (
-            <div className="space-y-4">
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {draft.strings.map((s, i) => (
-                  <button key={i} type="button" onClick={() => setActiveStringIdx(i)}
-                    className={cn("px-3 py-1 text-xs font-mono border flex-shrink-0 transition-colors", i === activeStringIdx ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/50")}>
-                    {s.shortName || `String ${i+1}`}
-                  </button>
-                ))}
+      {step === 1 && (
+        <div className="space-y-4">
+          <div className="flex gap-1.5 overflow-x-auto pb-1.5">
+            {draft.strings.map((s, i) => (
+              <button key={i} type="button" onClick={() => setActiveStringIdx(i)}
+                className={cn("px-3 py-1 text-xs font-mono border flex-shrink-0 transition-colors", i === activeStringIdx ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/50")}>
+                {s.shortName || `String ${i+1}`}
+              </button>
+            ))}
+          </div>
+          {activeStr && (
+            <div className="space-y-3">
+              <div>
+                <FieldLabel>Flavor Quote</FieldLabel>
+                <textarea className="input-field min-h-[50px] resize-none text-sm" value={activeStr.quote} onChange={e => updateString(activeStringIdx, {quote: e.target.value})} placeholder="A memorable quote in character voice..." />
               </div>
-              {activeStr && (
-                <div className="space-y-2">
-                  <p className="text-xs font-mono text-muted-foreground mb-2">Set cost, DC, and effect for each power level:</p>
-                  {activeStr.levels.map((lv, li) => (
-                    <div key={li} className="p-3 border border-border/60 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono text-primary w-6 flex-shrink-0">PL{li+1}</span>
-                        <div className="flex gap-2">
-                          <div>
-                            <label className="text-[9px] font-mono text-muted-foreground/60 block">Cost</label>
-                            <input type="number" min={1} className="w-12 input-field text-center text-xs" value={lv.cost} onChange={e => updateLevel(activeStringIdx, li, {cost: parseInt(e.target.value)||1})} />
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-mono text-muted-foreground/60 block">DC</label>
-                            <input type="number" min={5} className="w-12 input-field text-center text-xs" value={lv.dc} onChange={e => updateLevel(activeStringIdx, li, {dc: parseInt(e.target.value)||10})} />
-                          </div>
-                        </div>
-                      </div>
-                      <input className="input-field text-xs" value={lv.effect} onChange={e => updateLevel(activeStringIdx, li, {effect: e.target.value})} placeholder={`PL${li+1} effect description...`} />
-                    </div>
+              <div>
+                <FieldLabel>Flavor / Thematic Description</FieldLabel>
+                <textarea className="input-field min-h-[70px] resize-none text-sm" value={activeStr.flavor} onChange={e => updateString(activeStringIdx, {flavor: e.target.value})} placeholder="What does this string do thematically? What does casting it feel like?" />
+              </div>
+              <div>
+                <FieldLabel>Check Attribute — Which stat governs this string's rolls?</FieldLabel>
+                <div className="grid grid-cols-3 gap-2">
+                  {([["ths", "Thread Sense", "Sensing, timing, intuition"], ["ctr", "Control", "Precision, technique, safety"], ["pot", "Potency", "Raw force, brute power"]] as const).map(([attr, name, desc]) => (
+                    <button key={attr} type="button" onClick={() => updateString(activeStringIdx, {checkAttr: attr as any})}
+                      className={cn("p-2 text-xs font-mono border text-left transition-colors", activeStr.checkAttr === attr ? "border-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>
+                      <div className={cn("font-bold uppercase mb-0.5", activeStr.checkAttr === attr ? "text-primary" : "")}>{attr}</div>
+                      <div className="text-[10px] text-muted-foreground/70">{name}</div>
+                      <div className="text-[9px] text-muted-foreground/50 mt-0.5">{desc}</div>
+                    </button>
                   ))}
                 </div>
-              )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>Mishap Effect (failed roll, not nat 1)</FieldLabel>
+                  <textarea className="input-field min-h-[70px] resize-none text-xs" value={activeStr.mishap} onChange={e => updateString(activeStringIdx, {mishap: e.target.value})} placeholder="Minor failure effect, embarrassing but survivable..." />
+                </div>
+                <div>
+                  <FieldLabel>Snapback (nat 1 or Strain Check fail)</FieldLabel>
+                  <textarea className="input-field min-h-[70px] resize-none text-xs" value={activeStr.snapback} onChange={e => updateString(activeStringIdx, {snapback: e.target.value})} placeholder="Catastrophic failure effect — costly and dramatic..." />
+                </div>
+              </div>
             </div>
           )}
+        </div>
+      )}
 
-          {wizStep === 3 && (
-            <div className="space-y-4">
-              <div className="p-3 border border-primary/20 bg-primary/5">
-                <p className="font-[family-name:'Cinzel',serif] text-sm text-primary mb-1">{draft.name}</p>
-                <p className="text-xs font-mono text-muted-foreground">{draft.description}</p>
-              </div>
-              {draft.strings.map((s, i) => (
-                <div key={i} className="p-3 border border-border/60 space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="font-mono text-sm text-foreground">{s.name || `String ${i+1}`}</span>
-                    <span className="text-[10px] font-mono text-primary uppercase">{s.checkAttr} check</span>
-                  </div>
-                  {s.quote && <p className="text-[10px] font-[family-name:'IM_Fell_English',serif] italic text-primary/60">{s.quote}</p>}
-                  {s.flavor && <p className="text-xs font-mono text-muted-foreground">{s.flavor}</p>}
-                  <div className="space-y-0.5 mt-1">
-                    {s.levels.map(l => (
-                      <div key={l.pl} className="text-[10px] font-mono text-muted-foreground/70">
-                        PL{l.pl}: {l.cost}tp | DC {l.dc} | {l.effect || "(no effect set)"}
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="flex gap-1.5 overflow-x-auto pb-1.5">
+            {draft.strings.map((s, i) => (
+              <button key={i} type="button" onClick={() => setActiveStringIdx(i)}
+                className={cn("px-3 py-1 text-xs font-mono border flex-shrink-0 transition-colors", i === activeStringIdx ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/50")}>
+                {s.shortName || `String ${i+1}`}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs font-mono text-muted-foreground">For each Power Level: set Tension cost, DC, and effect. Higher PLs = more dangerous.</p>
+          {activeStr && (
+            <div className="space-y-2">
+              {activeStr.levels.map((lv, li) => (
+                <div key={li} className={cn("p-3 border space-y-2 transition-colors", li > 2 ? "border-destructive/20" : "border-border/60")}>
+                  <div className="flex items-center gap-3">
+                    <span className={cn("text-xs font-mono w-7 flex-shrink-0 font-bold", li > 2 ? "text-destructive/80" : "text-primary")}>PL{li+1}</span>
+                    <div className="flex gap-3 items-end flex-1">
+                      <div>
+                        <div className="text-[9px] font-mono text-muted-foreground/60 mb-0.5">Tension cost</div>
+                        <input type="number" min={1} max={20} className="w-14 input-field text-center text-xs py-1" value={lv.cost} onChange={e => updateLevel(activeStringIdx, li, {cost: parseInt(e.target.value)||1})} />
                       </div>
-                    ))}
+                      <div>
+                        <div className="text-[9px] font-mono text-muted-foreground/60 mb-0.5">DC</div>
+                        <input type="number" min={5} max={30} className="w-14 input-field text-center text-xs py-1" value={lv.dc} onChange={e => updateLevel(activeStringIdx, li, {dc: parseInt(e.target.value)||10})} />
+                      </div>
+                      {li > 2 && <span className="text-[9px] font-mono text-destructive/60">⚠ High risk</span>}
+                    </div>
                   </div>
+                  <input className="input-field text-xs" value={lv.effect} onChange={e => updateLevel(activeStringIdx, li, {effect: e.target.value})} placeholder={`PL${li+1} effect — what happens? Describe damage, duration, area, conditions...`} />
                 </div>
               ))}
             </div>
           )}
         </div>
+      )}
 
-        <div className="flex justify-between p-4 border-t border-border">
-          <button onClick={() => wizStep > 0 ? setWizStep(s => s-1) : onClose()}
-            className="px-4 py-2 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors">
-            {wizStep === 0 ? "Cancel" : "← Back"}
-          </button>
-          {wizStep < WIZ_STEPS.length - 1 ? (
-            <button onClick={() => setWizStep(s => s+1)} disabled={wizStep === 0 && !draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              Continue →
-            </button>
-          ) : (
-            <button onClick={handleSave} disabled={saving || !draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              {saving ? "Saving..." : "Save Draft"}
-            </button>
-          )}
+      {step === 3 && (
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Compatible Modes — which casting modes synergize best with this affinity?</FieldLabel>
+            <div className="grid grid-cols-4 gap-1.5">
+              {ALL_MODES.map(m => (
+                <button key={m} type="button" onClick={() => toggleMode(m)}
+                  className={cn("px-2 py-1.5 text-[10px] font-mono border text-center transition-colors", draft.compatibleModes.includes(m) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Snapback Damage Type — what kind of damage does overloading this affinity deal?</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {SNAPBACK_TYPES.map(t => (
+                <button key={t} type="button" onClick={() => setDraft({...draft, snapbackType: t})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.snapbackType === t ? "border-destructive text-destructive bg-destructive/10" : "border-border text-muted-foreground hover:border-destructive/40")}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="p-3 bg-background border border-border/40 text-xs font-mono text-muted-foreground space-y-1">
+            <p className="text-foreground/70 mb-1">Common Affinity Conventions:</p>
+            <p>• Common affinities have 5–8 strings (Fire, Water, Earth, Air)</p>
+            <p>• Uncommon affinities have 3–5 strings (Glass, Sound, Gravity)</p>
+            <p>• Rare/Unique affinities may have 2–4 strings with very high PLs</p>
+            <p>• Starting strings for a new character: 2 (regardless of affinity tier)</p>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {step === 4 && (
+        <div className="space-y-3">
+          <div className="p-4 border border-primary/30 bg-primary/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-[family-name:'Cinzel',serif] text-primary">{draft.name}</span>
+              <span className="text-[10px] font-mono border border-primary/30 text-primary px-2 py-0.5">{draft.category}</span>
+            </div>
+            <p className="text-xs font-mono text-muted-foreground mb-2">{draft.description}</p>
+            {draft.innateCantrip && <p className="text-[10px] font-mono text-chart-2 border-l-2 border-chart-2/40 pl-2">Innate: {draft.innateCantrip}</p>}
+            {draft.compatibleModes.length > 0 && <div className="flex gap-1 mt-2 flex-wrap">{draft.compatibleModes.map(m => <span key={m} className="text-[9px] font-mono border border-primary/20 text-primary/70 px-1.5 py-0.5">{m}</span>)}</div>}
+          </div>
+          {draft.strings.map((s, i) => (
+            <div key={i} className="p-3 border border-border/60">
+              <div className="flex justify-between items-baseline mb-1.5">
+                <span className="font-mono text-sm text-foreground">{s.name || `String ${i+1}`}</span>
+                <span className="text-[10px] font-mono text-primary uppercase">{s.checkAttr}</span>
+              </div>
+              {s.quote && <p className="text-[10px] italic text-primary/60 mb-1">{s.quote}</p>}
+              {s.flavor && <p className="text-xs font-mono text-muted-foreground mb-2">{s.flavor}</p>}
+              <div className="space-y-0.5">
+                {s.levels.map(l => (
+                  <div key={l.pl} className="text-[10px] font-mono text-muted-foreground/70">
+                    <span className="text-primary/50">PL{l.pl}</span> {l.cost}tp DC{l.dc}: {l.effect || <span className="italic text-muted-foreground/40">(no effect)</span>}
+                  </div>
+                ))}
+              </div>
+              {(s.mishap || s.snapback) && (
+                <div className="mt-1.5 pt-1.5 border-t border-border/20 grid grid-cols-2 gap-1 text-[9px] font-mono">
+                  {s.mishap && <p><span className="text-yellow-600/60">Mishap: </span><span className="text-muted-foreground/60">{s.mishap}</span></p>}
+                  {s.snapback && <p><span className="text-destructive/60">Snapback: </span><span className="text-muted-foreground/60">{s.snapback}</span></p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </WizardShell>
   );
 }
 
-// ── Item Wizard ───────────────────────────────────────────────────────────
+// ── Item Wizard ─────────────────────────────────────────────────────────────
+
+interface StatBonus { attr: string; bonus: number; }
 
 function ItemWizard({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
-  const [wizStep, setWizStep] = useState(0);
-  const [draft, setDraft] = useState({ name: "", category: "Magical", subCategory: "", rarity: "Common", desc: "", mechanical: "", cost: "" });
+  const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const WIZ_STEPS = ["Basic Info", "Mechanical", "Review"];
-  const RARITIES = ["Common", "Uncommon", "Rare", "Exotic", "Legendary"];
-  const CATEGORIES = ["Magical", "Weapon", "Armor", "Consumable", "Tool", "Artifact", "Kit"];
+  const [draft, setDraft] = useState({
+    name: "", category: "Magical", subCategory: "", rarity: "Common",
+    desc: "", loreText: "",
+    statBonuses: [] as StatBonus[],
+    vpBonus: 0, charges: "Unlimited", chargesPer: "short rest",
+    attunement: "None", slot: "Held",
+    requirements: "", stringType: "",
+    mechanical: "", cost: "",
+  });
+
+  const STEPS = ["Identity", "Stat Effects", "Mechanics", "Review"];
+  const RARITIES = ["Common", "Uncommon", "Rare", "Exotic", "Legendary", "Artifact"];
+  const CATEGORIES = ["Magical", "Weapon", "Armor", "Consumable", "Tool", "Jewelry", "Artifact", "Kit", "Focus"];
+  const SLOTS = ["Held", "Two-Handed", "Armor", "Ring", "Neck", "Belt", "Head", "Cape", "Pack", "Implanted"];
+  const ATTUNEMENTS = ["None", "Required", "Optional"];
+  const CHARGES_OPTS = ["Unlimited", "1", "2", "3", "5", "10"];
+  const REST_OPTS = ["short rest", "long rest", "dawn", "week", "permanent"];
+
+  function addStatBonus() {
+    if (draft.statBonuses.length < 6) setDraft({...draft, statBonuses: [...draft.statBonuses, { attr: "pot", bonus: 1 }]});
+  }
+  function updateBonus(i: number, patch: Partial<StatBonus>) {
+    const next = [...draft.statBonuses]; next[i] = {...next[i], ...patch};
+    setDraft({...draft, statBonuses: next});
+  }
+  function removeBonus(i: number) {
+    setDraft({...draft, statBonuses: draft.statBonuses.filter((_,j) => j !== i)});
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -303,97 +444,222 @@ function ItemWizard({ onClose, onSave }: { onClose: () => void; onSave: () => vo
   }
 
   return (
-    <div className="fixed inset-0 bg-background/90 backdrop-blur z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-card border border-border shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+    <WizardShell
+      title="New Item" steps={STEPS} step={step} onClose={onClose}
+      onBack={() => setStep(s => s - 1)} onNext={() => setStep(s => s + 1)}
+      canNext={step === 0 ? !!draft.name.trim() : true}
+      onSave={handleSave} saving={saving}
+    >
+      {step === 0 && (
+        <div className="space-y-4">
           <div>
-            <h2 className="font-[family-name:'Cinzel',serif] text-lg">New Item</h2>
-            <div className="flex gap-3 mt-1">
-              {WIZ_STEPS.map((s, i) => (
-                <span key={s} className={cn("text-[10px] font-mono", i === wizStep ? "text-primary" : i < wizStep ? "text-muted-foreground" : "text-muted-foreground/30")}>
-                  {i < wizStep ? "✓ " : `${i+1}. `}{s}
-                </span>
+            <FieldLabel>Item Name *</FieldLabel>
+            <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="e.g., Deepwater Compass, Ember Gauntlet..." />
+          </div>
+          <div>
+            <FieldLabel>Rarity</FieldLabel>
+            <div className="flex flex-wrap gap-1">
+              {RARITIES.map(r => (
+                <button key={r} type="button" onClick={() => setDraft({...draft, rarity: r})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.rarity === r ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{r}</button>
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground font-mono">✕</button>
+          <div>
+            <FieldLabel>Category</FieldLabel>
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map(c => (
+                <button key={c} type="button" onClick={() => setDraft({...draft, category: c})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.category === c ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{c}</button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Slot</FieldLabel>
+              <select className="input-field" value={draft.slot} onChange={e => setDraft({...draft, slot: e.target.value})}>
+                {SLOTS.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <FieldLabel>Sub-category</FieldLabel>
+              <input className="input-field" value={draft.subCategory} onChange={e => setDraft({...draft, subCategory: e.target.value})} placeholder="e.g., Shortsword, Scroll..." />
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Physical Description / Lore</FieldLabel>
+            <textarea className="input-field min-h-[70px] resize-none" value={draft.desc} onChange={e => setDraft({...draft, desc: e.target.value})} placeholder="What does it look like? Who made it? Where does it come from?" />
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {wizStep === 0 && (
-            <>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Name</label>
-                <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="Item name..." /></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Rarity</label>
-                <div className="flex flex-wrap gap-1">{RARITIES.map(r => (
-                  <button key={r} type="button" onClick={() => setDraft({...draft, rarity: r})}
-                    className={cn("px-3 py-1 text-xs font-mono border transition-colors", draft.rarity === r ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{r}</button>
-                ))}</div></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Category</label>
-                <div className="flex flex-wrap gap-1">{CATEGORIES.map(c => (
-                  <button key={c} type="button" onClick={() => setDraft({...draft, category: c})}
-                    className={cn("px-3 py-1 text-xs font-mono border transition-colors", draft.category === c ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{c}</button>
-                ))}</div></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Sub-category</label>
-                <input className="input-field" value={draft.subCategory} onChange={e => setDraft({...draft, subCategory: e.target.value})} placeholder="e.g., Ranged, Scroll..." /></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Description</label>
-                <textarea className="input-field min-h-[80px] resize-none" value={draft.desc} onChange={e => setDraft({...draft, desc: e.target.value})} placeholder="Flavor and physical description..." /></div>
-            </>
-          )}
-          {wizStep === 1 && (
-            <>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Mechanical Effect</label>
-                <textarea className="input-field min-h-[100px] resize-none" value={draft.mechanical} onChange={e => setDraft({...draft, mechanical: e.target.value})} placeholder="What does it do? Bonuses, charges, actions..." /></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Cost / Availability</label>
-                <input className="input-field" value={draft.cost} onChange={e => setDraft({...draft, cost: e.target.value})} placeholder="e.g., 150 Gold, Rare vendor..." /></div>
-            </>
-          )}
-          {wizStep === 2 && (
-            <div className="space-y-3">
-              <div className="p-3 border border-primary/20 bg-primary/5">
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="font-mono text-foreground text-sm">{draft.name}</span>
-                  <span className="text-[10px] font-mono text-primary">{draft.rarity} · {draft.category}</span>
-                </div>
-                {draft.subCategory && <p className="text-[10px] font-mono text-muted-foreground">{draft.subCategory}</p>}
-                <p className="text-xs font-mono text-muted-foreground mt-1">{draft.desc}</p>
+      )}
+
+      {step === 1 && (
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <FieldLabel>Attribute Bonuses (passive, always active when equipped)</FieldLabel>
+              {draft.statBonuses.length < 6 && (
+                <button type="button" onClick={addStatBonus} className="text-xs font-mono text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+                  <Plus className="w-3 h-3" /> Add bonus
+                </button>
+              )}
+            </div>
+            {draft.statBonuses.length === 0 ? (
+              <div className="py-4 text-center font-mono text-xs text-muted-foreground/40 border border-dashed border-border/30">
+                No stat bonuses. Click "Add bonus" above.
               </div>
-              {draft.mechanical && <div className="p-3 border border-border/60">
-                <p className="text-[10px] font-mono text-muted-foreground uppercase mb-1">Effect</p>
-                <p className="text-xs font-mono text-foreground">{draft.mechanical}</p>
-              </div>}
-              {draft.cost && <p className="text-xs font-mono text-muted-foreground">Cost: {draft.cost}</p>}
+            ) : (
+              <div className="space-y-2">
+                {draft.statBonuses.map((b, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <select className="input-field text-xs flex-1" value={b.attr} onChange={e => updateBonus(i, {attr: e.target.value})}>
+                      {ATTRIBUTE_DEFS.map(a => <option key={a.key} value={a.key}>{a.abbr} — {a.name}</option>)}
+                    </select>
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={() => updateBonus(i, {bonus: Math.max(-5, b.bonus - 1)})} className="w-6 h-6 flex items-center justify-center border border-border text-muted-foreground hover:bg-muted text-xs">−</button>
+                      <span className={cn("w-8 text-center font-mono text-sm", b.bonus >= 0 ? "text-chart-2" : "text-destructive")}>{b.bonus >= 0 ? `+${b.bonus}` : b.bonus}</span>
+                      <button type="button" onClick={() => updateBonus(i, {bonus: Math.min(10, b.bonus + 1)})} className="w-6 h-6 flex items-center justify-center border border-border text-muted-foreground hover:bg-muted text-xs">+</button>
+                    </div>
+                    <button type="button" onClick={() => removeBonus(i)} className="text-destructive/40 hover:text-destructive transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Max VP Bonus</FieldLabel>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setDraft({...draft, vpBonus: Math.max(0, draft.vpBonus - 1)})} className="w-7 h-7 border border-border flex items-center justify-center text-muted-foreground hover:bg-muted">−</button>
+                <span className="w-10 text-center font-mono text-sm text-foreground">{draft.vpBonus > 0 ? `+${draft.vpBonus}` : "0"}</span>
+                <button type="button" onClick={() => setDraft({...draft, vpBonus: Math.min(50, draft.vpBonus + 1)})} className="w-7 h-7 border border-border flex items-center justify-center text-muted-foreground hover:bg-muted">+</button>
+                <span className="text-xs font-mono text-muted-foreground">to max VP</span>
+              </div>
+            </div>
+            <div>
+              <FieldLabel>Attunement</FieldLabel>
+              <div className="flex gap-1">
+                {ATTUNEMENTS.map(a => (
+                  <button key={a} type="button" onClick={() => setDraft({...draft, attunement: a})}
+                    className={cn("flex-1 py-1.5 text-xs font-mono border transition-colors", draft.attunement === a ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{a}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Requirements (optional) — minimum attribute or level</FieldLabel>
+            <input className="input-field text-xs" value={draft.requirements} onChange={e => setDraft({...draft, requirements: e.target.value})} placeholder="e.g., POT 14+, Level 5+, Water Affinity..." />
+          </div>
+          <div>
+            <FieldLabel>String Synergy (optional) — which string types does this item enhance?</FieldLabel>
+            <input className="input-field text-xs" value={draft.stringType} onChange={e => setDraft({...draft, stringType: e.target.value})} placeholder="e.g., Water strings, Vital String, any THS-check strings..." />
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Mechanical Effect — active abilities, on-use powers, conditions</FieldLabel>
+            <textarea className="input-field min-h-[100px] resize-none" value={draft.mechanical} onChange={e => setDraft({...draft, mechanical: e.target.value})} placeholder="What does it do when you use it? Include range, duration, targets, damage, saves..." />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Charges (if applicable)</FieldLabel>
+              <div className="flex gap-1 flex-wrap">
+                {CHARGES_OPTS.map(c => (
+                  <button key={c} type="button" onClick={() => setDraft({...draft, charges: c})}
+                    className={cn("px-2.5 py-1 text-xs font-mono border transition-colors", draft.charges === c ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{c}</button>
+                ))}
+              </div>
+            </div>
+            {draft.charges !== "Unlimited" && (
+              <div>
+                <FieldLabel>Recharges per</FieldLabel>
+                <div className="flex gap-1 flex-wrap">
+                  {REST_OPTS.map(r => (
+                    <button key={r} type="button" onClick={() => setDraft({...draft, chargesPer: r})}
+                      className={cn("px-2 py-1 text-[10px] font-mono border transition-colors", draft.chargesPer === r ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{r}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <FieldLabel>Cost / Market Availability</FieldLabel>
+            <input className="input-field" value={draft.cost} onChange={e => setDraft({...draft, cost: e.target.value})} placeholder="e.g., 200 Gold, Guild vendor only, quest reward..." />
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-3">
+          <div className="p-4 border border-primary/20 bg-primary/5">
+            <div className="flex items-start justify-between mb-2">
+              <span className="font-[family-name:'Cinzel',serif] text-foreground">{draft.name}</span>
+              <div className="text-right">
+                <span className="text-[10px] font-mono text-primary">{draft.rarity}</span>
+                <span className="text-[10px] font-mono text-muted-foreground"> · {draft.category}</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mb-2 text-[10px] font-mono">
+              <span className="border border-border/40 px-1.5 py-0.5 text-muted-foreground">{draft.slot}</span>
+              {draft.subCategory && <span className="border border-border/40 px-1.5 py-0.5 text-muted-foreground">{draft.subCategory}</span>}
+              {draft.attunement !== "None" && <span className="border border-primary/30 text-primary px-1.5 py-0.5">Attunement {draft.attunement}</span>}
+            </div>
+            {draft.desc && <p className="text-xs font-mono text-muted-foreground mb-2 italic">{draft.desc}</p>}
+            {draft.statBonuses.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-2">
+                {draft.statBonuses.map((b, i) => <span key={i} className="text-xs font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">{b.bonus >= 0 ? "+" : ""}{b.bonus} {ATTRIBUTE_DEFS.find(a=>a.key===b.attr)?.abbr}</span>)}
+                {draft.vpBonus > 0 && <span className="text-xs font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">+{draft.vpBonus} Max VP</span>}
+              </div>
+            )}
+            {draft.requirements && <p className="text-[10px] font-mono text-destructive/70">Requires: {draft.requirements}</p>}
+            {draft.stringType && <p className="text-[10px] font-mono text-chart-4/70 mt-0.5">Synergy: {draft.stringType}</p>}
+          </div>
+          {draft.mechanical && (
+            <div className="p-3 border border-border/60">
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wide mb-1">Effect</p>
+              <p className="text-xs font-mono text-foreground">{draft.mechanical}</p>
+              {draft.charges !== "Unlimited" && <p className="text-[10px] font-mono text-primary/60 mt-1">{draft.charges} charge{draft.charges !== "1" ? "s" : ""} / {draft.chargesPer}</p>}
             </div>
           )}
+          {draft.cost && <p className="text-xs font-mono text-muted-foreground">Market: {draft.cost}</p>}
         </div>
-        <div className="flex justify-between p-4 border-t border-border">
-          <button onClick={() => wizStep > 0 ? setWizStep(s => s-1) : onClose()}
-            className="px-4 py-2 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors">
-            {wizStep === 0 ? "Cancel" : "← Back"}
-          </button>
-          {wizStep < WIZ_STEPS.length - 1 ? (
-            <button onClick={() => setWizStep(s => s+1)} disabled={!draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              Continue →
-            </button>
-          ) : (
-            <button onClick={handleSave} disabled={saving || !draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              {saving ? "Saving..." : "Save Draft"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </WizardShell>
   );
 }
 
-// ── Background Wizard ─────────────────────────────────────────────────────
+// ── Background Wizard ───────────────────────────────────────────────────────
 
 function BackgroundWizard({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
-  const [wizStep, setWizStep] = useState(0);
-  const [draft, setDraft] = useState({ name: "", desc: "", attrBonuses: {} as Record<string,number>, flexBonus: 0, startingSkills: [] as string[], startingBurnout: 0, benefit: "", penalty: "" });
+  const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const WIZ_STEPS = ["Basic Info", "Attributes", "Skills & Extras", "Review"];
+  const [draft, setDraft] = useState({
+    name: "", desc: "", socialStanding: "Common",
+    attrBonuses: {} as Record<string, number>, flexBonus: 0,
+    startingSkills: [] as string[],
+    startingBurnout: 0,
+    startingTechnique: "",
+    startingGear: "",
+    loreTrait: "",
+    benefit: "", penalty: "",
+  });
+
+  const STEPS = ["Identity", "Attributes", "Skills & Extras", "Lore", "Review"];
+  const SOCIAL = ["Outcast", "Common", "Minor Guild", "Major Guild", "Noble Lineage"];
+
+  function toggleSkill(s: string) {
+    setDraft(d => ({
+      ...d,
+      startingSkills: d.startingSkills.includes(s)
+        ? d.startingSkills.filter(x => x !== s)
+        : d.startingSkills.length < 4 ? [...d.startingSkills, s] : d.startingSkills
+    }));
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -407,118 +673,164 @@ function BackgroundWizard({ onClose, onSave }: { onClose: () => void; onSave: ()
   }
 
   return (
-    <div className="fixed inset-0 bg-background/90 backdrop-blur z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-card border border-border shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+    <WizardShell
+      title="New Background" steps={STEPS} step={step} onClose={onClose}
+      onBack={() => setStep(s => s - 1)} onNext={() => setStep(s => s + 1)}
+      canNext={step === 0 ? !!draft.name.trim() : true}
+      onSave={handleSave} saving={saving}
+    >
+      {step === 0 && (
+        <div className="space-y-4">
           <div>
-            <h2 className="font-[family-name:'Cinzel',serif] text-lg">New Background</h2>
-            <div className="flex gap-3 mt-1">
-              {WIZ_STEPS.map((s, i) => (
-                <span key={s} className={cn("text-[10px] font-mono", i === wizStep ? "text-primary" : i < wizStep ? "text-muted-foreground" : "text-muted-foreground/30")}>
-                  {i < wizStep ? "✓ " : `${i+1}. `}{s}
-                </span>
+            <FieldLabel>Background Name *</FieldLabel>
+            <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="e.g., Street Urchin, Guild Scholar, Temple Initiate..." />
+          </div>
+          <div>
+            <FieldLabel>Social Standing — where this background sits in Aethros society</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {SOCIAL.map(s => (
+                <button key={s} type="button" onClick={() => setDraft({...draft, socialStanding: s})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.socialStanding === s ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>{s}</button>
               ))}
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground font-mono">✕</button>
+          <div>
+            <FieldLabel>Description — who comes from this background?</FieldLabel>
+            <textarea className="input-field min-h-[90px] resize-none" value={draft.desc} onChange={e => setDraft({...draft, desc: e.target.value})} placeholder="What life did they live? What shaped them? What do they know that others don't?" />
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {wizStep === 0 && (
-            <>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Background Name</label>
-                <input className="input-field" value={draft.name} onChange={e => setDraft({...draft, name: e.target.value})} placeholder="e.g., Street Urchin, Temple Scholar..." /></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Description</label>
-                <textarea className="input-field min-h-[100px] resize-none" value={draft.desc} onChange={e => setDraft({...draft, desc: e.target.value})} placeholder="Who comes from this background?" /></div>
-            </>
-          )}
-          {wizStep === 1 && (
-            <div className="space-y-4">
-              <p className="text-xs font-mono text-muted-foreground">Choose up to 3 stat bonuses (+1 each):</p>
-              <div className="grid grid-cols-3 gap-2">
-                {ATTRIBUTE_DEFS.map(attr => {
-                  const current = draft.attrBonuses[attr.key] ?? 0;
-                  const total = Object.values(draft.attrBonuses).reduce((a,b)=>a+b,0);
-                  return (
-                    <button key={attr.key} type="button"
-                      onClick={() => { const next = {...draft.attrBonuses}; if (current) { delete next[attr.key]; } else if (total < 3) { next[attr.key] = 1; } setDraft({...draft, attrBonuses: next}); }}
-                      className={cn("p-3 border text-center font-mono text-xs transition-colors", current ? "border-chart-2 bg-chart-2/10 text-chart-2" : "border-border text-muted-foreground hover:border-primary/40")}>
-                      <div className="text-sm mb-0.5">{current ? "+1" : "—"}</div>
-                      <div>{attr.abbr}</div>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-muted-foreground">Flex bonus:</span>
-                {[0,1].map(v => (
-                  <button key={v} type="button" onClick={() => setDraft({...draft, flexBonus: v})}
-                    className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.flexBonus === v ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>
-                    {v === 0 ? "None" : "+1 (any attr)"}
+      )}
+
+      {step === 1 && (
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Attribute Bonuses — choose up to 3 (+1 each)</FieldLabel>
+            <div className="grid grid-cols-3 gap-2">
+              {ATTRIBUTE_DEFS.map(attr => {
+                const current = draft.attrBonuses[attr.key] ?? 0;
+                const total = Object.values(draft.attrBonuses).reduce((a,b)=>a+b,0);
+                return (
+                  <button key={attr.key} type="button"
+                    onClick={() => {
+                      const next = {...draft.attrBonuses};
+                      if (current) { delete next[attr.key]; }
+                      else if (total < 3) { next[attr.key] = 1; }
+                      setDraft({...draft, attrBonuses: next});
+                    }}
+                    className={cn("p-3 border text-center font-mono text-xs transition-colors", current ? "border-chart-2 bg-chart-2/10 text-chart-2" : "border-border text-muted-foreground hover:border-primary/40")}>
+                    <div className="text-base font-bold mb-0.5">{current ? "+1" : "—"}</div>
+                    <div className="text-[10px] opacity-70">{attr.abbr}</div>
+                    <div className="text-[9px] opacity-50 truncate">{attr.name}</div>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
-          {wizStep === 2 && (
-            <div className="space-y-4">
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Starting Skills (comma-separated)</label>
-                <input className="input-field" value={draft.startingSkills.join(", ")} onChange={e => setDraft({...draft, startingSkills: e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})} placeholder="e.g., Lore, Discernment" /></div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-muted-foreground">Starting Burnout:</span>
-                {[0,1].map(v => (
-                  <button key={v} type="button" onClick={() => setDraft({...draft, startingBurnout: v})}
-                    className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.startingBurnout === v ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>
-                    {v === 0 ? "None" : "Level 1"}
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-xs font-mono text-muted-foreground">Flex bonus:</span>
+              {[0,1].map(v => (
+                <button key={v} type="button" onClick={() => setDraft({...draft, flexBonus: v})}
+                  className={cn("px-3 py-1.5 text-xs font-mono border transition-colors", draft.flexBonus === v ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40")}>
+                  {v === 0 ? "None" : "+1 any attribute (player's choice)"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Starting Attuned Skills — pick up to 4 (player gets these for free at character creation)</FieldLabel>
+            <div className="grid grid-cols-2 gap-1.5 mt-1">
+              {ALL_SKILLS.map(s => {
+                const selected = draft.startingSkills.includes(s);
+                return (
+                  <button key={s} type="button" onClick={() => toggleSkill(s)}
+                    className={cn("px-2.5 py-1.5 text-[10px] font-mono border text-left transition-colors", selected ? "border-chart-2 text-chart-2 bg-chart-2/10" : "border-border text-muted-foreground hover:border-primary/40")}>
+                    {selected && "✓ "}{s}
                   </button>
-                ))}
-              </div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Benefit</label>
-                <textarea className="input-field min-h-[60px] resize-none" value={draft.benefit} onChange={e => setDraft({...draft, benefit: e.target.value})} placeholder="Special mechanical benefit..." /></div>
-              <div><label className="text-xs font-mono text-muted-foreground uppercase block mb-1">Penalty (optional)</label>
-                <textarea className="input-field min-h-[60px] resize-none" value={draft.penalty} onChange={e => setDraft({...draft, penalty: e.target.value})} placeholder="Drawback or complication..." /></div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] font-mono text-muted-foreground/50 mt-1">{draft.startingSkills.length}/4 selected</p>
+          </div>
+          <div>
+            <FieldLabel>Starting Burnout Level — some harsh backgrounds begin with Burnout</FieldLabel>
+            <div className="flex gap-1.5">
+              {[0,1,2,3].map(v => (
+                <button key={v} type="button" onClick={() => setDraft({...draft, startingBurnout: v})}
+                  className={cn("flex-1 py-2 text-xs font-mono border text-center transition-colors",
+                    draft.startingBurnout === v
+                      ? v === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" : "border-destructive text-destructive bg-destructive/10"
+                      : "border-border text-muted-foreground hover:border-primary/40")}>
+                  {v === 0 ? "None" : `Level ${v}`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Starting Technique — unique combat/magic technique known from background</FieldLabel>
+            <input className="input-field" value={draft.startingTechnique} onChange={e => setDraft({...draft, startingTechnique: e.target.value})} placeholder="e.g., Ironwall Stance, Pressure Release, Vault Step..." />
+          </div>
+          <div>
+            <FieldLabel>Starting Gear — equipment they start with beyond standard issue</FieldLabel>
+            <textarea className="input-field min-h-[60px] resize-none" value={draft.startingGear} onChange={e => setDraft({...draft, startingGear: e.target.value})} placeholder="e.g., Worn guild pendant (+1 social checks), 50ft rope, poison kit..." />
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4">
+          <div>
+            <FieldLabel>Lore Trait — a unique role-playing or world-knowledge benefit</FieldLabel>
+            <textarea className="input-field min-h-[70px] resize-none" value={draft.loreTrait} onChange={e => setDraft({...draft, loreTrait: e.target.value})} placeholder="e.g., Knows the location of 1d4 black-market contacts in any major city. Advantage on checks related to criminal organizations." />
+          </div>
+          <div>
+            <FieldLabel>Mechanical Benefit — in-game advantage or rule exception</FieldLabel>
+            <textarea className="input-field min-h-[70px] resize-none" value={draft.benefit} onChange={e => setDraft({...draft, benefit: e.target.value})} placeholder="e.g., May spend TP as if it were gold (2 TP = 1 GP) when bribing city officials..." />
+          </div>
+          <div>
+            <FieldLabel>Penalty / Complication (optional) — drawback for balance</FieldLabel>
+            <textarea className="input-field min-h-[60px] resize-none" value={draft.penalty} onChange={e => setDraft({...draft, penalty: e.target.value})} placeholder="e.g., Guild contacts view you with suspicion. Disadvantage on PRE checks with law enforcement..." />
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="space-y-3">
+          <div className="p-4 border border-primary/20 bg-primary/5">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="font-[family-name:'Cinzel',serif] text-foreground">{draft.name}</span>
+              <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">{draft.socialStanding}</span>
+            </div>
+            <p className="text-xs font-mono text-muted-foreground mb-3">{draft.desc}</p>
+            <div className="flex flex-wrap gap-2 text-xs font-mono">
+              {Object.entries(draft.attrBonuses).map(([k,v]) => (
+                <span key={k} className="text-chart-2">+{v} {ATTRIBUTE_DEFS.find(a=>a.key===k)?.abbr}</span>
+              ))}
+              {draft.flexBonus > 0 && <span className="text-primary">+{draft.flexBonus} any</span>}
+              {draft.startingBurnout > 0 && <span className="text-destructive">Burnout L{draft.startingBurnout}</span>}
+            </div>
+          </div>
+          {draft.startingSkills.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wide mb-1.5">Attuned Skills</p>
+              <div className="flex flex-wrap gap-1">{draft.startingSkills.map(s => <span key={s} className="text-xs font-mono bg-chart-2/10 border border-chart-2/30 text-chart-2 px-2 py-0.5">{s}</span>)}</div>
             </div>
           )}
-          {wizStep === 3 && (
-            <div className="space-y-3">
-              <div className="p-3 border border-primary/20 bg-primary/5">
-                <p className="font-mono text-foreground text-sm mb-1">{draft.name}</p>
-                <p className="text-xs font-mono text-muted-foreground">{draft.desc}</p>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-mono">
-                {Object.entries(draft.attrBonuses).map(([k,v]) => (
-                  <span key={k} className="text-chart-2">+{v} {ATTRIBUTE_DEFS.find(a=>a.key===k)?.abbr}</span>
-                ))}
-                {draft.flexBonus > 0 && <span className="text-primary">+{draft.flexBonus} (any)</span>}
-              </div>
-              {draft.startingSkills.length > 0 && <div className="flex flex-wrap gap-1">{draft.startingSkills.map(s => <span key={s} className="text-xs font-mono bg-muted px-2 py-0.5">{s}</span>)}</div>}
-              {draft.benefit && <p className="text-xs font-mono border-l-2 border-primary/40 pl-3 text-foreground">{draft.benefit}</p>}
-              {draft.penalty && <p className="text-xs font-mono border-l-2 border-destructive/30 pl-3 text-destructive/70">{draft.penalty}</p>}
-            </div>
-          )}
+          {draft.startingTechnique && <div className="p-2 border border-border/50"><p className="text-[10px] font-mono text-muted-foreground mb-0.5">Technique</p><p className="text-xs font-mono text-foreground">{draft.startingTechnique}</p></div>}
+          {draft.startingGear && <div className="p-2 border border-border/50"><p className="text-[10px] font-mono text-muted-foreground mb-0.5">Starting Gear</p><p className="text-xs font-mono text-foreground">{draft.startingGear}</p></div>}
+          {draft.loreTrait && <p className="text-xs font-mono border-l-2 border-chart-4/40 pl-3 text-foreground/80">{draft.loreTrait}</p>}
+          {draft.benefit && <p className="text-xs font-mono border-l-2 border-primary/40 pl-3 text-foreground">{draft.benefit}</p>}
+          {draft.penalty && <p className="text-xs font-mono border-l-2 border-destructive/30 pl-3 text-destructive/70">{draft.penalty}</p>}
         </div>
-        <div className="flex justify-between p-4 border-t border-border">
-          <button onClick={() => wizStep > 0 ? setWizStep(s => s-1) : onClose()}
-            className="px-4 py-2 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors">
-            {wizStep === 0 ? "Cancel" : "← Back"}
-          </button>
-          {wizStep < WIZ_STEPS.length - 1 ? (
-            <button onClick={() => setWizStep(s => s+1)} disabled={!draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              Continue →
-            </button>
-          ) : (
-            <button onClick={handleSave} disabled={saving || !draft.name.trim()}
-              className="px-6 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-colors">
-              {saving ? "Saving..." : "Save Draft"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </WizardShell>
   );
 }
 
-// ── Homebrew List ─────────────────────────────────────────────────────────
+// ── Homebrew List ───────────────────────────────────────────────────────────
 
 function HomebrewList({ items, onTogglePublish, onDelete }: { items: any[]; onTogglePublish: (id: number) => void; onDelete: (id: number) => void }) {
   if (items.length === 0) {
@@ -536,20 +848,15 @@ function HomebrewList({ items, onTogglePublish, onDelete }: { items: any[]; onTo
             <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", item.published ? "bg-chart-2" : "bg-muted-foreground/30")} />
             <div>
               <span className="font-mono text-sm text-foreground">{item.name}</span>
-              {item.published && (
-                <span className="ml-2 text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">PUBLISHED</span>
-              )}
-              {!item.published && (
-                <span className="ml-2 text-[10px] font-mono text-muted-foreground/50 border border-border/40 px-1.5 py-0.5">DRAFT</span>
-              )}
+              {item.published
+                ? <span className="ml-2 text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">PUBLISHED</span>
+                : <span className="ml-2 text-[10px] font-mono text-muted-foreground/50 border border-border/40 px-1.5 py-0.5">DRAFT</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => onTogglePublish(item.id)}
               className={cn("flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono border transition-colors",
-                item.published
-                  ? "border-chart-2/40 text-chart-2 hover:bg-chart-2/10"
-                  : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
+                item.published ? "border-chart-2/40 text-chart-2 hover:bg-chart-2/10" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
               {item.published ? <><EyeOff className="w-3 h-3" /> Unpublish</> : <><Globe className="w-3 h-3" /> Publish</>}
             </button>
             <button onClick={() => onDelete(item.id)}
@@ -563,7 +870,7 @@ function HomebrewList({ items, onTogglePublish, onDelete }: { items: any[]; onTo
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────
+// ── Main Component ──────────────────────────────────────────────────────────
 
 export default function Weavekeeper() {
   const { user } = useAuth();
@@ -701,17 +1008,12 @@ export default function Weavekeeper() {
               <h2 className="font-[family-name:'Cinzel',serif] text-lg text-foreground">All Player Characters</h2>
               <span className="text-xs font-mono text-muted-foreground">{allCharacters.length} total</span>
             </div>
-
             {charsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({length: 6}).map((_,i) => (
-                  <div key={i} className="h-28 border border-border bg-card animate-pulse" />
-                ))}
+                {Array.from({length: 6}).map((_,i) => <div key={i} className="h-28 border border-border bg-card animate-pulse" />)}
               </div>
             ) : allCharacters.length === 0 ? (
-              <div className="py-16 text-center font-mono text-muted-foreground/50 text-sm border border-dashed border-border/30">
-                No characters yet.
-              </div>
+              <div className="py-16 text-center font-mono text-muted-foreground/50 text-sm border border-dashed border-border/30">No characters yet.</div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {allCharacters.map(char => {
@@ -728,16 +1030,11 @@ export default function Weavekeeper() {
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="font-[family-name:'Cinzel',serif] text-sm text-foreground truncate">{char.name}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">
-                            Lv.{char.level} · {char.affinity || "—"} · {char.mode || "—"}
-                          </div>
+                          <div className="text-[10px] font-mono text-muted-foreground">Lv.{char.level} · {char.affinity || "—"} · {char.mode || "—"}</div>
                           {(data.guildRank || data.guild) && (
                             <div className="text-[10px] font-mono text-muted-foreground/60 truncate mt-0.5">
                               {data.guildRank ? `${data.guildRank}, ` : ""}{data.guild && data.guild !== "None (Independent)" ? data.guild.replace("The ", "") : "Independent"}
                             </div>
-                          )}
-                          {data.background && (
-                            <div className="text-[10px] font-mono text-primary/50 truncate mt-0.5">{data.background}</div>
                           )}
                         </div>
                       </div>
@@ -766,7 +1063,6 @@ export default function Weavekeeper() {
               <h2 className="font-[family-name:'Cinzel',serif] text-lg text-foreground mb-1">Homebrew Creation</h2>
               <p className="text-xs font-mono text-muted-foreground">Create custom content. Publish to make it available to players.</p>
             </div>
-
             <Tabs value={activeHBTab} onValueChange={setActiveHBTab}>
               <TabsList className="mb-4 bg-card/50 border border-border/50 h-auto p-0.5">
                 <TabsTrigger value="affinities" className="font-mono text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
@@ -779,31 +1075,25 @@ export default function Weavekeeper() {
                   Backgrounds ({hbBackgrounds.length})
                 </TabsTrigger>
               </TabsList>
-
               <TabsContent value="affinities">
                 <div className="mb-3 flex justify-end">
-                  <button onClick={() => setAffinityWizard(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
+                  <button onClick={() => setAffinityWizard(true)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
                     <Plus className="w-3.5 h-3.5" /> New Affinity
                   </button>
                 </div>
                 <HomebrewList items={hbAffinities} onTogglePublish={togglePublish} onDelete={deleteHomebrew} />
               </TabsContent>
-
               <TabsContent value="items">
                 <div className="mb-3 flex justify-end">
-                  <button onClick={() => setItemWizard(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
+                  <button onClick={() => setItemWizard(true)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
                     <Plus className="w-3.5 h-3.5" /> New Item
                   </button>
                 </div>
                 <HomebrewList items={hbItems} onTogglePublish={togglePublish} onDelete={deleteHomebrew} />
               </TabsContent>
-
               <TabsContent value="backgrounds">
                 <div className="mb-3 flex justify-end">
-                  <button onClick={() => setBgWizard(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
+                  <button onClick={() => setBgWizard(true)} className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-[0_0_12px_rgba(180,120,60,0.3)]">
                     <Plus className="w-3.5 h-3.5" /> New Background
                   </button>
                 </div>

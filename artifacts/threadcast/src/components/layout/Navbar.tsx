@@ -1,12 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Scroll, ShieldHalf, LogOut, Swords } from "lucide-react";
+import { BookOpen, Scroll, ShieldHalf, LogOut, Swords, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const initials = user?.displayName
     ? user.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
@@ -65,7 +67,16 @@ export default function Navbar() {
 
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none" />
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center border border-border/40 text-muted-foreground/60 hover:text-foreground hover:border-border/80 transition-all"
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+
             {user ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
