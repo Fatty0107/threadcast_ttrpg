@@ -40,6 +40,14 @@ interface InventoryEntry {
   subItems?: SubItem[];
 }
 
+interface WeavingEntry {
+  id: string;
+  numStrings: number;
+  strings: string[];
+  powerLevels: number[];
+  modes: string[];
+}
+
 interface SheetData {
   avatarDataUrl?: string;
   attributes?: Record<string, number>;
@@ -78,6 +86,8 @@ interface SheetData {
   notesSession?: string;
   recoveryDiceCurrent?: number;
   featCharges?: Record<string, number>;
+  featChoices?: Record<string, any>;
+  weavings?: WeavingEntry[];
 }
 
 interface Props {
@@ -119,7 +129,30 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   }
 
   // ---- Derived ----
-  const attrs = localData.attributes || {};
+  const feats = localData.feats || [];
+  const baseAttrs: Record<string, number> = localData.attributes || {};
+  // ASI feat bonuses applied on top of base attributes
+  const asiAttrBonuses: Record<string, number> = {};
+  feats.forEach((name, idx) => {
+    if (name === "Attribute Score Improvement") {
+      const choice = (localData.featChoices || {} as any)[String(idx)];
+      if (choice?.mode === "one" && choice.attrs?.[0]) {
+        asiAttrBonuses[choice.attrs[0]] = (asiAttrBonuses[choice.attrs[0]] || 0) + 2;
+      } else if (choice?.mode === "two") {
+        (choice.attrs || []).forEach((a: string) => {
+          if (a) asiAttrBonuses[a] = (asiAttrBonuses[a] || 0) + 1;
+        });
+      }
+    }
+  });
+  const attrs: Record<string, number> = {
+    pot: (baseAttrs.pot || 10) + (asiAttrBonuses.pot || 0),
+    ctr: (baseAttrs.ctr || 10) + (asiAttrBonuses.ctr || 0),
+    res: (baseAttrs.res || 10) + (asiAttrBonuses.res || 0),
+    acu: (baseAttrs.acu || 10) + (asiAttrBonuses.acu || 0),
+    pre: (baseAttrs.pre || 10) + (asiAttrBonuses.pre || 0),
+    ths: (baseAttrs.ths || 10) + (asiAttrBonuses.ths || 0),
+  };
   const vp = localData.vitalityPoints || { current: 0, max: 0 };
   const tension = localData.tension || { current: 0, pool: 0, safeLimit: 0 };
   const burnout = localData.burnout || 0;
@@ -127,7 +160,6 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const corruption = localData.corruption || 0;
   const level = character.level || 1;
   const rb = getRefinementBonus(level);
-  const feats = localData.feats || [];
   const inventory = localData.inventory || [];
 
   // Feat passive bonuses
@@ -154,9 +186,26 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   // Per-rest feats that are active on this character
   const activeCombatFeats = FEATS.filter(f => f.usesPerRest && feats.includes(f.name));
 
-  const attunedSkills: string[] = localData.attunedSkills
+  const attunedSkillsBase: string[] = localData.attunedSkills
     || (localData.skills || []).filter(s => s.attuned).map(s => s.name)
     || [];
+  const attunementFeatSkills: string[] = [];
+  feats.forEach((name, idx) => {
+    if (name === "Attunement (Skilled)") {
+      const choice = (localData.featChoices as any || {})[String(idx)];
+      if (choice?.skill && !attunedSkillsBase.includes(choice.skill)) {
+        attunementFeatSkills.push(choice.skill);
+      }
+    }
+  });
+  const attunedSkills = [...attunedSkillsBase, ...attunementFeatSkills];
+  const expertiseSkills: string[] = [];
+  feats.forEach((name, idx) => {
+    if (name === "Expertise") {
+      const choice = (localData.featChoices as any || {})[String(idx)];
+      if (choice?.skill) expertiseSkills.push(choice.skill);
+    }
+  });
 
   const featSlots = Math.floor(level / 2);
   const featSlotsRemaining = featSlots - feats.length;
@@ -199,9 +248,15 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   }
 
   // ---- Feat helpers ----
+  const REPEATABLE_FEATS = new Set(["Attribute Score Improvement", "Attunement (Skilled)", "Expertise"]);
+  const activeFeatEntries = feats.map((name, idx) => ({
+    def: FEATS.find(f => f.name === name),
+    name,
+    idx,
+  }));
   const activeFeatDefs = FEATS.filter(f => feats.includes(f.name));
   const availableFeats = FEATS.filter(f => {
-    if (feats.includes(f.name)) return false;
+    if (!REPEATABLE_FEATS.has(f.name) && feats.includes(f.name)) return false;
     if (f.minLevel > level) return false;
     return true;
   });
@@ -210,8 +265,14 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     patch({ feats: [...feats, name] });
     setShowFeatPicker(false);
   }
-  function removeFeat(name: string) {
-    patch({ feats: feats.filter(f => f !== name) });
+  function removeFeatByIdx(idx: number) {
+    const nextFeats = feats.filter((_, i) => i !== idx);
+    const nextChoices = { ...(localData.featChoices || {}) };
+    delete (nextChoices as Record<string, any>)[String(idx)];
+    patch({ feats: nextFeats, featChoices: nextChoices });
+  }
+  function saveFeatChoice(idx: number, choice: any) {
+    patch({ featChoices: { ...(localData.featChoices || {}), [String(idx)]: choice } });
   }
 
   // ---- Inventory helpers ----
@@ -421,12 +482,13 @@ ${ALL_SKILLS.map(skill => {
 </tbody></table>
 
 ${totalStr > 0 ? `<h2>Strings (${totalStr})</h2><div>${(localData.strings||[]).map((s:string)=>`<div style="border:1px solid #bbb;padding:3px 7px;margin-bottom:3px;font-size:9pt">${s}</div>`).join("")}</div>` : ""}
+${(localData.weavings||[]).length > 0 ? `<h2>Weaving Combinations</h2><div style="font-size:7.5pt;color:#555;font-family:monospace;margin-bottom:4px">2 strings = Normal check; 3 = Discord ×2 cost; 4 = Discord ×3 cost (Lv7+)</div><table><thead><tr><th>#</th><th>Strings</th><th>Power Levels</th><th>Modes</th><th>Check</th><th>Effect</th><th>Tension</th></tr></thead><tbody>${(localData.weavings||[]).map((w:WeavingEntry,wi:number)=>{const cm=w.numStrings===2?1:w.numStrings===3?2:3;const bc=(w.strings||[]).reduce((s:number,sn:string,si:number)=>{const sd=findString(sn);const pl=(w.powerLevels||[])[si]||1;return s+(sd?.levels?.[pl-1]?.cost??pl);},0);return `<tr><td style="font-family:monospace">${wi+1}</td><td>${(w.strings||[]).map((s:string,si:number)=>s||`—`).join(", ")}</td><td style="font-family:monospace">${(w.powerLevels||[]).slice(0,w.numStrings).map((pl:number)=>`PL${pl}`).join(", ")}</td><td style="font-family:monospace">${(w.modes||[]).slice(0,w.numStrings).map((m:string)=>m||"?").join(", ")}</td><td style="font-family:monospace">${w.numStrings===2?"Normal":"Discord"}</td><td>${w.numStrings===2?"Enhanced":w.numStrings===3?"Dramatic":"Catastrophic"}</td><td style="font-family:monospace;font-weight:bold">${bc*cm}T</td></tr>`;}).join("")}</tbody></table>` : ""}
 </div>
 
 <!-- PAGE 3: FEATS + INVENTORY -->
 <div class="page">
-${activeFeatDefsAll.length > 0 ? `<h2>Feats (${activeFeatDefsAll.length}/${Math.floor(level/2)} slots)</h2>
-<div class="g2">${activeFeatDefsAll.map(feat => `<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;flex-wrap:wrap;gap:3px"><span class="feat-nm">${feat.name}</span><div style="display:flex;align-items:center;gap:4px"><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span>${restBadge(feat)}${feat.passiveBonus?`<span class="passive-badge">PASSIVE</span>`:""}</div></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div></div>`).join("")}</div>` : ""}
+${feats.length > 0 ? `<h2>Feats (${feats.length}/${Math.floor(level/2)} slots)</h2>
+<div class="g2">${feats.map((featName,fi) => {const feat=FEATS.find(f=>f.name===featName);if(!feat)return`<div class="feat-block"><span class="feat-nm">${featName}</span></div>`;const fc=(localData.featChoices as Record<string,any>||{})[String(fi)];let choiceHtml="";if(featName==="Attribute Score Improvement"&&fc){if(fc.mode==="one"&&fc.attrs?.[0]){const a=ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0]);choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+2 ${a?.abbr||fc.attrs[0]} (${(baseAttrs[fc.attrs[0]]||10)} → ${(baseAttrs[fc.attrs[0]]||10)+2})</div>`;}else if(fc.mode==="two"&&fc.attrs?.length>=2){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0])?.abbr||fc.attrs[0]} · +1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[1])?.abbr||fc.attrs[1]}</div>`;}}else if(featName==="Attunement (Skilled)"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Attuned: ${fc.skill} (+${rb})</div>`;}else if(featName==="Expertise"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Expertise: ${fc.skill} (RB = +${rb*2})</div>`;}return`<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;flex-wrap:wrap;gap:3px"><span class="feat-nm">${feat.name}</span><div style="display:flex;align-items:center;gap:4px"><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span>${restBadge(feat)}${feat.passiveBonus?`<span class="passive-badge">PASSIVE</span>`:""}</div></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div>${choiceHtml}</div>`;}).join("")}</div>` : ""}
 
 <h2>Inventory (${inventory.length} items)</h2>
 ${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Notes</th></tr></thead><tbody>
@@ -617,7 +679,9 @@ ${([
               <h3 className="font-[family-name:'Cinzel',serif] text-xs text-muted-foreground uppercase tracking-widest">Attributes</h3>
               <div>
                 {ATTRIBUTE_DEFS.map(attr => {
-                  const score = attrs[attr.key] || 10;
+                  const baseScore = baseAttrs[attr.key] || 10;
+                  const bonus = asiAttrBonuses[attr.key] || 0;
+                  const score = baseScore + bonus;
                   const mod = calcMod(score);
                   return (
                     <div key={attr.key} className="flex items-center py-2 border-b border-border/20 last:border-0 hover:bg-muted/20 px-1 group">
@@ -625,13 +689,14 @@ ${([
                       <input
                         type="number"
                         className="w-14 bg-transparent text-center font-mono text-lg focus:outline-none"
-                        value={score}
+                        value={baseScore}
                         min={1} max={20}
                         onChange={e => {
                           const v = parseInt(e.target.value) || 10;
-                          patch({ attributes: { ...attrs, [attr.key]: v } });
+                          patch({ attributes: { ...baseAttrs, [attr.key]: v } });
                         }}
                       />
+                      {bonus > 0 && <span className="text-[10px] font-mono text-chart-2 ml-0.5">+{bonus}={score}</span>}
                       <button
                         className="ml-auto w-14 text-center text-primary font-mono font-bold hover:bg-primary/15 py-1 rounded transition-colors"
                         onClick={() => openRoll(`${attr.label} Check`, mod, character.name)}
@@ -839,11 +904,15 @@ ${([
                 const attrScore = attrs[skill.attr] || 10;
                 const mod = calcMod(attrScore);
                 const isAttuned = attunedSkills.includes(skill.name);
-                const total = mod + (isAttuned ? rb : 0);
+                const isFeatAttuned = attunementFeatSkills.includes(skill.name);
+                const isExpert = expertiseSkills.includes(skill.name);
+                const totalRb = isAttuned ? (isExpert ? rb * 2 : rb) : 0;
+                const total = mod + totalRb;
                 return (
                   <tr key={skill.name} className="border-b border-border/20 hover:bg-muted/20">
                     <td className="py-2.5">
                       <GameTerm term={skill.name.toLowerCase()} className="text-foreground">{skill.name}</GameTerm>
+                      {isFeatAttuned && <span className="text-[9px] font-mono text-primary/60 ml-1">feat</span>}
                     </td>
                     <td className="py-2.5 text-center">
                       <GameTerm term={skill.attr} className="text-muted-foreground text-xs">{skill.attr.toUpperCase()}</GameTerm>
@@ -853,15 +922,17 @@ ${([
                         className={cn("w-5 h-5 inline-flex items-center justify-center border transition-colors text-xs",
                           isAttuned ? "border-primary bg-primary/10 text-primary" : "border-border/60 hover:border-primary/40")}
                         onClick={() => {
-                          const next = isAttuned ? attunedSkills.filter(s => s !== skill.name) : [...attunedSkills, skill.name];
+                          if (isFeatAttuned) return;
+                          const next = isAttuned ? attunedSkillsBase.filter(s => s !== skill.name) : [...attunedSkillsBase, skill.name];
                           patch({ attunedSkills: next });
                         }}
+                        title={isFeatAttuned ? "Attuned via feat" : undefined}
                       >
-                        {isAttuned ? "●" : ""}
+                        {isAttuned ? (isExpert ? "★" : "●") : ""}
                       </button>
                     </td>
                     <td className="py-2.5 text-center text-muted-foreground">
-                      {fmtMod(mod)}{isAttuned ? <span className="text-primary"> +{rb}</span> : ""}
+                      {fmtMod(mod)}{isAttuned ? <span className="text-primary"> +{totalRb}{isExpert ? <span className="text-chart-2 text-[9px]"> ×2</span> : null}</span> : null}
                       {" "}= <strong className={isAttuned ? "text-primary" : ""}>{fmtMod(total)}</strong>
                     </td>
                     <td className="py-2.5 text-center">
@@ -941,6 +1012,148 @@ ${([
               </button>
             </div>
           </div>
+
+          {/* ===== WEAVING COMBINATIONS ===== */}
+          <div className="border-t border-border/40 pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Weaving Combinations</h4>
+              <button
+                onClick={() => {
+                  const newWeave: WeavingEntry = {
+                    id: Math.random().toString(36).slice(2),
+                    numStrings: 2,
+                    strings: [],
+                    powerLevels: [1, 1],
+                    modes: [],
+                  };
+                  patch({ weavings: [...(localData.weavings || []), newWeave] });
+                }}
+                className="px-3 py-1 text-xs border border-primary/50 text-primary hover:bg-primary/10 font-mono"
+              >
+                + ADD WEAVE
+              </button>
+            </div>
+            <div className="text-[10px] font-mono text-muted-foreground/60 border border-border/20 p-2 space-y-0.5">
+              <div>2 STRINGS — Normal Thread Check · Enhanced effect · ×1 Tension cost</div>
+              <div>3 STRINGS — Discord Thread Check · Dramatic effect · ×2 Tension cost</div>
+              <div>4 STRINGS (Lv7+) — Discord Thread Check · Catastrophic potential · ×3 Tension cost</div>
+            </div>
+            {(localData.weavings || []).length === 0 && (
+              <p className="text-xs font-mono text-muted-foreground/50 text-center py-2">No weaving combinations saved. Add one above.</p>
+            )}
+            {(localData.weavings || []).map((weave, wi) => {
+              const maxStrings = level >= 7 ? 4 : 3;
+              const checkType = weave.numStrings === 2 ? "Normal" : "Discord";
+              const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
+              const costMultiplier = weave.numStrings === 2 ? 1 : weave.numStrings === 3 ? 2 : 3;
+              const baseCost = (weave.strings || []).reduce((sum, sName, si) => {
+                const sData = findString(sName);
+                const pl = (weave.powerLevels || [])[si] || 1;
+                return sum + (sData?.levels?.[pl - 1]?.cost ?? pl);
+              }, 0);
+              const totalCost = baseCost * costMultiplier;
+              return (
+                <div key={weave.id} className="border border-border p-3 bg-card/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-semibold text-foreground">Weave {wi + 1}</span>
+                    <button
+                      onClick={() => patch({ weavings: (localData.weavings || []).filter((_, i) => i !== wi) })}
+                      className="text-[10px] font-mono text-muted-foreground/40 hover:text-destructive"
+                    >
+                      × Remove
+                    </button>
+                  </div>
+                  {/* String count selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground">Strings:</span>
+                    {[2, 3, 4].filter(n => n <= maxStrings).map(n => (
+                      <button
+                        key={n}
+                        className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors",
+                          weave.numStrings === n ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground hover:border-primary/40"
+                        )}
+                        onClick={() => {
+                          const next = [...(localData.weavings || [])];
+                          next[wi] = {
+                            ...weave,
+                            numStrings: n,
+                            strings: (weave.strings || []).slice(0, n),
+                            powerLevels: [...(weave.powerLevels || [1,1,1,1]).slice(0, n), ...(Array(Math.max(0, n - (weave.powerLevels||[]).length)).fill(1))],
+                            modes: (weave.modes || []).slice(0, n),
+                          };
+                          patch({ weavings: next });
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    {level < 7 && <span className="text-[10px] font-mono text-muted-foreground/40">(4 requires Lv7)</span>}
+                  </div>
+                  {/* Per-string configuration */}
+                  {Array.from({ length: weave.numStrings }).map((_, si) => (
+                    <div key={si} className="grid grid-cols-3 gap-1.5">
+                      <select
+                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+                        value={(weave.strings || [])[si] || ""}
+                        onChange={e => {
+                          const next = [...(localData.weavings || [])];
+                          const newStrings = [...(weave.strings || [])];
+                          newStrings[si] = e.target.value;
+                          next[wi] = { ...weave, strings: newStrings };
+                          patch({ weavings: next });
+                        }}
+                      >
+                        <option value="">String {si + 1}</option>
+                        {(localData.strings || []).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <select
+                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+                        value={(weave.powerLevels || [])[si] || 1}
+                        onChange={e => {
+                          const next = [...(localData.weavings || [])];
+                          const newPLs = [...(weave.powerLevels || [1,1,1,1])];
+                          newPLs[si] = parseInt(e.target.value);
+                          next[wi] = { ...weave, powerLevels: newPLs };
+                          patch({ weavings: next });
+                        }}
+                      >
+                        {[1, 2, 3, 4, 5].map(pl => <option key={pl} value={pl}>PL {pl}</option>)}
+                      </select>
+                      <select
+                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+                        value={(weave.modes || [])[si] || ""}
+                        onChange={e => {
+                          const next = [...(localData.weavings || [])];
+                          const newModes = [...(weave.modes || [])];
+                          newModes[si] = e.target.value;
+                          next[wi] = { ...weave, modes: newModes };
+                          patch({ weavings: next });
+                        }}
+                      >
+                        <option value="">Mode</option>
+                        <option value="Primary">Primary</option>
+                        <option value="Secondary">Secondary</option>
+                        <option value="Tertiary">Tertiary</option>
+                      </select>
+                    </div>
+                  ))}
+                  {/* Weave summary + cast button */}
+                  <div className="flex items-center justify-between bg-primary/5 border border-primary/10 px-2 py-1.5 font-mono text-[10px]">
+                    <span className="text-muted-foreground">
+                      <span className={cn(weave.numStrings === 2 ? "text-chart-2" : "text-destructive/80")}>{checkType}</span> Check · {effectType} Effect · <span className="text-primary font-semibold">{totalCost}T cost</span>
+                      {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
+                    </span>
+                    <button
+                      className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                      onClick={() => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + totalCost))}
+                    >
+                      CAST (+{totalCost}T)
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </TabsContent>
 
         {/* ===== FEATS ===== */}
@@ -990,62 +1203,176 @@ ${([
           )}
 
           <div className="space-y-3">
-            {activeFeatDefs.length === 0 && !showFeatPicker && (
+            {activeFeatEntries.length === 0 && !showFeatPicker && (
               <div className="py-8 text-center font-mono text-muted-foreground text-sm">
                 {featSlots === 0 ? "Reach Level 2 to choose your first feat." : "No feats selected yet."}
               </div>
             )}
-            {activeFeatDefs.map(feat => (
-              <div key={feat.name} className="border border-border p-4 bg-card group relative">
-                <button
-                  onClick={() => removeFeat(feat.name)}
-                  className="absolute top-3 right-3 text-muted-foreground/40 hover:text-destructive text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  × Remove
-                </button>
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="font-[family-name:'Cinzel',serif] text-foreground">{feat.name}</span>
-                  <span className={cn("text-[10px] font-mono px-1.5 py-0.5",
-                    feat.category === "combat" ? "bg-destructive/20 text-destructive" :
-                    feat.category === "defense" ? "bg-chart-2/20 text-chart-2" :
-                    feat.category === "magic" ? "bg-primary/20 text-primary" :
-                    "bg-muted text-muted-foreground"
-                  )}>{feat.category}</span>
-                  {feat.usesPerRest && (
-                    <button
-                      className={cn("text-[10px] font-mono px-2 py-0.5 border transition-colors",
-                        isFeatAvailable(feat.name)
-                          ? "border-primary/50 text-primary hover:bg-primary/10"
-                          : "border-border/30 text-muted-foreground/40 cursor-default"
+            {activeFeatEntries.map(({ def, name, idx }) => {
+              const choice = (localData.featChoices as Record<string, any> || {})[String(idx)];
+              return (
+                <div key={idx} className="border border-border p-4 bg-card group relative">
+                  <button
+                    onClick={() => removeFeatByIdx(idx)}
+                    className="absolute top-3 right-3 text-muted-foreground/40 hover:text-destructive text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    × Remove
+                  </button>
+                  {def ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className="font-[family-name:'Cinzel',serif] text-foreground">{def.name}</span>
+                        <span className={cn("text-[10px] font-mono px-1.5 py-0.5",
+                          def.category === "combat" ? "bg-destructive/20 text-destructive" :
+                          def.category === "defense" ? "bg-chart-2/20 text-chart-2" :
+                          def.category === "magic" ? "bg-primary/20 text-primary" :
+                          "bg-muted text-muted-foreground"
+                        )}>{def.category}</span>
+                        {def.usesPerRest && (
+                          <button
+                            className={cn("text-[10px] font-mono px-2 py-0.5 border transition-colors",
+                              isFeatAvailable(def.name)
+                                ? "border-primary/50 text-primary hover:bg-primary/10"
+                                : "border-border/30 text-muted-foreground/40 cursor-default"
+                            )}
+                            onClick={() => isFeatAvailable(def.name) && useFeat(def.name)}
+                          >
+                            {isFeatAvailable(def.name) ? "✓ " : "× "}
+                            {def.restType === "mend" ? "1/MEND" : def.restType === "long" ? "1/LONG REST" : "1/COMBAT"}
+                          </button>
+                        )}
+                        {def.passiveBonus && (
+                          <span className="text-[10px] font-mono text-chart-2/80 px-1.5 py-0.5 border border-chart-2/30 bg-chart-2/5">
+                            PASSIVE: {[
+                              def.passiveBonus.vpMax      ? `+${def.passiveBonus.vpMax} VP Max`       : null,
+                              def.passiveBonus.wardRating ? `+${def.passiveBonus.wardRating} Ward`     : null,
+                              def.passiveBonus.threadPool ? `+${def.passiveBonus.threadPool} TP Max`   : null,
+                              def.passiveBonus.safeLimit  ? `+${def.passiveBonus.safeLimit} Safe Lmt`  : null,
+                              def.passiveBonus.guardRating? `+${def.passiveBonus.guardRating} Guard`   : null,
+                            ].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-mono text-muted-foreground leading-relaxed mb-2">{def.desc}</p>
+                      <p className="text-xs font-mono text-primary/70 bg-primary/5 border border-primary/10 px-2 py-1">{def.mechanical}</p>
+
+                      {/* ASI inline choice */}
+                      {def.name === "Attribute Score Improvement" && (
+                        <div className="mt-3 p-3 border border-primary/20 bg-primary/5 space-y-2">
+                          <p className="text-[10px] font-mono text-primary uppercase tracking-wider">Assign Improvement</p>
+                          <div className="flex gap-2">
+                            {(["one","two"] as const).map(m => (
+                              <button
+                                key={m}
+                                className={cn("px-3 py-1 border text-xs font-mono transition-colors",
+                                  (choice?.mode || "one") === m
+                                    ? "border-primary bg-primary/20 text-primary"
+                                    : "border-border text-muted-foreground hover:border-primary/40"
+                                )}
+                                onClick={() => saveFeatChoice(idx, { mode: m, attrs: [] })}
+                              >
+                                {m === "one" ? "+2 to ONE attr" : "+1 to TWO attrs"}
+                              </button>
+                            ))}
+                          </div>
+                          {(choice?.mode || "one") === "one" ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono text-muted-foreground">+2 to:</span>
+                              <select
+                                className="bg-background border border-border text-xs font-mono px-2 py-1 focus:outline-none focus:border-primary"
+                                value={choice?.attrs?.[0] || ""}
+                                onChange={e => saveFeatChoice(idx, { mode: "one", attrs: [e.target.value] })}
+                              >
+                                <option value="">— choose —</option>
+                                {ATTRIBUTE_DEFS.map(a => <option key={a.key} value={a.key}>{a.abbr} — {a.label}</option>)}
+                              </select>
+                              {choice?.attrs?.[0] && (
+                                <span className="text-xs font-mono text-chart-2">
+                                  {ATTRIBUTE_DEFS.find(a => a.key === choice.attrs[0])?.abbr}: {baseAttrs[choice.attrs[0]] || 10} → {(baseAttrs[choice.attrs[0]] || 10) + 2}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {[0, 1].map(slot => (
+                                <div key={slot} className="flex items-center gap-2">
+                                  <span className="text-xs font-mono text-muted-foreground w-10">+1 to:</span>
+                                  <select
+                                    className="bg-background border border-border text-xs font-mono px-2 py-1 focus:outline-none focus:border-primary"
+                                    value={choice?.attrs?.[slot] || ""}
+                                    onChange={e => {
+                                      const newAttrs = [...(choice?.attrs || ["", ""])];
+                                      newAttrs[slot] = e.target.value;
+                                      saveFeatChoice(idx, { mode: "two", attrs: newAttrs });
+                                    }}
+                                  >
+                                    <option value="">— choose —</option>
+                                    {ATTRIBUTE_DEFS
+                                      .filter(a => !choice?.attrs?.[(slot === 0 ? 1 : 0)] || a.key !== choice.attrs[slot === 0 ? 1 : 0])
+                                      .map(a => <option key={a.key} value={a.key}>{a.abbr} — {a.label}</option>)
+                                    }
+                                  </select>
+                                  {choice?.attrs?.[slot] && (
+                                    <span className="text-xs font-mono text-chart-2">
+                                      {ATTRIBUTE_DEFS.find(a => a.key === choice.attrs[slot])?.abbr}: {baseAttrs[choice.attrs[slot]] || 10} → {(baseAttrs[choice.attrs[slot]] || 10) + 1}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
-                      onClick={() => isFeatAvailable(feat.name) && useFeat(feat.name)}
-                    >
-                      {isFeatAvailable(feat.name) ? "✓ " : "× "}
-                      {feat.restType === "mend" ? "1/MEND" : feat.restType === "long" ? "1/LONG REST" : "1/COMBAT"}
-                    </button>
-                  )}
-                  {feat.passiveBonus && (
-                    <span className="text-[10px] font-mono text-chart-2/80 px-1.5 py-0.5 border border-chart-2/30 bg-chart-2/5">
-                      PASSIVE: {[
-                        feat.passiveBonus.vpMax      ? `+${feat.passiveBonus.vpMax} VP Max`       : null,
-                        feat.passiveBonus.wardRating ? `+${feat.passiveBonus.wardRating} Ward`     : null,
-                        feat.passiveBonus.threadPool ? `+${feat.passiveBonus.threadPool} TP Max`   : null,
-                        feat.passiveBonus.safeLimit  ? `+${feat.passiveBonus.safeLimit} Safe Lmt`  : null,
-                        feat.passiveBonus.guardRating? `+${feat.passiveBonus.guardRating} Guard`   : null,
-                      ].filter(Boolean).join(" · ")}
-                    </span>
+
+                      {/* Attunement (Skilled) inline choice */}
+                      {def.name === "Attunement (Skilled)" && (
+                        <div className="mt-3 p-3 border border-primary/20 bg-primary/5 space-y-2">
+                          <p className="text-[10px] font-mono text-primary uppercase tracking-wider">Choose Skill to Attune</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <select
+                              className="bg-background border border-border text-xs font-mono px-2 py-1 focus:outline-none focus:border-primary"
+                              value={choice?.skill || ""}
+                              onChange={e => saveFeatChoice(idx, { skill: e.target.value })}
+                            >
+                              <option value="">— choose a skill —</option>
+                              {ALL_SKILLS
+                                .filter(s => !attunedSkillsBase.includes(s.name) || s.name === choice?.skill)
+                                .map(s => <option key={s.name} value={s.name}>{s.name} ({s.attr.toUpperCase()})</option>)
+                              }
+                            </select>
+                            {choice?.skill && (
+                              <span className="text-xs font-mono text-chart-2">Attuned: {choice.skill} (+{rb})</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expertise inline choice */}
+                      {def.name === "Expertise" && (
+                        <div className="mt-3 p-3 border border-primary/20 bg-primary/5 space-y-2">
+                          <p className="text-[10px] font-mono text-primary uppercase tracking-wider">Choose Skill for Expertise (×2 RB)</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <select
+                              className="bg-background border border-border text-xs font-mono px-2 py-1 focus:outline-none focus:border-primary"
+                              value={choice?.skill || ""}
+                              onChange={e => saveFeatChoice(idx, { skill: e.target.value })}
+                            >
+                              <option value="">— choose an attuned skill —</option>
+                              {attunedSkills.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            {choice?.skill && (
+                              <span className="text-xs font-mono text-chart-2">Expertise: {choice.skill} (RB = +{rb * 2})</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="font-[family-name:'Cinzel',serif] text-foreground">{name}</span>
                   )}
                 </div>
-                <p className="text-xs font-mono text-muted-foreground leading-relaxed mb-2">{feat.desc}</p>
-                <p className="text-xs font-mono text-primary/70 bg-primary/5 border border-primary/10 px-2 py-1">{feat.mechanical}</p>
-              </div>
-            ))}
-            {feats.filter(name => !activeFeatDefs.find(f => f.name === name)).map(name => (
-              <div key={name} className="border border-border p-4 bg-card group relative">
-                <button onClick={() => removeFeat(name)} className="absolute top-3 right-3 text-muted-foreground/40 hover:text-destructive text-xs opacity-0 group-hover:opacity-100 transition-opacity">× Remove</button>
-                <span className="font-[family-name:'Cinzel',serif] text-foreground">{name}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
 

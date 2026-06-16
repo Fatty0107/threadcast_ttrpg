@@ -96,13 +96,16 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const user = (req as any).user;
   const id = parseInt(req.params.id ?? "0");
+
+  const whereClause = isWeavekeeper(req)
+    ? eq(charactersTable.id, id)
+    : and(eq(charactersTable.id, id), eq(charactersTable.userId, (req as any).user.id));
 
   const [existing] = await db
     .select()
     .from(charactersTable)
-    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, user.id)))
+    .where(whereClause)
     .limit(1);
 
   if (!existing) {
