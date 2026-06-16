@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { WATER_STRINGS } from "@/lib/affinity-data";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, BookOpen, Zap, Shield, Star, Eye, Waves } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, Zap, Shield, Star, Eye } from "lucide-react";
 
 function Section({ id, title, icon, children }: { id: string; title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -140,8 +139,6 @@ const MODES = [
 ];
 
 export default function Compendium() {
-  const [activeWaterString, setActiveWaterString] = useState<string | null>(null);
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-5xl py-8 px-4 space-y-4">
@@ -320,56 +317,6 @@ export default function Compendium() {
           </div>
         </Section>
 
-        {/* Water Affinity */}
-        <Section id="water" title="Water Affinity — All 13 Strings" icon={<Waves className="w-4 h-4" />}>
-          <p className="text-xs font-mono text-muted-foreground mb-4">The full Water Affinity string catalog. Water weavers start with 2 strings and unlock more as they level. All 13 strings are available for selection.</p>
-          <div className="space-y-2">
-            {WATER_STRINGS.map(s => {
-              const isActive = activeWaterString === s.id;
-              const attrColor = s.checkAttr === "pot" ? "text-destructive/80 border-destructive/30" : s.checkAttr === "ctr" ? "text-chart-2 border-chart-2/30" : "text-chart-4 border-chart-4/30";
-              return (
-                <div key={s.id} className={cn("border transition-all", isActive ? "border-primary/40 bg-primary/3" : "border-border/50 hover:border-border")}>
-                  <button
-                    onClick={() => setActiveWaterString(isActive ? null : s.id)}
-                    className="w-full text-left p-3 flex items-center gap-3"
-                  >
-                    <span className={cn("font-mono text-[10px] border px-1.5 py-0.5 flex-shrink-0 uppercase", attrColor)}>{s.checkAttr}</span>
-                    <div className="flex-1">
-                      <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">{s.shortName}</span>
-                      <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">{s.flavor}</p>
-                    </div>
-                    {isActive ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />}
-                  </button>
-                  {isActive && (
-                    <div className="px-3 pb-3 border-t border-border/20 pt-3 space-y-3">
-                      <p className="text-xs font-[family-name:'IM_Fell_English',serif] italic text-primary/70">{s.quote}</p>
-                      <p className="text-xs font-mono text-muted-foreground">{s.flavor}</p>
-                      <div className="space-y-1">
-                        {s.levels.map(l => (
-                          <div key={l.pl} className="flex gap-2 text-xs font-mono text-muted-foreground/80">
-                            <span className="text-primary/60 flex-shrink-0">PL{l.pl}</span>
-                            <span className="text-muted-foreground/40 flex-shrink-0">{l.cost}tp | DC {l.dc}</span>
-                            <span>{l.effect}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono border-t border-border/20 pt-2">
-                        <div>
-                          <span className="text-yellow-600/60">MISHAP: </span>
-                          <span className="text-muted-foreground/70">{s.mishap}</span>
-                        </div>
-                        <div>
-                          <span className="text-destructive/60">SNAPBACK: </span>
-                          <span className="text-muted-foreground/70">{s.snapback}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Section>
       </div>
     </div>
   );

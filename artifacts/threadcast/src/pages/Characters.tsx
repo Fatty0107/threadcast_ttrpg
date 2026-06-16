@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListCharacters, useDeleteCharacter,
-  getListCharactersQueryKey,
+  getListCharactersQueryKey, type Character,
 } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { calcMod, calcVPMax, ATTRIBUTE_DEFS } from "@/lib/ttrpg-data";
@@ -25,7 +25,10 @@ export default function Characters() {
       setDeletingId(charId);
       deleteMutation.mutate({ id: charId }, {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListCharactersQueryKey() });
+          queryClient.setQueryData(
+            getListCharactersQueryKey(),
+            (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? [],
+          );
         },
         onSettled: () => setDeletingId(null),
       });

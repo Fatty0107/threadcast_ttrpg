@@ -169,6 +169,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const [build, setBuild] = useState<BuildState>(DEFAULT_BUILD);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [populated, setPopulated] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!existingChar || populated) return;
@@ -296,12 +297,23 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       recoveryDiceCurrent: Math.max(0, calcMod(total.res) + 2),
     };
 
+    setSubmitError(null);
     if (charId) {
-      updateMutation.mutate({ id: parseInt(charId), data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, data } },
-        { onSuccess: () => setLocation(`/characters/${charId}`) });
+      updateMutation.mutate(
+        { id: parseInt(charId), data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, data } },
+        {
+          onSuccess: () => setLocation(`/characters/${charId}`),
+          onError: (err: any) => setSubmitError(err?.message ?? "Failed to save. Please try again."),
+        },
+      );
     } else {
-      createMutation.mutate({ data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, isDraft: false, data } },
-        { onSuccess: (char) => setLocation(`/characters/${char.id}`) });
+      createMutation.mutate(
+        { data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, isDraft: false, data } },
+        {
+          onSuccess: (char) => setLocation(`/characters/${char.id}`),
+          onError: (err: any) => setSubmitError(err?.message ?? "Failed to create character. Please try again."),
+        },
+      );
     }
   }
 
@@ -1011,22 +1023,29 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between pt-2">
-            <button type="button" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}
-              className="px-4 py-2 font-mono text-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors">
-              ← BACK
-            </button>
-            {step < STEPS.length - 1 ? (
-              <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canAdvance()}
-                className="px-6 py-2 font-mono text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-all hover:shadow-[0_0_15px_rgba(180,120,60,0.3)]">
-                CONTINUE →
-              </button>
-            ) : (
-              <button type="button" onClick={handleFinish} disabled={isPending}
-                className="px-6 py-2 font-mono text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all hover:shadow-[0_0_15px_rgba(180,120,60,0.3)]">
-                {isPending ? "WEAVING..." : charId ? "SAVE CHANGES" : "ENTER THE WEAVE →"}
-              </button>
+          <div className="space-y-2 pt-2">
+            {submitError && (
+              <div className="w-full px-3 py-2 bg-destructive/10 border border-destructive/40 font-mono text-xs text-destructive">
+                ⚠ {submitError}
+              </div>
             )}
+            <div className="flex justify-between">
+              <button type="button" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}
+                className="px-4 py-2 font-mono text-sm border border-border text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors">
+                ← BACK
+              </button>
+              {step < STEPS.length - 1 ? (
+                <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canAdvance()}
+                  className="px-6 py-2 font-mono text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 transition-all hover:shadow-[0_0_15px_rgba(180,120,60,0.3)]">
+                  CONTINUE →
+                </button>
+              ) : (
+                <button type="button" onClick={handleFinish} disabled={isPending}
+                  className="px-6 py-2 font-mono text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all hover:shadow-[0_0_15px_rgba(180,120,60,0.3)]">
+                  {isPending ? "WEAVING..." : charId ? "SAVE CHANGES" : "ENTER THE WEAVE →"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

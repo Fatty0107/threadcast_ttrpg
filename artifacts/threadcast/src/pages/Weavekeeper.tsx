@@ -513,7 +513,7 @@ function ItemWizard({ onClose, onSave }: { onClose: () => void; onSave: () => vo
                 {draft.statBonuses.map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <select className="input-field text-xs flex-1" value={b.attr} onChange={e => updateBonus(i, {attr: e.target.value})}>
-                      {ATTRIBUTE_DEFS.map(a => <option key={a.key} value={a.key}>{a.abbr} — {a.name}</option>)}
+                      {ATTRIBUTE_DEFS.map(a => <option key={a.key} value={a.key}>{a.abbr} — {a.label}</option>)}
                     </select>
                     <div className="flex items-center gap-1">
                       <button type="button" onClick={() => updateBonus(i, {bonus: Math.max(-5, b.bonus - 1)})} className="w-6 h-6 flex items-center justify-center border border-border text-muted-foreground hover:bg-muted text-xs">−</button>
@@ -720,7 +720,7 @@ function BackgroundWizard({ onClose, onSave }: { onClose: () => void; onSave: ()
                     className={cn("p-3 border text-center font-mono text-xs transition-colors", current ? "border-chart-2 bg-chart-2/10 text-chart-2" : "border-border text-muted-foreground hover:border-primary/40")}>
                     <div className="text-base font-bold mb-0.5">{current ? "+1" : "—"}</div>
                     <div className="text-[10px] opacity-70">{attr.abbr}</div>
-                    <div className="text-[9px] opacity-50 truncate">{attr.name}</div>
+                    <div className="text-[9px] opacity-50 truncate">{attr.label}</div>
                   </button>
                 );
               })}
