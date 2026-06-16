@@ -20,18 +20,23 @@ export default function Characters() {
     setLocation("/build");
   }
 
-  function handleDelete(charId: number, charName: string) {
+  async function handleDelete(charId: number, charName: string) {
     if (confirm(`Burn ${charName}'s thread permanently? This cannot be undone.`)) {
       setDeletingId(charId);
+      await queryClient.cancelQueries({ queryKey: getListCharactersQueryKey() });
+      const snapshot = queryClient.getQueryData<Character[]>(getListCharactersQueryKey());
       queryClient.setQueryData(
         getListCharactersQueryKey(),
         (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? [],
       );
       deleteMutation.mutate({ id: charId }, {
         onError: () => {
+          queryClient.setQueryData(getListCharactersQueryKey(), snapshot);
+        },
+        onSettled: () => {
+          setDeletingId(null);
           queryClient.invalidateQueries({ queryKey: getListCharactersQueryKey() });
         },
-        onSettled: () => setDeletingId(null),
       });
     }
   }
