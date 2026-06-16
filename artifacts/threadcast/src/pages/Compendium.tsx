@@ -167,7 +167,7 @@ export default function Compendium() {
               <div className="space-y-1 text-xs font-mono text-muted-foreground">
                 <div>Level 1: <span className="text-foreground">Primary Mode</span> (Harmony on all Thread Checks)</div>
                 <div>Level 4: <span className="text-foreground">2 Secondary Modes</span> (Normal roll)</div>
-                <div>Level 7: <span className="text-foreground">2 Tertiary Modes</span> (Discord roll)</div>
+                <div>Level 7: <span className="text-foreground">2 Tertiary Modes</span> (Normal roll)</div>
               </div>
             </div>
             <div className="p-3 border border-chart-2/20 bg-chart-2/5">

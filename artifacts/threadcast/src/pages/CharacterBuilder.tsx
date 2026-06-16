@@ -155,6 +155,17 @@ function BonusBadge({ attrKey, value }: { attrKey: string; value: number }) {
   );
 }
 
+// ---- Dice rolling helpers ----
+function roll4d6DropLowest(): number {
+  const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+  const sorted = [...dice].sort((a, b) => a - b);
+  return sorted[1] + sorted[2] + sorted[3];
+}
+
+function rollStatGroup(): number[] {
+  return Array.from({ length: 6 }, roll4d6DropLowest);
+}
+
 // ---- Main Component ----
 export default function CharacterBuilder({ charId }: { charId?: string }) {
   const [, setLocation] = useLocation();
@@ -170,6 +181,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [populated, setPopulated] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [attrMethod, setAttrMethod] = useState<"point-buy" | "rolled">("point-buy");
+  const [rolledGroups, setRolledGroups] = useState<number[][]>([]);
 
   useEffect(() => {
     if (!existingChar || populated) return;
@@ -219,9 +232,35 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   }
 
   function setAttr(key: AttrKey, value: number) {
-    if (value < ATTR_MIN) return;
-    const next = { ...build.baseAttrs, [key]: value };
-    if ((Object.values(next) as number[]).reduce((a, b) => a + b, 0) > POINT_BUY_TOTAL) return;
+    if (attrMethod === "rolled") {
+      if (value < 3 || value > 18) return;
+      updateBuild({ baseAttrs: { ...build.baseAttrs, [key]: value } });
+    } else {
+      if (value < ATTR_MIN) return;
+      const next = { ...build.baseAttrs, [key]: value };
+      if ((Object.values(next) as number[]).reduce((a, b) => a + b, 0) > POINT_BUY_TOTAL) return;
+      updateBuild({ baseAttrs: next });
+    }
+  }
+
+  function switchAttrMethod(method: "point-buy" | "rolled") {
+    setAttrMethod(method);
+    updateBuild({ baseAttrs: DEFAULT_BASE });
+    if (method === "point-buy") setRolledGroups([]);
+  }
+
+  function addRolledGroup() {
+    setRolledGroups(prev => [...prev, rollStatGroup()]);
+  }
+
+  function rerollGroup(idx: number) {
+    setRolledGroups(prev => prev.map((g, i) => i === idx ? rollStatGroup() : g));
+  }
+
+  function applyGroup(group: number[]) {
+    const keys: AttrKey[] = ["pot", "ctr", "res", "acu", "pre", "ths"];
+    const next = {} as Attributes;
+    keys.forEach((k, i) => { next[k] = group[i]; });
     updateBuild({ baseAttrs: next });
   }
 
@@ -242,7 +281,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       return true;
     }
     if (step === 1) return build.background !== "" && (!bg?.flexBonus || build.flexAttrBonus !== "");
-    if (step === 2) return pointsLeft >= 0;
+    if (step === 2) {
+      if (attrMethod === "rolled") return Object.values(build.baseAttrs).every(v => v >= 3 && v <= 18);
+      return pointsLeft >= 0;
+    }
     if (step === 3) {
       if (!build.primaryMode) return false;
       if (level >= 4 && (!build.secondaryModes[0] || !build.secondaryModes[1])) return false;
@@ -556,15 +598,81 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
           {/* STEP 2: ATTRIBUTES */}
           {step === 2 && (
-            <Section title="Attributes" subtitle={`Distribute ${POINT_BUY_TOTAL} points across 6 attributes. Min: 8, Max: ${ATTR_MAX} before background & guild bonuses.`}>
-              <div className={cn(
-                "inline-block px-3 py-1 font-mono text-sm mb-4 border transition-colors",
-                pointsLeft < 0 ? "border-destructive text-destructive bg-destructive/10" :
-                pointsLeft === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" :
-                "border-border text-muted-foreground"
-              )}>
-                {pointsLeft} points remaining
+            <Section
+              title="Attributes"
+              subtitle={attrMethod === "point-buy"
+                ? `Distribute ${POINT_BUY_TOTAL} points across 6 attributes. Min: 8, Max: ${ATTR_MAX} before background & guild bonuses.`
+                : "Roll 4d6 drop lowest for each stat (range 3–18). Generate sets below and apply one, then adjust freely."}
+            >
+              {/* Method selector */}
+              <div className="flex gap-2 mb-4">
+                {(["point-buy", "rolled"] as const).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => switchAttrMethod(m)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-mono border transition-colors",
+                      attrMethod === m
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    {m === "point-buy" ? "POINT-BUY" : "MANUAL / ROLLED"}
+                  </button>
+                ))}
               </div>
+
+              {/* Point-buy budget indicator */}
+              {attrMethod === "point-buy" && (
+                <div className={cn(
+                  "inline-block px-3 py-1 font-mono text-sm mb-4 border transition-colors",
+                  pointsLeft < 0 ? "border-destructive text-destructive bg-destructive/10" :
+                  pointsLeft === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" :
+                  "border-border text-muted-foreground"
+                )}>
+                  {pointsLeft} points remaining
+                </div>
+              )}
+
+              {/* Rolled groups panel */}
+              {attrMethod === "rolled" && (
+                <div className="mb-5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={addRolledGroup}
+                      className="px-3 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      + ROLL NEW SET
+                    </button>
+                    <span className="text-[10px] font-mono text-muted-foreground/60">Each set = 6 rolls of 4d6 drop lowest</span>
+                  </div>
+                  {rolledGroups.length > 0 && (
+                    <div className="space-y-2">
+                      {rolledGroups.map((group, gi) => (
+                        <div key={gi} className="p-3 border border-border/60 bg-card/40">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Set {gi + 1} — Total: {group.reduce((a, b) => a + b, 0)}</span>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => rerollGroup(gi)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/60 px-2 py-0.5 transition-colors">REROLL</button>
+                              <button type="button" onClick={() => applyGroup(group)} className="text-[10px] font-mono text-primary border border-primary/40 bg-primary/5 hover:bg-primary/15 px-2 py-0.5 transition-colors">USE SET</button>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            {group.map((v, vi) => (
+                              <div key={vi} className="text-center">
+                                <div className="text-[10px] font-mono text-muted-foreground/50">{ATTRIBUTE_DEFS[vi]?.abbr ?? vi}</div>
+                                <div className="w-8 h-8 flex items-center justify-center border border-border font-mono text-sm text-foreground">{v}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 {ATTRIBUTE_DEFS.map(attr => {
@@ -575,6 +683,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                   const total = base + bgBonus + flexBonus + rankBonus;
                   const mod = calcMod(total);
                   const totalBonus = bgBonus + flexBonus + rankBonus;
+                  const atMin = attrMethod === "rolled" ? base <= 3 : base <= ATTR_MIN;
+                  const atMax = attrMethod === "rolled" ? base >= 18 : base >= ATTR_MAX || pointsLeft <= 0;
                   return (
                     <div key={attr.key} className="flex items-center gap-4 p-3 border border-border/60 hover:border-border bg-card/40 transition-colors">
                       <div className="w-32">
@@ -585,9 +695,9 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                         <div className="text-[10px] text-muted-foreground/60">{attr.label}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base - 1)} disabled={base <= ATTR_MIN} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
+                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base - 1)} disabled={atMin} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
                         <span className="w-8 text-center font-mono text-lg">{base}</span>
-                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base + 1)} disabled={base >= ATTR_MAX || pointsLeft <= 0} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
+                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base + 1)} disabled={atMax} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
                       </div>
                       {totalBonus > 0 && (
                         <div className="flex gap-1">
@@ -687,7 +797,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
               )}
 
               {level >= 7 && (
-                <Section title="Tertiary Modes (Level 7+)" subtitle="Choose 2 tertiary modes. Roll Discord (2d20 keep lowest) when casting.">
+                <Section title="Tertiary Modes (Level 7+)" subtitle="Choose 2 tertiary modes. Roll Normal (1d20) when casting.">
                   {([0, 1] as const).map(idx => (
                     <div key={idx} className="mb-4">
                       <p className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-widest">
@@ -964,7 +1074,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                   <ReviewRow label="Secondary Modes" value={build.secondaryModes.filter(m => m).join(", ") + " (Normal)"} />
                 )}
                 {level >= 7 && build.tertiaryModes.some(m => m) && (
-                  <ReviewRow label="Tertiary Modes" value={build.tertiaryModes.filter(m => m).join(", ") + " (Discord)"} />
+                  <ReviewRow label="Tertiary Modes" value={build.tertiaryModes.filter(m => m).join(", ") + " (Normal)"} />
                 )}
                 <ReviewRow label="Strings" value={build.selectedStrings.filter(s => s.trim()).join(", ") || "None"} />
                 {build.selectedFeats.length > 0 && (

@@ -1302,11 +1302,11 @@ ${([
                 <input className="w-full bg-background border border-border px-2 py-1 focus:outline-none focus:border-primary" value={localData.secondaryMode2 || ""} onChange={e => patch({ secondaryMode2: e.target.value })} placeholder="Unlocked at Level 4..." disabled={level < 4} />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground uppercase tracking-widest mb-1">Tertiary Mode 1 <span className="text-destructive/40 ml-1">Discord · Level 7+</span></label>
+                <label className="block text-xs text-muted-foreground uppercase tracking-widest mb-1">Tertiary Mode 1 <span className="text-muted-foreground/40 ml-1">Normal · Level 7+</span></label>
                 <input className="w-full bg-background border border-border px-2 py-1 focus:outline-none focus:border-primary" value={localData.tertiaryMode || ""} onChange={e => patch({ tertiaryMode: e.target.value })} placeholder="Unlocked at Level 7..." disabled={level < 7} />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground uppercase tracking-widest mb-1">Tertiary Mode 2 <span className="text-destructive/40 ml-1">Discord · Level 7+</span></label>
+                <label className="block text-xs text-muted-foreground uppercase tracking-widest mb-1">Tertiary Mode 2 <span className="text-muted-foreground/40 ml-1">Normal · Level 7+</span></label>
                 <input className="w-full bg-background border border-border px-2 py-1 focus:outline-none focus:border-primary" value={localData.tertiaryMode2 || ""} onChange={e => patch({ tertiaryMode2: e.target.value })} placeholder="Unlocked at Level 7..." disabled={level < 7} />
               </div>
             </div>
