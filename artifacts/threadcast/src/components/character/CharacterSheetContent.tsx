@@ -6,7 +6,7 @@ import {
   type ItemRarity,
   calcMod, fmtMod, getRefinementBonus,
   calcVPMax, calcThreadPool, calcSafeLimit, calcGuardRating, calcWardRating,
-  calcRecoveryDice,
+  calcRecoveryDice, getGuildRankData, GUILDS,
 } from "@/lib/ttrpg-data";
 import { findString } from "@/lib/affinity-data";
 import { TensionGauge } from "@/components/shared/TensionGauge";
@@ -87,6 +87,7 @@ interface SheetData {
   recoveryDiceCurrent?: number;
   featCharges?: Record<string, number>;
   featChoices?: Record<string, any>;
+  guildFeatChoice?: string;
   weavings?: WeavingEntry[];
 }
 
@@ -145,13 +146,18 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
       }
     }
   });
+  const guildRankData = localData.guild && localData.guildRank
+    ? getGuildRankData(localData.guild, localData.guildRank)
+    : undefined;
+  const guildStatBonuses = guildRankData?.statBonuses ?? {};
+
   const attrs: Record<string, number> = {
-    pot: (baseAttrs.pot || 10) + (asiAttrBonuses.pot || 0),
-    ctr: (baseAttrs.ctr || 10) + (asiAttrBonuses.ctr || 0),
-    res: (baseAttrs.res || 10) + (asiAttrBonuses.res || 0),
-    acu: (baseAttrs.acu || 10) + (asiAttrBonuses.acu || 0),
-    pre: (baseAttrs.pre || 10) + (asiAttrBonuses.pre || 0),
-    ths: (baseAttrs.ths || 10) + (asiAttrBonuses.ths || 0),
+    pot: (baseAttrs.pot || 10) + (asiAttrBonuses.pot || 0) + (guildStatBonuses.pot || 0),
+    ctr: (baseAttrs.ctr || 10) + (asiAttrBonuses.ctr || 0) + (guildStatBonuses.ctr || 0),
+    res: (baseAttrs.res || 10) + (asiAttrBonuses.res || 0) + (guildStatBonuses.res || 0),
+    acu: (baseAttrs.acu || 10) + (asiAttrBonuses.acu || 0) + (guildStatBonuses.acu || 0),
+    pre: (baseAttrs.pre || 10) + (asiAttrBonuses.pre || 0) + (guildStatBonuses.pre || 0),
+    ths: (baseAttrs.ths || 10) + (asiAttrBonuses.ths || 0) + (guildStatBonuses.ths || 0),
   };
   const vp = localData.vitalityPoints || { current: 0, max: 0 };
   const tension = localData.tension || { current: 0, pool: 0, safeLimit: 0 };
@@ -168,16 +174,24 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const featPoolBonus  = feats.includes("Extended Thread Pool") ? 4 : 0;
   const featSLBonus    = feats.includes("Extended Thread Pool") ? 2 : 0;
 
+  // Guild feat choice passive bonuses
+  const guildFeatName = localData.guildFeatChoice;
+  const guildFeatDef = guildFeatName ? FEATS.find(f => f.name === guildFeatName) : undefined;
+  const guildFeatVpBonus   = guildFeatDef?.passiveBonus?.vpMax      ?? 0;
+  const guildFeatWardBonus = guildFeatDef?.passiveBonus?.wardRating  ?? 0;
+  const guildFeatPoolBonus = guildFeatDef?.passiveBonus?.threadPool  ?? 0;
+  const guildFeatSLBonus   = guildFeatDef?.passiveBonus?.safeLimit   ?? 0;
+
   // Equipped item bonuses
   const equippedItems = inventory.filter(i => i.equipped);
   const equippedGR = equippedItems.reduce((s, i) => s + (ITEM_BONUS[i.id]?.guardRating  || 0), 0);
   const equippedWR = equippedItems.reduce((s, i) => s + (ITEM_BONUS[i.id]?.wardRating   || 0), 0);
 
-  const maxVP          = calcVPMax(attrs.res || 10, level) + featVpBonus;
-  const maxPool        = calcThreadPool(level, attrs.ths || 10) + featPoolBonus;
-  const safeLimit      = calcSafeLimit(level, attrs.ctr || 10) + featSLBonus;
+  const maxVP          = calcVPMax(attrs.res || 10, level) + featVpBonus + guildFeatVpBonus;
+  const maxPool        = calcThreadPool(level, attrs.ths || 10) + featPoolBonus + guildFeatPoolBonus;
+  const safeLimit      = calcSafeLimit(level, attrs.ctr || 10) + featSLBonus + guildFeatSLBonus;
   const guardRating    = calcGuardRating(attrs.res || 10) + equippedGR;
-  const wardRating     = calcWardRating(attrs.ctr || 10) + featWardBonus + equippedWR;
+  const wardRating     = calcWardRating(attrs.ctr || 10) + featWardBonus + guildFeatWardBonus + equippedWR;
   const maxRecoveryDice = calcRecoveryDice(attrs.res || 10);
   const recoveryDiceCurrent = localData.recoveryDiceCurrent ?? maxRecoveryDice;
 
@@ -198,7 +212,10 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
       }
     }
   });
-  const attunedSkills = [...attunedSkillsBase, ...attunementFeatSkills];
+  const guildAttunements = (guildRankData?.attunements ?? []).filter(
+    s => !attunedSkillsBase.includes(s) && !attunementFeatSkills.includes(s)
+  );
+  const attunedSkills = [...attunedSkillsBase, ...attunementFeatSkills, ...guildAttunements];
   const expertiseSkills: string[] = [];
   feats.forEach((name, idx) => {
     if (name === "Expertise") {
@@ -1041,123 +1058,94 @@ ${([
             {(localData.weavings || []).length === 0 && (
               <p className="text-xs font-mono text-muted-foreground/50 text-center py-2">No weaving combinations saved. Add one above.</p>
             )}
-            {(localData.weavings || []).map((weave, wi) => {
-              const maxStrings = level >= 7 ? 4 : 3;
-              const checkType = weave.numStrings === 2 ? "Normal" : "Discord";
-              const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
-              const costMultiplier = weave.numStrings === 2 ? 1 : weave.numStrings === 3 ? 2 : 3;
-              const baseCost = (weave.strings || []).reduce((sum, sName, si) => {
-                const sData = findString(sName);
-                const pl = (weave.powerLevels || [])[si] || 1;
-                return sum + (sData?.levels?.[pl - 1]?.cost ?? pl);
-              }, 0);
-              const totalCost = baseCost * costMultiplier;
-              return (
-                <div key={weave.id} className="border border-border p-3 bg-card/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-semibold text-foreground">Weave {wi + 1}</span>
-                    <button
-                      onClick={() => patch({ weavings: (localData.weavings || []).filter((_, i) => i !== wi) })}
-                      className="text-[10px] font-mono text-muted-foreground/40 hover:text-destructive"
-                    >
-                      × Remove
-                    </button>
-                  </div>
-                  {/* String count selector */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground">Strings:</span>
-                    {[2, 3, 4].filter(n => n <= maxStrings).map(n => (
-                      <button
-                        key={n}
-                        className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors",
-                          weave.numStrings === n ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground hover:border-primary/40"
-                        )}
-                        onClick={() => {
-                          const next = [...(localData.weavings || [])];
-                          next[wi] = {
-                            ...weave,
-                            numStrings: n,
-                            strings: (weave.strings || []).slice(0, n),
-                            powerLevels: [...(weave.powerLevels || [1,1,1,1]).slice(0, n), ...(Array(Math.max(0, n - (weave.powerLevels||[]).length)).fill(1))],
-                            modes: (weave.modes || []).slice(0, n),
-                          };
-                          patch({ weavings: next });
-                        }}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    {level < 7 && <span className="text-[10px] font-mono text-muted-foreground/40">(4 requires Lv7)</span>}
-                  </div>
-                  {/* Per-string configuration */}
-                  {Array.from({ length: weave.numStrings }).map((_, si) => (
-                    <div key={si} className="grid grid-cols-3 gap-1.5">
-                      <select
-                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
-                        value={(weave.strings || [])[si] || ""}
-                        onChange={e => {
-                          const next = [...(localData.weavings || [])];
-                          const newStrings = [...(weave.strings || [])];
-                          newStrings[si] = e.target.value;
-                          next[wi] = { ...weave, strings: newStrings };
-                          patch({ weavings: next });
-                        }}
-                      >
-                        <option value="">String {si + 1}</option>
-                        {(localData.strings || []).map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                      <select
-                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
-                        value={(weave.powerLevels || [])[si] || 1}
-                        onChange={e => {
-                          const next = [...(localData.weavings || [])];
-                          const newPLs = [...(weave.powerLevels || [1,1,1,1])];
-                          newPLs[si] = parseInt(e.target.value);
-                          next[wi] = { ...weave, powerLevels: newPLs };
-                          patch({ weavings: next });
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5].map(pl => <option key={pl} value={pl}>PL {pl}</option>)}
-                      </select>
-                      <select
-                        className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
-                        value={(weave.modes || [])[si] || ""}
-                        onChange={e => {
-                          const next = [...(localData.weavings || [])];
-                          const newModes = [...(weave.modes || [])];
-                          newModes[si] = e.target.value;
-                          next[wi] = { ...weave, modes: newModes };
-                          patch({ weavings: next });
-                        }}
-                      >
-                        <option value="">Mode</option>
-                        <option value="Primary">Primary</option>
-                        <option value="Secondary">Secondary</option>
-                        <option value="Tertiary">Tertiary</option>
-                      </select>
-                    </div>
-                  ))}
-                  {/* Weave summary + cast button */}
-                  <div className="flex items-center justify-between bg-primary/5 border border-primary/10 px-2 py-1.5 font-mono text-[10px]">
-                    <span className="text-muted-foreground">
-                      <span className={cn(weave.numStrings === 2 ? "text-chart-2" : "text-destructive/80")}>{checkType}</span> Check · {effectType} Effect · <span className="text-primary font-semibold">{totalCost}T cost</span>
-                      {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
-                    </span>
-                    <button
-                      className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
-                      onClick={() => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + totalCost))}
-                    >
-                      CAST (+{totalCost}T)
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            {(localData.weavings || []).map((weave, wi) => (
+              <WeaveCastRow
+                key={weave.id}
+                weave={weave}
+                wi={wi}
+                maxStrings={level >= 7 ? 4 : 3}
+                localData={localData}
+                patch={patch}
+                primaryMode={primaryMode}
+                secondaryModes={secondaryModes}
+                tertiaryModes={tertiaryModes}
+                ctrScore={attrs.ctr || 10}
+                onCast={cost => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + cost))}
+              />
+            ))}
           </div>
         </TabsContent>
 
         {/* ===== FEATS ===== */}
         <TabsContent value="feats" className="p-4 m-0">
+          {/* Guild Rank Benefits */}
+          {guildRankData && (
+            <div className="mb-5 border border-chart-2/30 bg-chart-2/5 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <span className="font-[family-name:'Cinzel',serif] text-sm text-chart-2">{localData.guildRank}</span>
+                  <span className="text-muted-foreground/60 font-mono text-[10px] ml-2">— {localData.guild}</span>
+                </div>
+                <span className="text-[9px] font-mono uppercase tracking-widest text-chart-2/60 border border-chart-2/30 px-2 py-0.5">GUILD RANK</span>
+              </div>
+              {/* Stat bonuses */}
+              {Object.keys(guildStatBonuses).length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  <span className="text-[10px] font-mono text-muted-foreground mr-1">Stat bonuses:</span>
+                  {(Object.entries(guildStatBonuses) as [string, number][]).map(([k, v]) => (
+                    <span key={k} className="text-[10px] font-mono px-1.5 py-0.5 border border-chart-2/40 text-chart-2">+{v} {k.toUpperCase()}</span>
+                  ))}
+                </div>
+              )}
+              {/* Attunements */}
+              {guildRankData.attunements.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <span className="text-[10px] font-mono text-muted-foreground mr-1">Attunements:</span>
+                  {guildRankData.attunements.map(s => (
+                    <span key={s} className="text-[10px] font-mono px-1.5 py-0.5 border border-primary/40 text-primary">{s}</span>
+                  ))}
+                </div>
+              )}
+              {/* Feat choice */}
+              <div>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-2">Guild Rank Feat — choose one:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {guildRankData.featChoices.map(featName => {
+                    const def = FEATS.find(f => f.name === featName);
+                    const chosen = localData.guildFeatChoice === featName;
+                    return (
+                      <button
+                        key={featName}
+                        onClick={() => patch({ guildFeatChoice: featName })}
+                        className={cn("text-left p-3 border transition-colors",
+                          chosen ? "border-chart-2 bg-chart-2/10" : "border-border hover:border-chart-2/50 bg-background"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono text-xs font-semibold text-foreground">{featName}</span>
+                          {chosen && <span className="text-[9px] font-mono text-chart-2 border border-chart-2/50 px-1.5 py-0.5">CHOSEN</span>}
+                        </div>
+                        {def && <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">{def.mechanical}</p>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {localData.guildFeatChoice && guildFeatDef && (
+                  <div className="mt-2 p-2 border border-chart-2/20 bg-chart-2/5">
+                    <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">{guildFeatDef.desc}</p>
+                    {guildFeatDef.passiveBonus && (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {guildFeatDef.passiveBonus.vpMax      && <span className="text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">+{guildFeatDef.passiveBonus.vpMax} VP Max</span>}
+                        {guildFeatDef.passiveBonus.threadPool && <span className="text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">+{guildFeatDef.passiveBonus.threadPool} Thread Pool</span>}
+                        {guildFeatDef.passiveBonus.safeLimit  && <span className="text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">+{guildFeatDef.passiveBonus.safeLimit} Safe Limit</span>}
+                        {guildFeatDef.passiveBonus.wardRating && <span className="text-[10px] font-mono text-chart-2 border border-chart-2/30 px-1.5 py-0.5">+{guildFeatDef.passiveBonus.wardRating} Ward Rating</span>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-4">
             <div className="font-mono text-xs text-muted-foreground">
               <GameTerm term="refinement bonus">Refinement Bonus</GameTerm> +{rb} · Level {level} · Feat slots: {featSlots} · Used: {feats.length}
@@ -1759,6 +1747,206 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
       />
+    </div>
+  );
+}
+
+// ===== WEAVE CAST ROW =====
+function WeaveCastRow({
+  weave, wi, maxStrings, localData, patch,
+  primaryMode, secondaryModes, tertiaryModes, ctrScore, onCast,
+}: {
+  weave: WeavingEntry; wi: number; maxStrings: number;
+  localData: any; patch: (p: any) => void;
+  primaryMode: string; secondaryModes: string[]; tertiaryModes: string[];
+  ctrScore: number; onCast: (cost: number) => void;
+}) {
+  type WModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
+  const mod = calcMod(ctrScore);
+  const [castOpen, setCastOpen] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<WModeOption | null>(null);
+  const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
+  const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number } | null>(null);
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const checkType = weave.numStrings === 2 ? "Normal" : "Discord";
+  const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
+  const costMultiplier = weave.numStrings === 2 ? 1 : weave.numStrings === 3 ? 2 : 3;
+  const baseCost = (weave.strings || []).reduce((sum: number, sName: string, si: number) => {
+    const sData = findString(sName);
+    const pl = (weave.powerLevels || [])[si] || 1;
+    return sum + (sData?.levels?.[pl - 1]?.cost ?? pl);
+  }, 0);
+  const totalCost = baseCost * costMultiplier;
+  const weaveDC = (() => {
+    const dcs = (weave.strings || []).map((sName: string, si: number) => {
+      const sData = findString(sName);
+      const pl = (weave.powerLevels || [])[si] || 1;
+      return sData?.levels?.[pl - 1]?.dc ?? (10 + pl * 2);
+    }).filter(Boolean);
+    if (!dcs.length) return 14;
+    return Math.max(...dcs) + (weave.numStrings - 2) * 2;
+  })();
+
+  const normalSet = new Set([...secondaryModes, ...tertiaryModes]);
+  const availableModes: WModeOption[] = ALL_MODES.map(m => {
+    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: "HARMONY" as const, tier: "Primary" as const };
+    if (normalSet.has(m.name)) {
+      const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
+      return { name: m.name, rollType: "NORMAL" as const, tier };
+    }
+    return { name: m.name, rollType: "DISCORD" as const, tier: "Other" as const };
+  });
+
+  function openCast() { setCastOpen(true); setSelectedMode(null); setCastResult(null); if (animRef.current) { clearInterval(animRef.current); animRef.current = null; } setAnimDice(null); }
+  function closeCast() { setCastOpen(false); setSelectedMode(null); setCastResult(null); if (animRef.current) { clearInterval(animRef.current); animRef.current = null; } setAnimDice(null); }
+
+  function doRoll() {
+    if (!selectedMode) return;
+    const mode = selectedMode;
+    onCast(totalCost);
+    setSelectedMode(null);
+    const needs2 = mode.rollType !== "NORMAL";
+    setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
+    animRef.current = setInterval(() => {
+      setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
+    }, 60);
+    setTimeout(() => {
+      if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
+      const d1 = Math.floor(Math.random() * 20) + 1;
+      let d2: number | undefined;
+      let finalDie = d1;
+      if (mode.rollType === "HARMONY") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.max(d1, d2); }
+      if (mode.rollType === "DISCORD") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.min(d1, d2); }
+      const total = finalDie + mod;
+      setAnimDice(null);
+      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: weaveDC });
+    }, 1100);
+  }
+
+  const rtBadge = (rt: string) => ({ HARMONY: "text-chart-2 bg-chart-2/10 border-chart-2/40", NORMAL: "text-muted-foreground bg-muted/30 border-border", DISCORD: "text-destructive bg-destructive/10 border-destructive/30" }[rt] ?? "");
+  const diceCol = (rt: "HARMONY" | "NORMAL" | "DISCORD") => ({ HARMONY: "border-chart-2 text-chart-2", NORMAL: "border-border text-foreground", DISCORD: "border-destructive text-destructive" }[rt]);
+
+  return (
+    <div className="border border-border p-3 bg-card/50 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-xs font-semibold text-foreground">Weave {wi + 1}</span>
+        <button onClick={() => patch({ weavings: (localData.weavings || []).filter((_: any, i: number) => i !== wi) })} className="text-[10px] font-mono text-muted-foreground/40 hover:text-destructive">× Remove</button>
+      </div>
+      {/* String count */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-mono text-muted-foreground">Strings:</span>
+        {[2, 3, 4].filter(n => n <= maxStrings).map(n => (
+          <button key={n} className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors", weave.numStrings === n ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}
+            onClick={() => {
+              const next = [...(localData.weavings || [])];
+              next[wi] = { ...weave, numStrings: n, strings: (weave.strings || []).slice(0, n), powerLevels: [...(weave.powerLevels || [1,1,1,1]).slice(0, n), ...(Array(Math.max(0, n - (weave.powerLevels||[]).length)).fill(1))], modes: (weave.modes || []).slice(0, n) };
+              patch({ weavings: next });
+            }}>{n}</button>
+        ))}
+        {maxStrings < 4 && <span className="text-[10px] font-mono text-muted-foreground/40">(4 requires Lv7)</span>}
+      </div>
+      {/* Per-string config */}
+      {Array.from({ length: weave.numStrings }).map((_, si) => (
+        <div key={si} className="grid grid-cols-3 gap-1.5">
+          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+            value={(weave.strings || [])[si] || ""}
+            onChange={e => { const next = [...(localData.weavings||[])]; const ns = [...(weave.strings||[])]; ns[si] = e.target.value; next[wi] = { ...weave, strings: ns }; patch({ weavings: next }); }}>
+            <option value="">String {si + 1}</option>
+            {(localData.strings || []).map((s: string) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+            value={(weave.powerLevels || [])[si] || 1}
+            onChange={e => { const next = [...(localData.weavings||[])]; const np = [...(weave.powerLevels||[1,1,1,1])]; np[si] = parseInt(e.target.value); next[wi] = { ...weave, powerLevels: np }; patch({ weavings: next }); }}>
+            {[1,2,3,4,5].map(pl => <option key={pl} value={pl}>PL {pl}</option>)}
+          </select>
+          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+            value={(weave.modes || [])[si] || ""}
+            onChange={e => { const next = [...(localData.weavings||[])]; const nm = [...(weave.modes||[])]; nm[si] = e.target.value; next[wi] = { ...weave, modes: nm }; patch({ weavings: next }); }}>
+            <option value="">Mode</option>
+            {ALL_MODES.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+          </select>
+        </div>
+      ))}
+      {/* Cast area */}
+      {castOpen ? (
+        <div className="border border-primary/30 bg-primary/5 p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
+              Weave {wi + 1} · {weave.numStrings} strings · DC {weaveDC} · {totalCost}T
+              <span className="text-muted-foreground/60 ml-1">({checkType} · {effectType})</span>
+            </span>
+            <button onClick={closeCast} className="text-muted-foreground hover:text-foreground text-xs font-mono">CLOSE ✕</button>
+          </div>
+          {animDice ? (
+            <div className="py-3 text-center">
+              <div className="flex items-center justify-center gap-4 mb-3">
+                <div className={cn("w-16 h-16 border-2 flex items-center justify-center text-3xl font-mono font-bold select-none", diceCol(animDice.rollType))}>{animDice.d1}</div>
+                {animDice.d2 !== undefined && (<>
+                  <div className="flex flex-col items-center gap-1"><span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">{animDice.rollType === "HARMONY" ? "keep highest" : "keep lowest"}</span><span className="text-muted-foreground font-mono text-lg">⟷</span></div>
+                  <div className={cn("w-16 h-16 border-2 flex items-center justify-center text-3xl font-mono font-bold select-none", diceCol(animDice.rollType))}>{animDice.d2}</div>
+                </>)}
+              </div>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest animate-pulse">{animDice.rollType === "HARMONY" ? "weaving harmony…" : animDice.rollType === "DISCORD" ? "embracing discord…" : "threading the weave…"}</p>
+            </div>
+          ) : castResult ? (
+            <div>
+              <div className={cn("p-3 border mb-2", castResult.finalDie === 1 ? "border-destructive/50 bg-destructive/5" : castResult.finalDie === 20 ? "border-primary/50 bg-primary/5" : castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" : "border-border bg-muted/10")}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={cn("w-12 h-12 border-2 flex items-center justify-center text-2xl font-mono font-bold", castResult.finalDie === castResult.d1 && castResult.d1 !== castResult.d2 ? diceCol(castResult.rollType) : "border-border/40 text-muted-foreground")}>{castResult.d1}</div>
+                  {castResult.d2 !== undefined && (<>
+                    <span className="text-muted-foreground/50 font-mono text-[10px]">{castResult.rollType === "HARMONY" ? "▲HI" : "▼LO"}</span>
+                    <div className={cn("w-12 h-12 border-2 flex items-center justify-center text-2xl font-mono font-bold", castResult.finalDie === castResult.d2 && castResult.d1 !== castResult.d2 ? diceCol(castResult.rollType) : "border-border/40 text-muted-foreground")}>{castResult.d2}</div>
+                  </>)}
+                  <div className="ml-auto text-right">
+                    <div className="text-[10px] font-mono text-muted-foreground">{castResult.chosenMode} · {castResult.rollType} {fmtMod(mod)}</div>
+                    <div className={cn("text-3xl font-bold font-mono", castResult.finalDie === 1 ? "text-destructive" : castResult.finalDie === 20 ? "text-primary" : castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground")}>{castResult.total}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">vs DC {castResult.dc}</div>
+                  </div>
+                </div>
+                {castResult.finalDie === 20 && <div className="font-mono text-[10px] text-primary font-bold mb-1">✦ THREAD BREAK — Exceptional weave!</div>}
+                {castResult.finalDie === 1 ? <div className="font-mono text-[10px] text-destructive font-bold">✸ MISFIRE — Weave collapses. Snapback on primary string.</div>
+                  : castResult.total >= castResult.dc ? <div className="font-mono text-[10px] text-chart-2 font-bold">SUCCESS — {effectType} effect achieved.</div>
+                  : <div className="font-mono text-[10px] text-muted-foreground font-bold">MISHAP — Weave fails. Tension was still spent.</div>}
+              </div>
+              <button onClick={() => setCastResult(null)} className="px-3 py-1 text-[10px] font-mono border border-border/50 text-muted-foreground hover:text-foreground transition-colors">← SELECT MODE AGAIN</button>
+            </div>
+          ) : selectedMode ? (
+            <div>
+              <div className="flex items-center gap-3 mb-3 p-2 border border-border bg-background">
+                <div><div className="font-mono text-xs text-foreground">{selectedMode.name}</div>{selectedMode.tier !== "Other" && <div className="text-[10px] font-mono text-muted-foreground">{selectedMode.tier} Mode</div>}</div>
+                <span className={cn("text-[10px] font-mono px-2 py-0.5 border ml-auto", rtBadge(selectedMode.rollType))}>{selectedMode.rollType}</span>
+              </div>
+              <div className="text-[10px] font-mono text-muted-foreground mb-3">{selectedMode.rollType === "HARMONY" && "Rolling 2d20 — keep highest. "}{selectedMode.rollType === "NORMAL" && "Rolling 1d20. "}{selectedMode.rollType === "DISCORD" && "Rolling 2d20 — keep lowest. "}Thread Check: CTR {fmtMod(mod)}</div>
+              <div className="flex gap-2">
+                <button onClick={() => setSelectedMode(null)} className="px-3 py-2 text-xs font-mono border border-border text-muted-foreground hover:text-foreground transition-colors">← CHANGE</button>
+                <button onClick={doRoll} className={cn("flex-1 py-2.5 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors", selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" : selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" : "border-primary text-primary hover:bg-primary/10")}>⚄ ROLL THE WEAVE</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-2">Select casting mode:</p>
+              <div className="grid grid-cols-2 gap-1">
+                {availableModes.map(m => (
+                  <button key={m.name} onClick={() => setSelectedMode(m)} className="text-left p-2 border border-border hover:border-primary/50 bg-background transition-colors group">
+                    <div className="flex items-center justify-between mb-0.5"><span className="font-mono text-[10px] text-foreground group-hover:text-primary transition-colors">{m.name}</span><span className={cn("text-[9px] font-mono px-1.5 py-0.5 border", rtBadge(m.rollType))}>{m.rollType}</span></div>
+                    {m.tier !== "Other" && <span className="text-[9px] font-mono text-muted-foreground/60">{m.tier}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/10 px-2 py-1.5 font-mono text-[10px]">
+          <span className="text-muted-foreground">
+            <span className={cn(weave.numStrings === 2 ? "text-chart-2" : "text-destructive/80")}>{checkType}</span> Check · {effectType} · <span className="text-primary font-semibold">{totalCost}T</span>
+            {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
+            {weaveDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {weaveDC}</span>}
+          </span>
+          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors" onClick={openCast}>CAST (+{totalCost}T)</button>
+        </div>
+      )}
     </div>
   );
 }
