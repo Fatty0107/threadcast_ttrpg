@@ -23,12 +23,13 @@ export default function Characters() {
   function handleDelete(charId: number, charName: string) {
     if (confirm(`Burn ${charName}'s thread permanently? This cannot be undone.`)) {
       setDeletingId(charId);
+      queryClient.setQueryData(
+        getListCharactersQueryKey(),
+        (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? [],
+      );
       deleteMutation.mutate({ id: charId }, {
-        onSuccess: () => {
-          queryClient.setQueryData(
-            getListCharactersQueryKey(),
-            (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? [],
-          );
+        onError: () => {
+          queryClient.invalidateQueries({ queryKey: getListCharactersQueryKey() });
         },
         onSettled: () => setDeletingId(null),
       });

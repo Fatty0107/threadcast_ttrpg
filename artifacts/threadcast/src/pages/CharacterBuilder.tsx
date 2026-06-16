@@ -156,14 +156,20 @@ function BonusBadge({ attrKey, value }: { attrKey: string; value: number }) {
 }
 
 // ---- Dice rolling helpers ----
-function roll4d6DropLowest(): number {
-  const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
-  const sorted = [...dice].sort((a, b) => a - b);
-  return sorted[1] + sorted[2] + sorted[3];
+interface RolledSlot {
+  dice: number[];
+  value: number;
+  assignedTo: AttrKey | "";
 }
 
-function rollStatGroup(): number[] {
-  return Array.from({ length: 6 }, roll4d6DropLowest);
+function rollOneSlot(): RolledSlot {
+  const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+  const sorted = [...dice].sort((a, b) => a - b);
+  return { dice, value: sorted[1] + sorted[2] + sorted[3], assignedTo: "" };
+}
+
+function emptySlot(): RolledSlot {
+  return { dice: [], value: 0, assignedTo: "" };
 }
 
 // ---- Main Component ----
@@ -182,7 +188,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const [populated, setPopulated] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [attrMethod, setAttrMethod] = useState<"point-buy" | "rolled">("point-buy");
-  const [rolledGroups, setRolledGroups] = useState<number[][]>([]);
+  const [rolledGroups, setRolledGroups] = useState<{ slots: RolledSlot[] }[]>([]);
 
   useEffect(() => {
     if (!existingChar || populated) return;
@@ -250,17 +256,40 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   }
 
   function addRolledGroup() {
-    setRolledGroups(prev => [...prev, rollStatGroup()]);
+    setRolledGroups(prev => [...prev, { slots: Array.from({ length: 6 }, emptySlot) }]);
   }
 
-  function rerollGroup(idx: number) {
-    setRolledGroups(prev => prev.map((g, i) => i === idx ? rollStatGroup() : g));
+  function deleteGroup(gi: number) {
+    setRolledGroups(prev => prev.filter((_, i) => i !== gi));
   }
 
-  function applyGroup(group: number[]) {
-    const keys: AttrKey[] = ["pot", "ctr", "res", "acu", "pre", "ths"];
-    const next = {} as Attributes;
-    keys.forEach((k, i) => { next[k] = group[i]; });
+  function rollSlot(gi: number, si: number) {
+    setRolledGroups(prev => prev.map((g, i) => {
+      if (i !== gi) return g;
+      return { slots: g.slots.map((s, j) => j === si ? rollOneSlot() : s) };
+    }));
+  }
+
+  function resetGroup(gi: number) {
+    setRolledGroups(prev => prev.map((g, i) =>
+      i === gi ? { slots: Array.from({ length: 6 }, emptySlot) } : g
+    ));
+  }
+
+  function assignSlot(gi: number, si: number, key: AttrKey | "") {
+    setRolledGroups(prev => prev.map((g, i) => {
+      if (i !== gi) return g;
+      return { slots: g.slots.map((s, j) => j === si ? { ...s, assignedTo: key } : s) };
+    }));
+  }
+
+  function applyGroup(gi: number) {
+    const group = rolledGroups[gi];
+    if (!group) return;
+    const next = { ...build.baseAttrs };
+    group.slots.forEach(s => {
+      if (s.assignedTo && s.value > 0) next[s.assignedTo] = s.value;
+    });
     updateBuild({ baseAttrs: next });
   }
 
@@ -602,118 +631,185 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
               title="Attributes"
               subtitle={attrMethod === "point-buy"
                 ? `Distribute ${POINT_BUY_TOTAL} points across 6 attributes. Min: 8, Max: ${ATTR_MAX} before background & guild bonuses.`
-                : "Roll 4d6 drop lowest for each stat (range 3–18). Generate sets below and apply one, then adjust freely."}
+                : "Roll 4d6 drop lowest for each slot (range 3–18). Assign each result to an attribute, then hit Apply Scores."}
             >
               {/* Method selector */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-5">
                 {(["point-buy", "rolled"] as const).map(m => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => switchAttrMethod(m)}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-mono border transition-colors",
-                      attrMethod === m
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/40"
-                    )}
-                  >
+                  <button key={m} type="button" onClick={() => switchAttrMethod(m)}
+                    className={cn("px-3 py-1.5 text-xs font-mono border transition-colors",
+                      attrMethod === m ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"
+                    )}>
                     {m === "point-buy" ? "POINT-BUY" : "MANUAL / ROLLED"}
                   </button>
                 ))}
               </div>
 
-              {/* Point-buy budget indicator */}
-              {attrMethod === "point-buy" && (
-                <div className={cn(
-                  "inline-block px-3 py-1 font-mono text-sm mb-4 border transition-colors",
-                  pointsLeft < 0 ? "border-destructive text-destructive bg-destructive/10" :
-                  pointsLeft === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" :
-                  "border-border text-muted-foreground"
-                )}>
-                  {pointsLeft} points remaining
-                </div>
-              )}
-
-              {/* Rolled groups panel */}
-              {attrMethod === "rolled" && (
-                <div className="mb-5 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={addRolledGroup}
-                      className="px-3 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      + ROLL NEW SET
-                    </button>
-                    <span className="text-[10px] font-mono text-muted-foreground/60">Each set = 6 rolls of 4d6 drop lowest</span>
+              {attrMethod === "point-buy" ? (
+                <>
+                  <div className={cn("inline-block px-3 py-1 font-mono text-sm mb-4 border transition-colors",
+                    pointsLeft < 0 ? "border-destructive text-destructive bg-destructive/10" :
+                    pointsLeft === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" :
+                    "border-border text-muted-foreground"
+                  )}>
+                    {pointsLeft} points remaining
                   </div>
-                  {rolledGroups.length > 0 && (
-                    <div className="space-y-2">
-                      {rolledGroups.map((group, gi) => (
-                        <div key={gi} className="p-3 border border-border/60 bg-card/40">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Set {gi + 1} — Total: {group.reduce((a, b) => a + b, 0)}</span>
+                  <div className="space-y-2">
+                    {ATTRIBUTE_DEFS.map(attr => {
+                      const base = build.baseAttrs[attr.key as AttrKey];
+                      const bgBonus = bg?.attrBonuses[attr.key as AttrKey] ?? 0;
+                      const flexBonus = build.flexAttrBonus === attr.key ? 1 : 0;
+                      const rankBonus = guildRankData?.statBonuses[attr.key as AttrKey] ?? 0;
+                      const total = base + bgBonus + flexBonus + rankBonus;
+                      const mod = calcMod(total);
+                      const totalBonus = bgBonus + flexBonus + rankBonus;
+                      return (
+                        <div key={attr.key} className="flex items-center gap-4 p-3 border border-border/60 hover:border-border bg-card/40 transition-colors">
+                          <div className="w-32">
+                            <div className="flex items-center gap-1.5 font-mono text-sm text-foreground">
+                              <span className="text-primary/60">{ATTR_ICONS[attr.key as AttrKey]}</span>
+                              {attr.abbr}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground/60">{attr.label}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => setAttr(attr.key as AttrKey, base - 1)} disabled={base <= ATTR_MIN} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
+                            <span className="w-8 text-center font-mono text-lg">{base}</span>
+                            <button type="button" onClick={() => setAttr(attr.key as AttrKey, base + 1)} disabled={base >= ATTR_MAX || pointsLeft <= 0} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
+                          </div>
+                          {totalBonus > 0 && (
+                            <div className="flex gap-1">
+                              {bgBonus + flexBonus > 0 && <span className="text-[10px] font-mono text-chart-2">+{bgBonus + flexBonus} bg</span>}
+                              {rankBonus > 0 && <span className="text-[10px] font-mono text-primary">+{rankBonus} rank</span>}
+                            </div>
+                          )}
+                          <div className="ml-auto text-right font-mono">
+                            <span className="text-xl text-foreground">{total}</span>
+                            <span className="text-sm text-primary ml-2">({mod >= 0 ? "+" : ""}{mod})</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Rolled groups */}
+                  <div className="space-y-4">
+                    {rolledGroups.map((group, gi) => {
+                      const allRolled = group.slots.every(s => s.dice.length > 0);
+                      const allAssigned = allRolled && group.slots.every(s => s.assignedTo !== "");
+                      const groupTotal = group.slots.reduce((sum, s) => sum + s.value, 0);
+                      return (
+                        <div key={gi} className="border border-border/60 bg-card/30">
+                          <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-card/60">
+                            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                              Group {gi + 1}{allRolled ? ` — Total: ${groupTotal}` : ""}
+                            </span>
+                            <button type="button" onClick={() => deleteGroup(gi)}
+                              className="text-[10px] font-mono text-destructive/50 hover:text-destructive border border-destructive/20 hover:border-destructive/50 px-2 py-0.5 transition-colors">
+                              DELETE GROUP
+                            </button>
+                          </div>
+                          <div className="p-4">
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-4">
+                              {group.slots.map((slot, si) => {
+                                const isRolled = slot.dice.length > 0;
+                                const minDieIdx = isRolled
+                                  ? slot.dice.reduce((minI, v, i, arr) => v < arr[minI] ? i : minI, 0)
+                                  : -1;
+                                return (
+                                  <div key={si} className="flex flex-col items-center gap-1.5">
+                                    {/* Rolled value */}
+                                    <div className="w-14 h-14 flex items-center justify-center border border-border/60 bg-background font-mono text-2xl text-foreground">
+                                      {isRolled ? slot.value : <span className="text-muted-foreground/30 text-base">—</span>}
+                                    </div>
+                                    {/* Individual dice (or spacer) */}
+                                    <div className="flex gap-0.5 h-5 items-center">
+                                      {isRolled ? slot.dice.map((d, di) => (
+                                        <div key={di} className={cn(
+                                          "w-5 h-5 flex items-center justify-center text-[9px] font-mono border",
+                                          di === minDieIdx
+                                            ? "border-border/20 text-muted-foreground/25"
+                                            : "border-primary/30 text-foreground/70"
+                                        )}>{d}</div>
+                                      )) : <div className="h-5" />}
+                                    </div>
+                                    {/* Attribute dropdown */}
+                                    <select
+                                      value={slot.assignedTo}
+                                      onChange={e => assignSlot(gi, si, e.target.value as AttrKey | "")}
+                                      disabled={!isRolled}
+                                      className="w-full text-[10px] font-mono bg-background border border-border/60 px-1 py-0.5 disabled:opacity-30 focus:outline-none focus:border-primary"
+                                    >
+                                      <option value="">—</option>
+                                      {ATTRIBUTE_DEFS.map(a => (
+                                        <option key={a.key} value={a.key}
+                                          disabled={group.slots.some((s2, j) => j !== si && s2.assignedTo === a.key)}>
+                                          {a.abbr} — {a.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    {/* Roll button */}
+                                    <button type="button" onClick={() => rollSlot(gi, si)}
+                                      className="w-full text-[10px] font-mono border border-primary/40 text-primary hover:bg-primary/10 py-1 transition-colors">
+                                      ROLL
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
                             <div className="flex gap-2">
-                              <button type="button" onClick={() => rerollGroup(gi)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground border border-border/60 px-2 py-0.5 transition-colors">REROLL</button>
-                              <button type="button" onClick={() => applyGroup(group)} className="text-[10px] font-mono text-primary border border-primary/40 bg-primary/5 hover:bg-primary/15 px-2 py-0.5 transition-colors">USE SET</button>
+                              <button type="button" onClick={() => resetGroup(gi)}
+                                className="text-xs font-mono border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 px-3 py-1.5 transition-colors">
+                                RESET GROUP
+                              </button>
+                              <button type="button" onClick={() => applyGroup(gi)} disabled={!allAssigned}
+                                className="text-xs font-mono border border-primary/60 bg-primary/5 text-primary hover:bg-primary/15 disabled:opacity-30 px-3 py-1.5 transition-colors">
+                                APPLY SCORES
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-2 flex-wrap">
-                            {group.map((v, vi) => (
-                              <div key={vi} className="text-center">
-                                <div className="text-[10px] font-mono text-muted-foreground/50">{ATTRIBUTE_DEFS[vi]?.abbr ?? vi}</div>
-                                <div className="w-8 h-8 flex items-center justify-center border border-border font-mono text-sm text-foreground">{v}</div>
-                              </div>
-                            ))}
-                          </div>
                         </div>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  <button type="button" onClick={addRolledGroup}
+                    className="w-full mt-4 py-3 text-xs font-mono border border-dashed border-border/60 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors">
+                    + ADD GROUP — 6 rolls of 4d6 drop lowest
+                  </button>
+
+                  {/* Applied scores summary */}
+                  {Object.values(build.baseAttrs).some(v => v !== 10) && (
+                    <div className="mt-4 p-3 border border-primary/20 bg-primary/5">
+                      <p className="text-[10px] font-mono text-primary uppercase tracking-widest mb-3">Applied Scores</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                        {ATTRIBUTE_DEFS.map(attr => {
+                          const base = build.baseAttrs[attr.key as AttrKey];
+                          const bgBonus = bg?.attrBonuses[attr.key as AttrKey] ?? 0;
+                          const flexBonus = build.flexAttrBonus === attr.key ? 1 : 0;
+                          const rankBonus = guildRankData?.statBonuses[attr.key as AttrKey] ?? 0;
+                          const total = base + bgBonus + flexBonus + rankBonus;
+                          const mod = calcMod(total);
+                          return (
+                            <div key={attr.key}>
+                              <div className="text-[10px] font-mono text-muted-foreground/60 mb-0.5">{attr.abbr}</div>
+                              <div className="text-xl font-mono text-foreground">{total}</div>
+                              <div className="text-[10px] font-mono text-primary">({mod >= 0 ? "+" : ""}{mod})</div>
+                              {(bgBonus + flexBonus + rankBonus) > 0 && (
+                                <div className="text-[8px] font-mono text-chart-2">base {base}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
-                </div>
+                </>
               )}
 
-              <div className="space-y-2">
-                {ATTRIBUTE_DEFS.map(attr => {
-                  const base = build.baseAttrs[attr.key as AttrKey];
-                  const bgBonus = bg?.attrBonuses[attr.key as AttrKey] ?? 0;
-                  const flexBonus = build.flexAttrBonus === attr.key ? 1 : 0;
-                  const rankBonus = guildRankData?.statBonuses[attr.key as AttrKey] ?? 0;
-                  const total = base + bgBonus + flexBonus + rankBonus;
-                  const mod = calcMod(total);
-                  const totalBonus = bgBonus + flexBonus + rankBonus;
-                  const atMin = attrMethod === "rolled" ? base <= 3 : base <= ATTR_MIN;
-                  const atMax = attrMethod === "rolled" ? base >= 18 : base >= ATTR_MAX || pointsLeft <= 0;
-                  return (
-                    <div key={attr.key} className="flex items-center gap-4 p-3 border border-border/60 hover:border-border bg-card/40 transition-colors">
-                      <div className="w-32">
-                        <div className="flex items-center gap-1.5 font-mono text-sm text-foreground">
-                          <span className="text-primary/60">{ATTR_ICONS[attr.key as AttrKey]}</span>
-                          {attr.abbr}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground/60">{attr.label}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base - 1)} disabled={atMin} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
-                        <span className="w-8 text-center font-mono text-lg">{base}</span>
-                        <button type="button" onClick={() => setAttr(attr.key as AttrKey, base + 1)} disabled={atMax} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
-                      </div>
-                      {totalBonus > 0 && (
-                        <div className="flex gap-1">
-                          {bgBonus + flexBonus > 0 && <span className="text-[10px] font-mono text-chart-2">+{bgBonus + flexBonus} bg</span>}
-                          {rankBonus > 0 && <span className="text-[10px] font-mono text-primary">+{rankBonus} rank</span>}
-                        </div>
-                      )}
-                      <div className="ml-auto text-right font-mono">
-                        <span className="text-xl text-foreground">{total}</span>
-                        <span className="text-sm text-primary ml-2">({mod >= 0 ? "+" : ""}{mod})</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
+              {/* Derived stats — both modes */}
               {bg && (
                 <div className="mt-4 p-3 border border-border/50 bg-muted/20 grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs text-muted-foreground">
                   <StatPreview label="Max VP" value={calcVPMax(totalAttrs.res, level)} />
