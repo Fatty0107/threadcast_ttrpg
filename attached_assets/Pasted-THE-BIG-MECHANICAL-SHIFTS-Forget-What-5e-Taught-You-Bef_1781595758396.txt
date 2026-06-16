@@ -1,0 +1,478 @@
+THE BIG MECHANICAL SHIFTS (Forget What 5e Taught You!)
+Before we look at the character sheet, we need to talk about three massive ways THREADCAST completely flips 5e on its head:
+Magic is Split (The Engine vs. The Steering Wheel)
+
+
+In D&D, a single stat (like Charisma for a Sorcerer) does literally everything for your spells—your accuracy, your damage, and your defense. Not here.
+
+Potency (POT) is your engine. It determines your raw horsepower and how much damage you can do.
+Control (CTR) is your steering wheel. It is your magical accuracy and defense.
+The Lesson: If you build a character with massive Potency but terrible Control, you have essentially built a rocket booster strapped to a tricycle. You will wrap yourself around a tree (this is called a "Snapback," and it is very painful).
+
+Dexterity is No Longer the God Stat
+
+
+In 5e, Dexterity rules the world. It gives you AC, initiative, reflex saves, and probably washes your car. In THREADCAST, DEX has been stripped of its crown.
+
+Physical agility does not determine who goes first anymore.
+Acuity (ACU)—your mental sharpness—determines Initiative. Acting first isn't about twitch muscles; it's about tactical processing speed. Who can read the room, calculate the leylines, and react while everyone else is still registering the ambush?
+
+Armor Class is Dead (Guard vs. Ward)
+
+
+In 5e, you have one AC. Whether a goblin throws a rock or a wizard shoots a laser, they roll against the exact same number. In THREADCAST, you have two defenses:
+
+Guard Rating (GR): Your physical defense, calculated as 10 + RES modifier. This is how well you dodge or absorb physical weapons.
+Ward Rating (WR): Your magical defense, calculated as 10 + CTR modifier. This is your active, precise ability to deflect, twist, or ground incoming magical threads.
+THE SIX CORE ATTRIBUTES
+The math is exactly the same as 5e! Your modifier is calculated as:
+
+(Score - 10) / 2, rounded down.
+
+---
+
+POTENCY (POT)
+What it means: Raw, brute magical strength. Your ability to muscle a leyline into doing what you want.
+
+Real-Life Analogy: The draw weight of a massive warbow. Two archers can have the same bow, but the stronger one can pull it back further to unleash a devastating shot.
+
+In-Game Example: You roll Potency when you want to unleash a towering column of fire (Power Level 3+ Surge) or blast a heavy iron vault door off its hinges using kinetic force.
+
+---
+
+CONTROL (CTR)
+What it means: Magical precision, safety, and technique.
+
+Real-Life Analogy: Your archery form. A toddler with a bazooka (High POT, Low CTR) versus John Wick with a pencil (Low POT, High CTR).
+
+In-Game Example: You roll Control to see if your magical attack actually hits the enemy's Ward Rating, or to try and suppress your magical fingerprint so the local inquisitors don't know you cast a spell.
+
+---
+
+RESILIENCE (RES)
+What it means: Physical toughness, stamina, and your body's ability to act as a lightning rod for magical feedback.
+
+Real-Life Analogy: Surviving a falling refrigerator landing on you, or being the designated driver for raw electrical voltage.
+
+In-Game Example: You roll Resilience when making a Strain Check to keep your body from collapsing when your current Tension exceeds your Safe Limit. It also determines your maximum Vitality Points (VP).
+
+---
+
+ACUITY (ACU)
+What it means: Mental sharpness, perception, and tactical processing speed.
+
+Real-Life Analogy: Solving a Rubik's Cube while riding a roller coaster.
+
+In-Game Example: You roll Acuity at the start of combat for your Initiative check. You also roll it to diagnose a magical disease or calculate the structural weak points of a building.
+
+---
+
+PRESENCE (PRE)
+What it means: Force of will, leadership, and emotional armor.
+
+Real-Life Analogy: Gaslighting the universe into thinking you are exactly where you are supposed to be.
+
+In-Game Example: You roll Presence to command a retreating squad of guards to turn back and fight, or to keep your cool when a horrifying monster from the Hollowing is trying to shatter your mind.
+
+---
+
+THREAD SENSE (THS)
+What it means: Your sixth sense for the invisible, vibrating strings of the universe.
+
+Real-Life Analogy: A musician tuning a guitar purely by ear, or "feeling" when your mom is about to walk into your messy bedroom.
+
+In-Game Example: You roll Thread Sense to sniff out the lingering magical signature left behind by an assassin, or to "hear" the high-pitched hum of a corrupted leyline before you accidentally step on it.
+Weavesnatcher
+OP
+ — 14/06/2026, 04:57 pm
+SKILLS & THE REFINEMENT BONUS (RB)
+The skill system is very similar to 5e, but with cool new names.
+
+The Concept: In 5e, you are Proficient in a skill. In THREADCAST, you are Attuned to a skill.
+
+The Math: When rolling an Attuned skill, you add your Attribute modifier plus your Refinement Bonus (RB).
+
+The Scaling: Just like 5e's Proficiency Bonus, your Refinement Bonus scales as you level up, moving from +2 to +6.
+
+Here are the 18 skills in the game, their linked attribute, a real-life analogy, and when you will use them.
+
+---
+
+Thread Reach (THS)
+
+
+Analogy: Casting a fishing line across a massive lake to hit a tiny, specific ripple.
+
+In-Game Example: Roll this when you are trying to tap into a deeply buried leyline or grab a thread that is 100 feet away from you.
+
+---
+
+Surge (POT)
+
+
+Analogy: Slamming the "NOS" button in a street racer to push the engine past its redline.
+
+In-Game Example: Roll this when you are using the Striker mode to push a magical blast to its absolute maximum destructive potential.
+
+---
+
+Weave Reading (THS)
+
+
+Analogy: Walking into a kitchen and smelling exactly what kind of spices were used in a soup cooked yesterday.
+
+In-Game Example: Roll this to analyze a magical crime scene, identifying what elements were cast and how long ago.
+
+---
+
+Signature Suppression (CTR)
+
+
+Analogy: Sneaking a silent, deadly fart in a crowded elevator and keeping a perfect straight face.
+
+In-Game Example: Roll this to cast a spell in a crowded noble ballroom without your unique magical "flare" giving you away.
+
+---
+
+Strand Awareness (THS)
+
+
+Analogy: Recognizing your best friend's handwriting on a random scrap of paper.
+
+In-Game Example: Roll this to actively scan a room and instantly identify who cast a spell based on their unique magical fingerprint.
+
+---
+Ward Craft (CTR)
+
+
+Analogy: Deploying a high-tech energy shield right before a missile hits.
+
+In-Game Example: Roll this to construct a physical, protective barrier out of raw light or stone to intercept incoming physical and magical attacks.
+Inscription (ACU)
+
+
+Analogy: Writing a flawless line of software code that won't crash when you run it.
+
+In-Game Example: Roll this to write permanent runes onto a sword or craft a complex, delayed-trigger magical trap.
+
+
+
+Anatomy of Magic (ACU)
+
+
+Analogy: Playing the board game Operation, but the patient is made of highly volatile live wires.
+
+In-Game Example: Roll this to medically heal an ally's broken bones without accidentally warping their DNA or mutating their biological threads.
+
+
+
+Combat Forms (ACU)
+
+
+Analogy: Executing a flawlessly rehearsed martial arts kata under pressure.
+
+In-Game Example: Roll this when you swing a sword, fire a physical bow, or try to parry a physical melee attack.
+
+
+
+Swift Hands (CTR)
+
+
+Analogy: A magician stealing your watch right off your wrist while shaking your hand.
+
+In-Game Example: Roll this to pick a lock, pickpocket an inquisitor's key, or draw your weapon in the blink of an eye.
+
+
+
+Grit (RES)
+
+
+Analogy: Eating a raw ghost pepper without shedding a single tear or making a face.
+
+In-Game Example: Roll this to physically endure a grueling march, or to shrug off the agonizing physical strain of conducting raw magic directly through your flesh.
+
+
+
+Discernment (ACU)
+
+
+Analogy: Instantly knowing your dog is lying about whether they've been fed yet.
+
+In-Game Example: Roll this to read a suspect's micro-expressions, detect if a noble is lying, or assess someone's true intentions.
+Lore (ACU)
+
+
+Analogy: Having a Wikipedia tab open in your brain at all times.
+
+In-Game Example: Roll this to recall ancient history, identify a rare magical beast, or remember the laws of a foreign kingdom.
+
+
+
+Guild Protocol (PRE)
+
+
+Analogy: Knowing exactly how to talk to HR so you can get what you want without getting fired.
+
+In-Game Example: Roll this to navigate the stiff bureaucracy of the Thaumatarch or demand an audience with a high-ranking military commander.
+
+
+
+Street Sense (ACU)
+
+
+Analogy: Knowing exactly which alleyways in a sketchy neighborhood have the best black markets and which ones have the muggers.
+
+In-Game Example: Roll this to find a reliable information broker or navigate a chaotic, unfamiliar slum.
+
+
+
+Survival (RES)
+
+
+Analogy: Camping in the wilderness, except the trees are actively plotting your demise.
+
+In-Game Example: Roll this to find clean water, build a shelter in a freezing mountain pass, or track a target through a swamp.
+
+
+
+Presence (PRE)
+
+
+Analogy: Walking into a room and having the entire crowd naturally go quiet because you radiate authority.
+
+In-Game Example: Roll this when you want to terrify a captured spy into giving up a password, or inspire a crowd to start a riot.
+
+
+
+Trade Craft (ACU)
+
+
+Analogy: A master blacksmith forging a legendary blade that perfectly balances beauty and function.
+
+In-Game Example: Roll this to craft non-magical items, repair damaged gear, or apply your magic to everyday commercial trades (like glassblowing or metalworking).
+Weavesnatcher
+OP
+ — 14/06/2026, 06:05 pm
+HOW MAGIC ACTUALLY WORKS (Affinities, Strings, and Modes)
+In D&D 5e, casting a spell is like ordering from a drive-thru. You want fire? You point at the picture of Fireball, hand over a spell slot, and it does exactly what the book says. You don't have to think about the physics.
+
+In THREADCAST, magic is a wildly creative sandbox. There is no rigid, pre-printed spell list. Instead, your magic is a three-part package deal: your Affinity, your Strings, and your Mode.
+
+THE MUSICAL INSTRUMENT ANALOGY (Remember This!)
+If you remember nothing else from this guide, keep this analogy in mind:
+Your Affinity is the instrument you play (e.g., a guitar).
+Your Strings are the actual notes you know how to play on it (e.g., C-major, G-minor).
+Your Mode is how you physically play those notes (e.g., plucking gently, slapping the strings, or using a slide).
+YOUR AFFINITY (Your Element)
+In 5e, you choose a subclass like "Evocation Wizard" or "Draconic Sorcerer." In THREADCAST, you choose an Affinity. This is the specific type of reality-string your soul naturally resonates with. You are born with this connection, and you cannot swap it out.
+
+Affinities are divided into categories:
+Common Affinities: Fire, Water, Earth, Air, Metal, Wood, Plant. (These are your classic elements. Think of them as the reliable workhorses of the system).
+Uncommon & Rare Affinities: Ice, Lightning, Glass, Stone, Sound, Light, Heat, Pressure, Gravity, Dreams, Memory, Emotion, Silence, Time. (These require DM approval, but they allow for highly specialized, incredibly creative playstyles).
+YOUR STRINGS (Your Custom Spells)
+In D&D, a level 1 Fire Mage can cast any level 1 fire spell they find in the Player's Handbook. In THREADCAST, just because your Affinity is "Fire" doesn't mean you have absolute, spontaneous control over all combustion in the multiverse. You have to unlock access to specific channels within that family. These are called Strings.
+
+The Big Secret: You don't pick your Strings from a pre-made list! Instead, you and the DM look at your character’s backstory and design them together.
+
+You start with 2 Strings at Level 1. Here are three completely different Fire Mages to show how backstory creates unique magic:
+
+Example A: The Blacksmith's Apprentice
+Backstory: Grew up stoking the coals in a Forgecrown workshop.
+String 1: "Forge-Heat" (The ability to precisely soften metal and raise temperatures without melting the surroundings).
+String 2: "The Ember-Eye" (The ability to read a fire to gauge its temperature, or spot structural weak points in heated stone).
+
+Example B: The Orphan of the Great Fire
+Backstory: Survived a traumatic, uncontrolled city-wide fire as a child.
+String 1: "The Smolder" (Manipulating choking smoke to blind enemies and cut off their breathing).
+String 2: "Wildfire" (Allowing fire to spread rapidly and uncontrollably across natural surfaces).
+
+Example C: The Street Performer
+Backstory: Earned coins by swallowing fire and entertaining crowds in the city slums.
+String 1: "The Spark" (Incredibly fast, tiny ignitions; perfect for quick distractions).
+String 2: "Flicker-Weave" (Manipulating the light and shadow cast by open flames to create simple, shifting illusions).
+
+Note: You will unlock more Strings as you level up, representing your character's growing understanding of their element.
+Weavesnatcher
+OP
+ — 14/06/2026, 06:12 pm
+THE TENSION SYSTEM (How to Cast Magic Without Burning Out)
+In D&D, when you cast a spell, you expend a spell slot and carry on with your day. In THREADCAST, every spell you cast is like grabbing a massive, high-tension steel cable, pulling it with all your strength, and anchoring it to your own ribs.
+
+The system uses Tension to represent how much reality-warping strain your body is holding. Here is how you manage that stress before physics asserts itself violently:
+
+THE THREAD POOL (Your Absolute Hard Cap)
+What it is: Your absolute maximum capacity for magic. It's the total amount of Tension your body can physically hold before the universe says "No" and resets you.
+
+The Analogy: Think of your Thread Pool like the maximum weight a bridge can hold. If the bridge's limit is 10,000 lbs, and you drive a 10,001 lb truck onto it, the bridge doesn't get a saving throw. It simply collapses.
+
+In Game Terms: If your current Tension ever exceeds your Thread Pool, you suffer an automatic, instantaneous Snapback. No roll, no warnings. Just consequences.
+
+THE SAFE LIMIT (Your Sweat-Free Zone)
+What it is: The amount of Tension you can hold comfortably without your muscles shaking.
+
+The Analogy: Imagine holding a heavy dumbbell at arm's length. You can hold a five-pound weight (under your Safe Limit) all day. But if someone hands you a fifty-pound weight (over your Safe Limit), you can hold it for a few seconds... but your shoulder will start screaming, your knees will shake, and eventually, gravity will win.
+
+In Game Terms: As long as your Tension is at or below this number, you are perfectly fine. The moment your Tension goes even 1 point above this, you enter the danger zone.
+
+THE STRAIN CHECK (The "Can I Keep Holding This?" Roll)
+What it is: A physical saving throw you have to make at the start of your turn if you are holding more Tension than your Safe Limit.
+
+The Analogy: This is the roll to see if you can keep holding that fifty-pound dumbbell above your head for one more round. If you pass, you grit your teeth and hold it. If you fail, your grip slips, the weight falls, and you suffer the consequences.
+
+In Game Terms: You roll a d20 + RES modifier. The difficulty (DC) gets harder for every single point of Tension you are over your Safe Limit. If you fail, you instantly suffer a Snapback/Mishap. 
+POWER LEVEL (How Hard You Pull)
+What it is: The scale and raw power of the effect you are trying to cast, rated from Level 1 (Flicker) to Level 5 (Breaking).
+
+The Analogy: Stretching a physical band. Power Level 1 is a gentle pluck to flick a piece of paper. Power Level 5 is stretching a massive cable past its physical limit to launch a boulder.
+
+In Game Terms: You choose the Power Level when you cast. Higher Power Levels do incredible things (like collapsing a wall instead of lighting a candle), but they require a higher Thread Check target and add way more Tension to your tracker. Plus, trying to cast a Power Level higher than your character's safety rating forces you to roll with Discord (worst-of-two d20s).
+
+THE MISHAP (The Minor Screw-Up)
+What it is: What happens when you fail a magic roll, but didn't roll a natural 1. It's a minor mistake, not a total disaster.
+
+The Analogy: You try to flip a pancake, but it misses the pan and lands on the stove. It's messy, a little embarrassing, and you might get some hot butter on your hand, but the kitchen isn't on fire.
+
+In Game Terms: You roll a d6 on a Mishap table. Usually, this means your spell simply fails to cast, you take a tiny bit of feedback damage, or your magic gets a little wild and targets the wrong creature, but you survive to fight another round.
+
+THE SNAPBACK (The Disaster)
+What it is: The absolute worst-case scenario. This occurs when you roll a natural 1 on a spell, fail a Strain Check, or exceed your Thread Pool. The tensioned leyline snaps out of your grip and violently whips back through your body.
+
+The Analogy: Think of pulling a heavy-duty bungeecord with all your strength, only for your hand to slip. It snaps back and hits you directly in the face.
+
+In Game Terms: You roll a d12 on a devastating table. This is where characters take massive elemental damage, get knocked unconscious, or suffer permanent physical injuries. If you were casting fire, you get burned; if you were casting earth, your muscles feel like they are turning to heavy stone.
+Weavesnatcher
+OP
+ — 14/06/2026, 07:28 pm
+YOUR FUNDAMENTAL MODE (The 8 Ways to Play the Strings)
+How do you actually use your Strings in a fight? You choose one Primary Mode of Resonance at character creation. This is your instinctive way of manipulating the leylines, your personal casting style.
+
+You get Harmony (roll two d20s, take the higher) on all Thread Checks using your Primary Mode, and you start with 2 starting Techniques from that mode.
+
+MODE 1: THE STRIKER (The Offense Mode)
+What it is: You hook a leyline, yank it backward like a heavy rubber band, and release it instantly. The reality string snaps back with violent, explosive force.
+
+D&D 5e Equivalent: Evocation Wizard or Sorcerer casting Fireball or Thunderwave.
+
+Real-Life Analogy: Plucking a heavy bass string so violently that the acoustic shockwave blows out the subwoofer.
+
+How it affects your Strings: It turns your element into a projectile or a sudden explosion. If your String is "The Spark," this is how you turn it into a blazing firebolt.
+
+The Math: Roll a Thread Check using POT modifier + Refinement Bonus (using your Surge skill). It deals a substantial 2d12 damage, scaling by Power Level, out to a range of 30 to 60 ft.
+
+Failure Mode: Pure kinetic and elemental backlash. Expect broken bones, ruptured muscles, or third-degree burns. Strikers keep the healers very busy.
+
+MODE 2: THE ANCHOR (The Defender Mode)
+What it is: You grab a leyline and hold it absolutely, perfectly still. You lock reality in place, acting as a human titanium pin.
+
+D&D 5e Equivalent: Abjuration Wizard casting Shield, Wall of Stone, or Hold Person.
+
+Real-Life Analogy: Clamping your thumb down hard on a guitar string to mute it entirely. The vibration stops, freezing everything nearby.
+
+How it affects your Strings: It solidifies your element. If you have a Water affinity, you use this to lock the water molecules into an indestructible ice barrier.
+
+The Math: Roll using RES modifier + Refinement Bonus (using Ward Craft). It creates a physical barrier with Vitality Points (VP) equal to 8 + (POT modifier × 2) + Level. It lasts as long as you concentrate, but you can't take major actions while holding it.
+
+Failure Mode: All that held-back tension releases instantly. Imagine a heavy, coiled spring-loaded door snapping back and throwing you across the room.
+
+MODE 3: THE SLIDER (The Mobility Mode)
+What it is: Instead of pulling a leyline, you grab onto it and slide yourself smoothly along its length, shifting where the physical force actually lands.
+
+D&D 5e Equivalent: Monks or Rogues using Misty Step, Evasive Footwork, or deflecting missiles.
+
+Real-Life Analogy: Sliding your finger smoothly along a guitar fretboard to change the pitch without ever replucking the string.
+
+How it affects your Strings: It uses your element to reposition things. If you have an Earth affinity, you slide along the ground leylines, effectively surfing on stone to teleport.
+
+The Math: Roll using CTR modifier + Refinement Bonus (using Swift Hands). You move POT modifier × 5 ft per Tension spent. If someone attacks you, a successful roll lets you redirect the attack to someone else within 15 ft.
+
+Failure Mode: Spatial lag. Your mind is at the destination, but your leg is still lingering fifty feet back. Expect dislocated joints, torn ligaments, or feeling like you've been physically unzipped.
+MODE 4: THE BINDER (The Crafting Mode)
+What it is: You grab multiple leylines simultaneously, braid them together, and program them to stay that way long after you walk away.
+
+D&D 5e Equivalent: Artificer, Transmutation Wizard, or casting Glyph of Warding.
+
+Real-Life Analogy: Braiding several flimsy, individual threads into a thick, permanent rope that can hold a ship.
+
+How it affects your Strings: It makes your magic permanent or conditional. You can bind Fire and Earth strings together to create a tiny, self-heating stove, or a stone sentinel that activates when a door opens.
+
+The Math: Roll using ACU modifier + Refinement Bonus (using Inscription). The effect is permanent until broken. Adding complex conditions (like "only trigger at night") adds +2 to the DC.
+
+Failure Mode: The braid unravels. Chaotic, tangled magic whips out in random directions, and you'll have a high-pitched, out-of-tune humming inside your skull for the next week.
+
+MODE 5: THE SHEARER (The Decay Mode)
+What it is: You introduce deliberate friction, working against the natural grain of the leylines. You rub and grind threads together to erode magic or physical structures.
+
+D&D 5e Equivalent: Casting Counterspell, Disintegrate, or necrotic rot.
+
+Real-Life Analogy: Playing a beautiful violin with a bow made of heavy-grit sandpaper. You are ruining the instrument on purpose.
+
+How it affects your Strings: It turns your element into a destructive tool of decay. If you have a Water affinity, you use this to make water highly acidic, or to violently disperse an enemy's fire spell.
+
+The Math: Roll using POT modifier + Refinement Bonus (using the inverse of Ward Craft). To counter a spell, you roll versus the enemy's casting roll. To erode objects, it deals a flat 2d10 damage per round to non-living targets.
+
+Failure Mode: The friction works its way backward into your own cells. It's essentially magic-induced rapid aging, and it is easily the most horrifying failure to watch.
+
+MODE 6: THE TENSIONER (The Siege Engine Mode)
+What it is: You pull a leyline back... and you keep pulling. You hold it over multiple combat rounds, letting tension build to devastating levels before letting go.
+
+D&D 5e Equivalent: Delayed Blast Fireball.
+
+Real-Life Analogy: Drawing a heavy warbow back further than humanly possible, your muscles shaking, praying the wood doesn't snap.
+
+How it affects your Strings: It supercharges your element. If your String is a simple campfire trick, holding it for 3 rounds turns it into a volcanic blast that can level a small fortress.
+
+The Math: You charge over rounds. 1 round = Power Level 3 magic. 2 rounds = Power Level 4. 3+ rounds = Power Level 5. Each round you hold it, the damage steps up, but you must make a challenging Snapback Check.
+
+Failure Mode: The accumulated pressure detonates inside you. Your nervous system takes a lightning strike from your own spell, which tends to leave permanent marks and neural damage.
+MODE 7: THE IMPRINTER (The Alteration Mode)
+What it is: You press a pattern onto the leylines, temporarily forcing a specific patch of the world to follow entirely new laws of physics.
+
+D&D 5e Equivalent: Illusion or Transmutation Wizard (Silence, Levitate, or Illusory Terrain).
+
+Real-Life Analogy: Clamping a capo onto a guitar fretboard. You didn't break the strings; you just changed the baseline rules for how that entire section plays.
+
+How it affects your Strings: It creates zone effects. If you have an Air affinity, you can stamp a 20-foot room with the vacuum rule, cutting off all sound and breathing.
+
+The Math: Roll using ACU modifier + Refinement Bonus (using Inscription). The zone lasts for Level + CTR modifier minutes, and can cover up to a 20-foot radius per 3 Tension spent.
+
+Failure Mode: The rules apply to you instead of the room. You try to make the ground soft, and suddenly your bones turn to jelly, or you stamp stone rules and find your own arm turning to solid granite for a day.
+
+MODE 8: THE CONDUCTOR (The Enhancement Mode)
+What it is: Instead of shooting elemental energy outward, you hook the leyline directly into your own central nervous system and run the voltage through your flesh.
+
+D&D 5e Equivalent: Barbarian's Rage, Paladin's Smite, or Monk's Ki.
+
+Real-Life Analogy: Plugging yourself directly into the generator. You get incredible physical power, but humans weren't designed to carry high voltage.
+
+How it affects your Strings: It enhances your body. If you have an Earth affinity, you channel the stone leylines into your skin, turning your muscles into granite and giving you superhuman strength.
+
+The Math: Roll using RES modifier + Refinement Bonus (using Grit). You can spend 2 Tension to grant +2 to any physical attribute for 1 round, or spend 3 Tension as a Minor Action to heal yourself for 1d8 + POT modifier Vitality Points (VP).
+
+Failure Mode: Internal elemental frying—organs turning to stone, spontaneous combustion, or permanent sensory burnout.
+INNATE MAGIC (Your Safety Cantrips)
+We hear you asking: "If magic is so dangerous that a bad roll can literally shatter my wrists, how do I do simple things like light a campfire, warm up my cold soup, or dry off my wet cloak?"
+
+This is where Innate Magic (also known as Internal Magic) comes in.
+
+In D&D, these are your utility cantrips like Prestidigitation, Druidcraft, or Thaumaturgy. In THREADCAST, these are tiny, personal-scale magical effects that draw purely on your own internal biological reserves rather than pulling on the high-tension leylines of the world.
+
+The Rules of Innate Magic
+No Rolls Required: You do not have to make a Thread Check. It just happens.
+
+No Strings Needed: You don't have to weave any of your specialized Strings.
+
+Completely Safe: Because you aren't grabbing world-leylines, there is zero risk of Tension buildup and zero risk of a horrible Snapback.
+
+What You Can Do (Based on Your Element)
+Fire: Ignite a candle, warm a bowl of soup with your fingers, or sense ambient temperature changes.
+
+Water: Condense a few drops of drinking water from the air, dry your shirt, or feel local water currents.
+
+Earth: Know which way is north underground, tell if a stone wall is hollow, or feel faint vibrations through the ground.
+
+The Catch (Your Body is the Generator)
+Your body has biological limits. If you push it too hard, you get physically exhausted.
+
+You can safely use Innate Magic up to 3 times per hour.
+
+If you use it a 4th time (or more) in a single hour, you immediately suffer 1 level of Fatigue. Your muscles ache, your head throbs, and you feel like you just ran a marathon because you forced your body to act as a physical power generator.
