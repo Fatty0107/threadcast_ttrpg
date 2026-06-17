@@ -4,7 +4,6 @@ services:
     runtime: node
     region: oregon
     buildCommand: >
-      corepack enable pnpm &&
       pnpm install &&
       PORT=3000 BASE_PATH=/ pnpm --filter @workspace/threadcast run build &&
       pnpm --filter @workspace/api-server run build
