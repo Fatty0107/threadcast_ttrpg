@@ -1,0 +1,92 @@
+2026-06-17T09:39:23.813321034Z ==> Downloading cache...
+2026-06-17T09:39:23.850504022Z ==> Cloning from https://github.com/Fatty0107/threadcast_ttrpg
+2026-06-17T09:39:38.021683776Z ==> Checking out commit 92f8175c77c3bf5bbeda09d700ae1d6d7edb3f98 in branch main
+2026-06-17T09:39:44.0461037Z ==> Downloaded 94MB in 3s. Extraction took 5s.
+2026-06-17T09:39:46.928135145Z ==> Using Node.js version 24.14.1 (default)
+2026-06-17T09:39:46.928144656Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-06-17T09:39:46.973330765Z ==> Running build command 'pnpm install && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/threadcast run build && pnpm --filter @workspace/api-server run build'...
+2026-06-17T09:39:48.884385722Z 
+2026-06-17T09:39:48.884411374Z > @workspace/threadcast@0.0.0 build /opt/render/project/src/artifacts/threadcast
+2026-06-17T09:39:48.884417714Z > vite build --config vite.config.ts
+2026-06-17T09:39:48.884421795Z 
+2026-06-17T09:39:49.206630269Z vite v7.3.3 building client environment for production...
+2026-06-17T09:39:49.273366343Z transforming...
+2026-06-17T09:39:49.69042617Z src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+2026-06-17T09:39:49.99778132Z src/components/ui/label.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+2026-06-17T09:39:51.067719449Z src/components/ui/select.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+2026-06-17T09:39:51.974250053Z ✓ 1845 modules transformed.
+2026-06-17T09:39:52.223274379Z rendering chunks...
+2026-06-17T09:39:52.23302962Z computing gzip size...
+2026-06-17T09:39:52.253494615Z dist/public/index.html                   1.61 kB │ gzip:   0.62 kB
+2026-06-17T09:39:52.253546699Z dist/public/assets/index-DYtAtreO.css  133.87 kB │ gzip:  20.13 kB
+2026-06-17T09:39:52.25355748Z dist/public/assets/index-Bs1Y1YWS.js   706.42 kB │ gzip: 207.32 kB
+2026-06-17T09:39:52.253602003Z 
+2026-06-17T09:39:52.253607844Z (!) Some chunks are larger than 500 kB after minification. Consider:
+2026-06-17T09:39:52.253612504Z - Using dynamic import() to code-split the application
+2026-06-17T09:39:52.253616884Z - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+2026-06-17T09:39:52.253620835Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2026-06-17T09:39:52.253786807Z ✓ built in 3.02s
+2026-06-17T09:39:52.701929785Z 
+2026-06-17T09:39:52.701953707Z > @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+2026-06-17T09:39:52.701959177Z > node ./build.mjs
+2026-06-17T09:39:52.701963147Z 
+2026-06-17T09:39:53.199286364Z 
+2026-06-17T09:39:53.199339648Z   dist/index.mjs                       2.2mb ⚠️
+2026-06-17T09:39:53.199345868Z   dist/pino-worker.mjs               153.4kb
+2026-06-17T09:39:53.199363369Z   dist/pino-file.mjs                 142.1kb
+2026-06-17T09:39:53.19936791Z   dist/pino-pretty.mjs               114.6kb
+2026-06-17T09:39:53.19937197Z   dist/thread-stream-worker.mjs        7.3kb
+2026-06-17T09:39:53.19937606Z   dist/index.mjs.map                   3.7mb
+2026-06-17T09:39:53.199379811Z   dist/pino-worker.mjs.map           256.9kb
+2026-06-17T09:39:53.199384011Z   dist/pino-file.mjs.map             229.0kb
+2026-06-17T09:39:53.199403612Z   dist/pino-pretty.mjs.map           204.0kb
+2026-06-17T09:39:53.199406443Z   dist/thread-stream-worker.mjs.map   12.0kb
+2026-06-17T09:39:53.199408783Z 
+2026-06-17T09:39:53.199412233Z ⚡ Done in 439ms
+2026-06-17T09:39:54.863420704Z ==> Uploading build...
+2026-06-17T09:40:07.162160469Z ==> Uploaded in 8.0s. Compression took 4.3s
+2026-06-17T09:40:07.221650031Z ==> Build successful 🎉
+2026-06-17T09:40:09.669944585Z ==> Deploying...
+2026-06-17T09:40:09.734982047Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-06-17T09:40:36.332533859Z ==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+2026-06-17T09:40:38.830778874Z /opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218
+2026-06-17T09:40:38.830811085Z           throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-06-17T09:40:38.830815705Z                 ^
+2026-06-17T09:40:38.830818425Z 
+2026-06-17T09:40:38.830821195Z PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+2026-06-17T09:40:38.830824995Z     at consumeUntil (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218:17)
+2026-06-17T09:40:38.830828416Z     at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:262:24)
+2026-06-17T09:40:38.830830996Z     at process (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:466:52)
+2026-06-17T09:40:38.830833976Z     at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:478:3)
+2026-06-17T09:40:38.830837366Z     at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:416:28)
+2026-06-17T09:40:38.830840556Z     at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+2026-06-17T09:40:38.830843936Z     at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+2026-06-17T09:40:38.830850986Z     at router6.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+2026-06-17T09:40:38.830854086Z     at app2.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+2026-06-17T09:40:38.830857187Z     at app2.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22) {
+2026-06-17T09:40:38.830859687Z   originalPath: '*'
+2026-06-17T09:40:38.830862377Z }
+2026-06-17T09:40:38.830864867Z 
+2026-06-17T09:40:38.830867587Z Node.js v24.14.1
+2026-06-17T09:40:44.620409605Z ==> Exited with status 1
+2026-06-17T09:40:44.623543319Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2026-06-17T09:40:50.061030497Z ==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+2026-06-17T09:40:52.36233292Z /opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218
+2026-06-17T09:40:52.362361331Z           throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-06-17T09:40:52.362364991Z                 ^
+2026-06-17T09:40:52.362388511Z 
+2026-06-17T09:40:52.362395412Z PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+2026-06-17T09:40:52.362399022Z     at consumeUntil (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:218:17)
+2026-06-17T09:40:52.362402282Z     at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:262:24)
+2026-06-17T09:40:52.362404712Z     at process (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:466:52)
+2026-06-17T09:40:52.362407142Z     at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:478:3)
+2026-06-17T09:40:52.362409962Z     at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.4.2/node_modules/path-to-regexp/src/index.ts:416:28)
+2026-06-17T09:40:52.362412842Z     at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+2026-06-17T09:40:52.362415812Z     at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+2026-06-17T09:40:52.362418832Z     at router6.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+2026-06-17T09:40:52.362421622Z     at app2.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+2026-06-17T09:40:52.362424292Z     at app2.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22) {
+2026-06-17T09:40:52.362427023Z   originalPath: '*'
+2026-06-17T09:40:52.362429712Z }
+2026-06-17T09:40:52.362432483Z 
+2026-06-17T09:40:52.362435623Z Node.js v24.14.1
