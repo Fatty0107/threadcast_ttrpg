@@ -19,7 +19,7 @@ const HARDCODED_USERS = [
   { username: "weavekeeper", password: "1268", displayName: "The Weavekeeper", role: "weavekeeper" },
 ] as const;
 
-async function seedUsers() {
+export async function seedUsers() {
   for (const u of HARDCODED_USERS) {
     const [existing] = await db
       .select()
