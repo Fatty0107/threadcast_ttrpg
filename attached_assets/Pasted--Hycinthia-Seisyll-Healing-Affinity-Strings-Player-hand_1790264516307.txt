@@ -1,0 +1,224 @@
+# Hycinthia Seisyll — Healing Affinity Strings
+
+*Player handout · proposed THREADCAST mechanics*
+
+Hycinthia works with **golden healing threads**. When she casts, they weave through whatever she touches, finding places where a living body is coming apart and helping hold it together. Her blood can respond to those same movements, giving **every String a second, combat-capable expression**.
+
+The two expressions are related, but they are not interchangeable: a thread that can close a wound might also draw a binding line of blood. **Choose either the Healing or Blood expression when casting a String.** One cast does not grant both effects.
+
+## Using this table
+
+- **PL** is Power Level. You can cast at a lower PL than your maximum.
+- **TP** is Tension Points added when you attempt the cast; **DC** is the Thread Check target.
+- The attribute beside each String is its Thread Check attribute.
+- Unless stated otherwise, Healing requires **touch**, Blood effects require a visible target or position **within 30 ft**, and effects are immediate.
+- Where a Blood effect calls for a **POT or RES save**, the target saves against that row’s DC. A successful save prevents the listed condition; if the effect also deals damage, the target takes half damage.
+- Hycinthia can shape **her own blood or blood already outside another creature**. She cannot seize blood inside an unwounded enemy. Blood is not created from nothing.
+- If she must supply fresh blood for a Blood cast, the proposed cost is **1 VP at PL 1–2, 2 VP at PL 3–4, or 3 VP at PL 5**. This cannot reduce her below 1 VP. Recovering the blood does not refund VP.
+- Healing cannot resurrect someone who is dead, restore lost memories, or automatically close Hycinthia’s persistent wounds.
+
+These numbers are a **playable draft** based on the project’s five-PL String format, not previously established canon.
+
+---
+
+## 1. The Holdfast String — THS
+
+**Purpose:** Keep life from slipping away. This was the first String to answer Hycinthia at age four: golden threads tried to hold her together while her blood rose around her in an uncontrolled defense.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 11** | Stops one ordinary external bleed on a creature she touches for **1 minute**. It does not restore VP or close a deep wound; the patient still needs treatment. | Raises a small blood shield around herself or an adjacent ally. It reduces the **next incoming hit by 1d6 damage** before her next turn. |
+| **2** | **2 / 13** | Holds a serious bleeding wound closed for **3 rounds**, preventing damage or deterioration specifically caused by that bleed. Moving the patient does not break the hold. | Extends a blood ribbon to an ally within **10 ft**. It catches one attack, reducing its damage by **2d6**, then collapses. |
+| **3** | **4 / 15** | Stabilizes one living creature at **0 VP**, bringing them to **1 VP**, and holds one severe bleed closed for **1 minute**. This does not repair the injury that caused it. | Raises a wall up to **10 ft long** until the start of her next turn. It provides full cover from one direction. The first creature to force its way through takes **2d6 slashing damage**. |
+| **4** | **6 / 17** | Stabilizes **two creatures within reach**, or sustains one critically bleeding patient for **10 minutes** while someone treats them. It cannot sustain a patient left unattended indefinitely. | Creates a **15-ft defensive arc** for **3 rounds** while she concentrates. Allies behind it have cover; a creature crossing it takes **3d6 slashing damage** once per round. |
+| **5** | **9 / 19** | Holds one still-living patient on the edge of death for **3 rounds**, even if several wounds are failing at once. This buys a narrow chance to intervene; it does not reverse an immediately fatal injury. | Forms a **20-ft-wide protective enclosure** for **3 rounds**. It provides cover, and once each round Hycinthia can turn part of it against an attacker for **4d6 slashing damage**. |
+
+**Double edge:** Holdfast can save someone without making them well. If Hycinthia pushes it too far, she may stay standing long after she should have stopped.
+
+---
+
+## 2. The Trace String — THS
+
+**Purpose:** Find what is wrong. Golden threads trace an injury’s path; a directed drop of blood can trace movement or mark an opening in combat. Trace gives **physical information**, not thoughts, motives, or memories.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 10** | By touch, identifies the location and general severity of **one injury**: for example, a surface cut versus deeper damage. | A bead of blood marks one visible creature until the end of her next turn. Hycinthia can follow its movement within **30 ft**, even through smoke or a crowd, but not through a solid wall. |
+| **2** | **2 / 12** | Locates a hidden bleed or identifies which of several visible wounds is most urgent. | A thin blood line follows a marked creature for **3 rounds** within **30 ft**. Hycinthia ignores ordinary visual concealment when aiming her *next Blood String* at it. |
+| **3** | **3 / 14** | Distinguishes physical trauma from signs of poison, infection, or illness in one patient. It identifies the *kind* of problem, not automatically its exact cause. | Marks **two creatures** for **1 minute**. While within **60 ft**, she knows their direction and can tell which one is visibly injured. |
+| **4** | **5 / 16** | Examines up to **three touched patients** in succession and learns who will deteriorate first without immediate care. | Blood markers anticipate a marked creature’s movement. Her next Blood String against one marked target deals **+1d6 damage** and ignores ordinary visual concealment. The marker then ends. |
+| **5** | **8 / 18** | Maps complex, interacting injuries in one living patient, identifying what must be treated first and what an attempted repair might worsen. | Maintains up to **four blood markers** for **1 minute**. She can direct a Blood String at a marked target she can reach around ordinary visual obstruction, but still cannot cast through a solid barrier or beyond the String’s range. |
+
+**Double edge:** Trace tells her where a body is vulnerable. Whether she uses that knowledge to treat or strike is her decision.
+
+---
+
+## 3. The Seam String — CTR
+
+**Purpose:** Bring separated soft tissue back together. Its Blood expression turns the same fine, pulling motion into binding or cutting filaments.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 11** | Closes a minor cut and restores **1d8 VP** to a touched creature injured by torn soft tissue. | Sends a fine filament up to **15 ft** for **1d6 slashing damage**. |
+| **2** | **2 / 13** | Closes a deeper cut, stops its ordinary bleeding, and restores **2d8 VP**. It does not remove infection or repair a broken bone. | Deals **2d6 slashing damage**. On a failed **POT save**, the filament also catches a hand or weapon, preventing that hand from being used until the end of the target’s next turn. |
+| **3** | **4 / 15** | Repairs a significant tear in muscle or skin and restores **3d8 VP**. The patient may still need rest before using the injured area normally. | Deals **3d6 slashing damage**. On a failed **POT save**, Hycinthia may pull a held object free or pin one limb until the start of her next turn. |
+| **4** | **6 / 17** | Joins extensive fresh soft-tissue damage and restores **4d8 VP**. It cannot replace tissue that is missing. | Deals **4d6 slashing damage** and, on a failed **POT save**, **Restrains** one target for **1 round**. The binding can be cut or broken normally. |
+| **5** | **9 / 19** | Over **10 minutes**, rejoins freshly separated tissue when the original tissue is present and viable; restores **5d8 VP**. It cannot grow a replacement limb. | Splits into several cutting seams. Divide **6d6 slashing damage** among up to **three targets** within **30 ft**; one target that fails a **POT save** is Restrained for **1 round**. |
+
+**Double edge:** A perfect stitch can close a wound. The same tension, pulled the wrong way, can open one.
+
+---
+
+## 4. The Set String — CTR
+
+**Purpose:** Give a damaged body structure and support. Golden threads align bones and joints; shaped blood becomes a rigid brace, guard, or striking form.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 11** | Supports a sprain or unstable joint for **1 hour**, allowing careful movement without worsening it. This is support, not a completed repair. | Hardens blood around her forearm. She reduces the next physical hit by **1d6 damage**, or makes one short strike for **1d6 bludgeoning damage**. |
+| **2** | **3 / 13** | Aligns a straightforward fracture and restores **1d8 VP**. The bone remains fragile and needs ordinary recovery time. | Forms a sturdier guard for **1 round**, reducing one hit by **2d6**, or a hardened strike dealing **2d6 bludgeoning damage**. |
+| **3** | **4 / 15** | Sets a complex break and stabilizes nearby damaged tissue; restores **2d8 VP**. The patient cannot immediately use the limb at full strength. | A hardened blood limb strikes for **3d6 bludgeoning damage**. A target that fails a **POT save** is knocked **Prone**. |
+| **4** | **6 / 17** | Over **10 minutes**, repairs a badly fractured bone well enough for cautious use and restores **3d8 VP**. Severe surrounding injuries still need other Strings. | Maintains a blood brace for **3 rounds** while concentrating. It reduces the first physical hit against her each round by **2d6**, and she can make one **3d6 bludgeoning** strike during that time. |
+| **5** | **9 / 19** | Over **1 hour**, rebuilds a shattered but still-present bone and restores **4d8 VP**. Recovery afterward is still necessary. | Raises a rigid **10-ft barricade** for **3 rounds**, or collapses that structure into one **5d8 bludgeoning** strike. She cannot keep the barricade after using it to strike. |
+
+**Double edge:** Set is strong because it insists on a shape. An imprecise cast can preserve the *wrong* shape.
+
+---
+
+## 5. The Ease String — CTR
+
+**Purpose:** Manage pain, spasms, and physical shock. Its Blood expression applies carefully directed pressure to absorb impact or hinder movement. Ease treats the body’s response to injury; it does **not** cure the injury.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 10** | Dulls pain from one touched injury until the end of the patient’s next turn. The patient can still tell that they are hurt. | A blood wrap absorbs **1d6 damage** from the next blow against Hycinthia before her next turn. |
+| **2** | **2 / 13** | Reduces pain and muscle spasm for **1 minute**, allowing examination or simple treatment without the patient fighting the pain. | Wraps one target’s limb for **1d6 bludgeoning damage**. On a failed **POT save**, its speed is reduced by **10 ft** for **1 round**. |
+| **3** | **4 / 15** | Keeps a conscious patient steady through a painful procedure or injury for **10 minutes**. It suppresses a penalty caused specifically by pain, not one caused by damaged anatomy. | Deals **2d6 bludgeoning damage** through a tightening strand. On a failed **POT save**, the target cannot take reactions until its next turn. |
+| **4** | **6 / 17** | Eases pain and physical shock in up to **three touched patients** for **3 rounds**. They can communicate and follow treatment instructions despite their injuries. | Sends wraps around up to **three targets** within **30 ft**. Divide **4d6 bludgeoning damage** among them; targets that fail a **POT save** have their speed halved for **1 round**. |
+| **5** | **8 / 19** | Keeps one injured, living patient functional through extreme pain for **1 minute**. It does not restore VP, and any untreated injury remains when the effect ends. | Concentrates crushing pressure on one target for **4d8 bludgeoning damage**. On a failed **POT save**, it is Restrained until the end of its next turn. |
+
+**Double edge:** Ease can make it possible to keep going. It can also make someone ignore a warning their body desperately needs them to hear.
+
+---
+
+## 6. The Pulse String — POT
+
+**Purpose:** Restore or sustain vital rhythm. Hycinthia can steady breathing and circulation, or drive shaped blood forward in forceful beats.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 11** | Helps a touched, living patient maintain a steady breath for **1 minute** while the cause of their difficulty is addressed. | A short blood pulse deals **1d6 bludgeoning damage** and pushes a target **5 ft** on a failed **RES save**. |
+| **2** | **2 / 13** | Steadies a dangerously racing or weak pulse for **3 rounds**. It cannot overcome an untreated fatal wound on its own. | A stronger pulse deals **2d6 bludgeoning damage** and pushes a target **10 ft** on a failed RES save. |
+| **3** | **4 / 15** | Sustains a living patient’s breathing and circulation for **3 rounds**, buying time for Holdfast, Seam, or ordinary treatment. | Sends a pulse down a **15-ft line** for **3d6 bludgeoning damage** to creatures in it. Those that fail a RES save are knocked Prone. |
+| **4** | **6 / 17** | Restores breathing to a living patient who has *just* stopped and maintains it for **1 minute**, provided the underlying injury can be treated. | A broad pulse in a **15-ft cone** deals **4d6 bludgeoning damage** and pushes creatures **15 ft** on a failed RES save. |
+| **5** | **9 / 20** | While Hycinthia remains in contact and concentrates, sustains the vital functions of one critically injured **living** patient for up to **1 minute**. It is emergency support, not resurrection. | Releases a focused, **30-ft** blood surge for **6d8 bludgeoning damage** to one target, pushing it up to **20 ft** on a failed RES save. |
+
+**Double edge:** Pulse can hold a rhythm steady—or impose one with force.
+
+---
+
+## 7. The Cleanse String — THS
+
+**Purpose:** Help a body remove what is harming it. When Hycinthia extracts a **real toxin**, her blood can contain and redirect it. She cannot invent poison that was not there.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **2 / 12** | Clears a mundane irritant from a fresh wound and makes it safer to treat. It does not cure an established disease. | Forms a fine blood needle that deals **1d6 piercing damage**. It has no poisonous effect without a real toxin. |
+| **2** | **3 / 14** | Suppresses the effects of one poison in a touched patient for **1 minute**, buying time for treatment but not removing it. | A needle deals **1d6 piercing damage**. If she has contained an extracted toxin, a target failing a **RES save** is also **Poisoned for 1 round**. |
+| **3** | **5 / 16** | Removes one ordinary poison or treats a straightforward infection in a living patient. Recovery from damage already done still takes time. | Fires a contained blood needle for **2d6 piercing damage**. With an actual extracted toxin, add **1d6 poison damage**; the toxin is then spent. |
+| **4** | **7 / 18** | Over **10 minutes**, treats a severe infection or complicated poison, provided she can identify what she is drawing out. | A blood spray in a **15-ft cone** deals **3d6 piercing damage**. If carrying an actual extracted toxin, creatures failing a RES save are Poisoned for **2 rounds**; the toxin is spent. |
+| **5** | **10 / 20** | Over **1 hour**, purges a deadly toxin or serious disease from one living patient. It does not restore tissue the condition has already destroyed. | A directed blood strike deals **5d6 piercing damage**. If she has contained a potent, real toxin, one target also suffers that toxin’s agreed effect on a failed RES save; the toxin is spent. |
+
+**Double edge:** Cleanse moves danger out of someone. What Hycinthia does with what she removed matters.
+
+---
+
+## 8. The Renewal String — POT
+
+**Purpose:** Encourage recovery over time. In combat, Hycinthia can push her blood into a brief burst of speed and force—but the exertion catches up with her.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **2 / 12** | Helps a resting, touched patient recover from ordinary exertion. Their next period of rest is more effective, but the String does not replace rest. | Moves a blood strand with sudden speed. Hycinthia gains **+10 ft movement** this turn and makes one **1d6 slashing** strike. |
+| **2** | **3 / 14** | Over **1 minute** of care, restores **1d8 VP** to a living patient recovering from recent injury. | Gains **+10 ft movement** this turn; one blood strike deals **2d6 slashing damage**. |
+| **3** | **5 / 16** | Over **10 minutes**, restores **2d8 VP** and eases ordinary physical fatigue. It does not remove magical Burnout. | Sweeps blood through two quick arcs. Divide **3d6 slashing damage** between up to **two targets** within 15 ft. |
+| **4** | **7 / 18** | Over **10 minutes**, restores **3d8 VP** and allows the patient to recover from substantial exertion without worsening their injuries. | Hycinthia moves up to **20 ft** as her blood lashes along her path. Divide **4d8 slashing damage** among up to **three targets** she passes. |
+| **5** | **10 / 20** | Over **1 hour**, restores **5d8 VP** and supports recovery from severe but nonmagical exhaustion. It cannot erase Burnout or replace prolonged convalescence. | Her blood becomes a brief, fast-moving storm. Divide **6d8 slashing damage** among up to **three targets** within 30 ft. Afterward, she suffers **Shaking Hands** until her next Mend. |
+
+**Double edge:** Renewal can encourage recovery, but using its Blood expression is borrowing strength rather than creating it.
+
+---
+
+## 9. The Cradle String — CTR
+
+**Purpose:** Protect someone fragile while they are being moved or treated. Its Blood expression is the deliberate, controlled form of a protective barrier.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **1 / 11** | A golden lattice supports an injured, touched ally until Hycinthia’s next turn, reducing the next damage they take by **1d6**. | Interposes a small blood screen, reducing one incoming hit against herself or an adjacent ally by **1d6**. |
+| **2** | **3 / 13** | Holds one patient steady during movement for **1 minute**, preventing that movement from aggravating an ordinary wound. | A blood screen reduces one hit by **2d6** and can be positioned between an ally within **10 ft** and an attacker. |
+| **3** | **5 / 15** | Supports **two touched injured allies** for **3 rounds**. Each has the next hit against them reduced by **2d6**. | Forms a **10-ft wall** that provides cover until the start of Hycinthia’s next turn. |
+| **4** | **7 / 17** | Wraps one living patient in a lattice for **3 rounds**. It has a shared pool of **3d8 damage reduction** and keeps their injuries from worsening during transport. | A jagged **15-ft wall** lasts **3 rounds** while she concentrates. A creature forcing through takes **3d6 slashing damage** once per round. |
+| **5** | **10 / 20** | Shelters up to **three allies within reach** for **1 minute** with a shared **5d8 damage-reduction pool**. Hycinthia chooses which protected hit spends from the pool. | Raises a **20-ft defensive dome** for **3 rounds**. It provides cover; once each round, a creature striking or crossing it takes **4d8 slashing damage**. |
+
+**Double edge:** Cradle protects by enclosing. Hycinthia must learn when to let someone out, not only how to keep danger away.
+
+---
+
+## 10. The Burden String — THS
+
+**Purpose:** Take on some of another person’s suffering. Its Blood expression gives Hycinthia a way to defend or strike back with blood she has shed, but **striking back does not undo the burden**.
+
+For the Healing expression, the listed VP moves from the ally’s loss to Hycinthia: the ally regains that VP, and Hycinthia loses the same amount. She cannot reduce herself below **1 VP** this way.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **2 / 12** | A touched ally regains up to **2 VP**; Hycinthia loses the same amount. She can sense their pain clearly for a moment afterward. | Shapes exposed blood into a reflexive **1d6 slashing** counterstrike against a creature within **10 ft**. |
+| **2** | **4 / 15** | Transfers up to **4 VP** of an ally’s recent injury to herself. It restores VP but does not remove a condition such as poison or a broken bone. | A blood ribbon intercepts a blow against an ally within **10 ft**, reducing it by **1d6**, then strikes the attacker for **2d6 slashing damage**. |
+| **3** | **6 / 17** | Transfers up to **6 VP** of injury from a willing ally within **10 ft**. Hycinthia experiences the strain immediately. | A blood lash reaches **30 ft** and deals **3d6 slashing damage**. If she has taken damage protecting an ally since her last turn, it deals **+1d6**. |
+| **4** | **8 / 19** | Transfers up to **10 VP** from a willing ally within **15 ft**. She cannot pass that loss on again through Burden. | Interposes blood between an ally and an attack, reducing damage by **2d6**, then releases a **4d8 slashing** counterstrike. |
+| **5** | **11 / 21** | Transfers up to **15 VP** from one willing ally, potentially keeping them in the fight at great risk to herself. It cannot take on an injury she could not survive. | Protects one ally within **20 ft** from a hit, reducing damage by **3d8**, and sends the blood outward for **6d8 slashing damage** against one attacker. |
+
+**Double edge:** Burden is not proof that Hycinthia must suffer to be useful. It is a powerful choice—and one she may be too willing to make.
+
+---
+
+## 11. The Reweave String — CTR
+
+**Purpose:** Precise reconstruction of damaged living structures. This is slow, demanding medicine on the Healing side; in combat, the same precision creates intricate, temporary blood constructs.
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **2 / 12** | Over **10 minutes**, guides a fresh wound toward cleaner healing, reducing avoidable scarring. It does not restore VP immediately. | Shapes a fine blood tool or hook that can manipulate a small object within **15 ft**, or strike for **1d6 piercing damage**. |
+| **2** | **4 / 15** | Over **1 hour**, repairs minor lingering muscle damage in a living patient and restores **1d8 VP**. | Forms an articulated hook dealing **2d6 piercing damage**. On a failed **POT save**, it holds a hand or object in place until Hycinthia’s next turn. |
+| **3** | **6 / 17** | Over **1 hour**, reconnects a *recently* damaged tendon or nerve when the living tissue remains available; restores **2d8 VP**. Full function may return gradually. | Several precise blood filaments deal **3d6 piercing damage**. On a failed POT save, they disarm the target or bind one limb for **1 round**. |
+| **4** | **8 / 19** | Over several hours of uninterrupted work, repairs serious damage to a living organ or complex tissue and restores **3d8 VP**. Trace may be needed first to understand the injury. | Creates a multi-part construct for **3 rounds** while concentrating. It can guard one adjacent ally or strike a target within 30 ft for **4d8 piercing damage** once during its duration. |
+| **5** | **11 / 21** | Over days of treatment, reconstructs severe but survivable tissue damage, restoring **5d8 VP** across the treatment. It requires living tissue and does not resurrect or automatically resolve supernatural wounds. | Weaves a complex blood construct for **1 minute** while concentrating. Once per round it can guard an ally or make a **3d8 piercing** strike; it is not alive or independently intelligent. |
+
+**Double edge:** Reweave is about extraordinary control, not effortless regeneration. Hycinthia’s own unhealed wounds remain a question this String cannot simply answer.
+
+---
+
+## 12. The Loom String — CTR
+
+**Purpose:** See several lives as one treatment problem without treating the people as interchangeable. Golden threads organize triage; blood divides into coordinated strands for battlefield control.
+
+**For this String, listed damage or healing dice are a *total pool* to divide—not that amount for every target.**
+
+| PL | TP / DC | Healing expression | Blood expression |
+|---|---:|---|---|
+| **1** | **2 / 12** | Assesses **two touched patients** in quick succession and identifies which needs immediate help first. | Splits blood into two short strands. Divide **1d6 slashing damage** between up to two targets within **15 ft**. |
+| **2** | **4 / 15** | Divides **2d8 VP of healing** between up to **two touched allies** in any amounts she chooses. | Controls two strands within **30 ft**. Divide **2d6 slashing damage** between up to two targets, or use one strand to catch an object instead of dealing its share. |
+| **3** | **6 / 17** | Divides **4d8 VP of healing** among up to **three allies within reach** and stabilizes any of them who were at 0 VP before distributing the pool. | Controls three strands for one cast. Divide **3d6 slashing damage** among up to three targets; one target failing a POT save also loses its reaction until its next turn. |
+| **4** | **8 / 19** | Divides **6d8 VP of healing** among up to **four touched allies**. She may instead spend one die from the pool to stop one ally’s ordinary bleeding. | Controls four strands within **30 ft**. Divide **5d6 slashing damage** among up to four targets; alternatively, sacrifice **2d6** from the pool to give an ally cover until her next turn. |
+| **5** | **11 / 21** | Over **1 minute**, divides **8d8 VP of healing** among up to **five living allies she can reach and touch**. She may stabilize them first, but cannot restore anyone already dead. | Weaves a battlefield network for **3 rounds** while concentrating. It has a total **8d6 slashing-damage pool** to spend across those rounds and can protect up to two allies with cover. Once the pool is spent, the network fades. |
+
+**Double edge:** Loom lets Hycinthia keep many people alive at once—or make many people fear where her blood will move next. Its challenge is concentration: losing track of one strand can compromise the whole pattern.
+
+---
+
+## What makes this *Hycinthia’s* Affinity
+
+The golden threads remain recognizably **Healing** even when a String has a combat expression. Seam always joins and pulls; Pulse always establishes rhythm; Cradle always encloses and protects. Hycinthia’s blood gives those actions a second material and a second consequence.
+
+Her most dangerous option is not automatically her strongest. Sometimes spending a cast on **Trace** to understand an injury, or **Holdfast** to keep someone alive, will matter more than a high-PL attack. And sometimes the person she must decide whether to preserve is herself.
