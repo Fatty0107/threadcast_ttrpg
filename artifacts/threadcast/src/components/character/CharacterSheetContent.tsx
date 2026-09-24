@@ -758,7 +758,7 @@ ${([
 
       {/* ===== TABS ===== */}
       <Tabs defaultValue="overview" className="w-full tc-workspace">
-        <TabsList className="tc-tabs">
+        <TabsList className="tc-tabs h-auto">
           {["overview","actions","skills","strings","feats","inventory","background","notes"].map(tab => (
             <TabsTrigger
               key={tab}
