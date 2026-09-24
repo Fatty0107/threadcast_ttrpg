@@ -14,3 +14,31 @@ mtime_ms = 1790280543682
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:2e86bbe8-e825-4cd2-982e-9c14d250f75a/92393ed5-5af5-4dfe-81a1-3c874abdbb94/b54b6712-0dc4-40ec-8e46-c935ba8a3ee5"
 storage_version_token = "1790280635536914"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "joZ9RuYH3_YUYdQtL_gZd"
+uri = "file://outputs/Melody_Aleura_Affinity_and_Strings_Overtone.pdf"
+type = "pdf"
+title = "Melody Aleura — revised affinity handout"
+description = "Full 21-page handout with Overtone replacing Brake in String 6."
+logical_id = "59b26994-4bb7-4a4e-aaec-b52d20aaa285"
+content_hash = "sha256:3011e01a6fa15cad100f7ad51c015480e4203a79f1d6e5d02fa2fdf879361dc5"
+size = 1036362
+mtime_ms = 1790282612662
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:2e86bbe8-e825-4cd2-982e-9c14d250f75a/59b26994-4bb7-4a4e-aaec-b52d20aaa285/b9760316-da95-49a7-90a5-68386e8c2d9a"
+storage_version_token = "1790282793099221"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "HOhB95vvESvlhj81o8G6-"
+uri = "file://outputs/Melody_Aleura_Overtone_replacement.md"
+type = "text"
+title = "Overtone String — editable text"
+description = "Replacement String and opening paragraphs for future revisions."
+logical_id = "270104d1-687e-4718-8e48-5a6d867c25f7"
+content_hash = "sha256:232a561852c0816c5131cbc0a2e872f1a5848906b9aee8bee78fffbf32f84d57"
+size = 3076
+mtime_ms = 1790282601674
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:2e86bbe8-e825-4cd2-982e-9c14d250f75a/270104d1-687e-4718-8e48-5a6d867c25f7/89315888-4adc-489d-a0d9-070e0b629738"
+storage_version_token = "1790282794444813"
+content_type = "text/markdown"
