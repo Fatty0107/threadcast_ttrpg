@@ -11,10 +11,13 @@ import {
 import { findString } from "@/lib/affinity-data";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
+import { DiceStage, ROLL_DURATION_MS } from "@/components/shared/DiceStage";
 import { useDiceRoller } from "@/components/shared/DiceRoller";
 import { GameTerm } from "@/components/shared/GameTerm";
+import { DEFAULT_DICE_STYLE, rollDie, useActiveDiceStyle } from "@/lib/dice-style";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import "./character-sheet.css";
 
 // ---- Types ----
 interface SubItem {
@@ -98,6 +101,8 @@ interface Props {
 
 export function CharacterSheetContent({ character, onUpdate }: Props) {
   const { openRoll } = useDiceRoller();
+  const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
+  const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [localData, setLocalData] = useState<SheetData>((character.data as SheetData) || {});
   const [showFeatPicker, setShowFeatPicker] = useState(false);
   const [showInventoryPicker, setShowInventoryPicker] = useState(false);
@@ -106,8 +111,16 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
   const [recoveryDiceUsed, setRecoveryDiceUsed] = useState(0);
+  const [mendRoll, setMendRoll] = useState<{ d1: number; d2: number; diceUsed: number; diceRoll: number; healed: number; rolling: boolean; rollKey: number } | null>(null);
+  const isMendRolling = !!mendRoll?.rolling;
   const [expandedKitItem, setExpandedKitItem] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const mendRollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mendRollLock = useRef(false);
+
+  useEffect(() => () => {
+    if (mendRollTimer.current) clearTimeout(mendRollTimer.current);
+  }, []);
 
   useEffect(() => {
     setLocalData((character.data as SheetData) || {});
@@ -189,6 +202,8 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
 
   const maxVP          = calcVPMax(attrs.res || 10, level) + featVpBonus + guildFeatVpBonus;
   const maxPool        = calcThreadPool(level, attrs.ths || 10) + featPoolBonus + guildFeatPoolBonus;
+  const threadPool     = tension.pool || maxPool;
+  const availableTension = threadPool - tension.current;
   const safeLimit      = calcSafeLimit(level, attrs.ctr || 10) + featSLBonus + guildFeatSLBonus;
   const guardRating    = calcGuardRating(attrs.res || 10) + equippedGR;
   const wardRating     = calcWardRating(attrs.ctr || 10) + featWardBonus + guildFeatWardBonus + equippedWR;
@@ -234,10 +249,31 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   function useFeat(name: string) {
     patch({ featCharges: { ...(localData.featCharges || {}), [name]: 0 } });
   }
+  function attemptCast(cost: number, consumePrecisionWeave = false): boolean {
+    if (!Number.isFinite(cost) || cost < 0 || !Number.isFinite(tension.current) ||
+        !Number.isFinite(threadPool) || tension.current + cost > threadPool) return false;
+    const precisionChargeAvailable = feats.includes("Precision Weave") && isFeatAvailable("Precision Weave");
+    if (consumePrecisionWeave && !precisionChargeAvailable) return false;
+    const nextTension = { ...tension, current: tension.current + cost };
+    if (consumePrecisionWeave) {
+      patch({
+        tension: nextTension,
+        featCharges: { ...(localData.featCharges || {}), "Precision Weave": 0 },
+      });
+    } else {
+      patch({ tension: nextTension });
+    }
+    return true;
+  }
 
   // ---- Mend handler ----
   function doMend() {
-    const diceRoll = recoveryDiceUsed * (Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1);
+    if (dicePreferencesLoading || mendRollLock.current) return;
+    mendRollLock.current = true;
+    const diceUsed = recoveryDiceUsed;
+    const d1 = rollDie(6);
+    const d2 = rollDie(6);
+    const diceRoll = recoveryDiceUsed * (d1 + d2);
     const healed = Math.min(diceRoll, maxVP - vp.current);
     const resetCharges = { ...(localData.featCharges || {}) };
     FEATS.filter(f => f.usesPerRest && (f.restType === "mend" || f.restType === "combat")).forEach(f => {
@@ -249,11 +285,17 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
       recoveryDiceCurrent: Math.max(0, recoveryDiceCurrent - recoveryDiceUsed),
       featCharges: resetCharges,
     });
+    setMendRoll({ d1, d2, diceUsed, diceRoll, healed, rolling: true, rollKey: (mendRoll?.rollKey ?? 0) + 1 });
     setRecoveryDiceUsed(0);
-    setShowMendPanel(false);
+    mendRollTimer.current = setTimeout(() => {
+      mendRollTimer.current = null;
+      mendRollLock.current = false;
+      setMendRoll(current => current ? { ...current, rolling: false } : current);
+    }, ROLL_DURATION_MS);
   }
 
   function doLongRest() {
+    if (mendRollLock.current) return;
     patch({
       vitalityPoints: { current: maxVP, max: maxVP },
       tension: { ...tension, current: 0 },
@@ -556,94 +598,137 @@ ${([
   const tertiaryModes = [localData.tertiaryMode || "", localData.tertiaryMode2 || ""].filter(m => m);
 
   return (
-    <div className="max-w-7xl mx-auto bg-background">
+    <div className="tc-sheet max-w-7xl mx-auto">
       {/* ===== HEADER ===== */}
-      <div className="border-b border-border bg-card px-6 py-4">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
+      <div className="tc-top">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="tc-identity flex-1">
             {/* Avatar */}
-            {localData.avatarDataUrl && (
+            {localData.avatarDataUrl ? (
               <img
                 src={localData.avatarDataUrl}
-                alt="Portrait"
-                className="w-14 h-14 object-cover border border-border flex-shrink-0 hidden sm:block"
+                alt={`${character.name} portrait`}
+                className="tc-portrait"
               />
+            ) : (
+              <div className="tc-portrait tc-monogram" aria-hidden="true">{character.name?.slice(0, 1) || "T"}</div>
             )}
             {/* Name & Identity */}
             <div className="flex-1 min-w-0">
+              <div className="tc-eyebrow mb-1">Aethros / Weaver dossier <span className="text-muted-foreground">· LV {level.toString().padStart(2, "0")}</span></div>
               <input
-                className="bg-transparent text-3xl font-[family-name:'Cinzel',serif] text-primary focus:outline-none w-full"
+                className="tc-name"
+                aria-label="Character name"
+                data-testid="input-character-name"
                 value={character.name}
                 onChange={e => onUpdate({ name: e.target.value })}
               />
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="tc-identity-meta">
                 <Badge>{character.affinity || "No Affinity"}</Badge>
                 <Badge variant="mode">{localData.primaryMode || character.mode || "No Mode"}</Badge>
                 <Badge variant="level">Level {level}</Badge>
                 {localData.background && <Badge variant="dim">{localData.background}</Badge>}
-                {localData.guild && <Badge variant="dim">{localData.guild}</Badge>}
+                {localData.guild && <Badge variant="dim">{localData.guild}{localData.guildRank ? ` / ${localData.guildRank}` : ""}</Badge>}
               </div>
             </div>
           </div>
 
           {/* Quick actions */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="tc-head-actions">
             <button
-              onClick={() => setShowMendPanel(v => !v)}
-              className="px-3 py-1.5 text-xs font-mono border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors"
+              onClick={() => { if (!isMendRolling) setShowMendPanel(v => !v); }}
+              disabled={isMendRolling}
+              className="tc-command tc-command--primary"
+              aria-expanded={showMendPanel}
+              aria-controls="tc-mend-panel"
+              data-testid="button-mend"
             >
-              MEND
+              Mend <span aria-hidden="true">↗</span>
             </button>
             <button
               onClick={doLongRest}
-              className="px-3 py-1.5 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors"
+              disabled={isMendRolling}
+              className="tc-command"
+              aria-label="Take a long rest and restore vitality, tension and recovery dice"
+              data-testid="button-long-rest"
             >
-              LONG REST
+              Long rest
             </button>
             <button
               onClick={handleExportPDF}
-              className="px-3 py-1.5 text-xs font-mono border border-border text-muted-foreground hover:bg-muted transition-colors"
+              className="tc-command tc-command--quiet"
+              data-testid="button-export-pdf"
             >
-              EXPORT PDF
+              Export PDF
             </button>
           </div>
         </div>
 
-        {/* VP Bar */}
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-1 font-mono text-xs">
-            <GameTerm term="vitality points" className="text-muted-foreground uppercase">Vitality Points</GameTerm>
-            <div className="flex items-center gap-3">
-              <button className="w-6 h-6 border border-border hover:bg-muted font-mono text-sm" onClick={() => patchNested("vitalityPoints", "current", Math.max(0, vp.current - 1))}>−</button>
-              <span className={vp.current <= vp.max * 0.25 ? "text-destructive font-bold" : "text-foreground"}>
-                {vp.current} <span className="text-muted-foreground">/ {vp.max || maxVP}</span>
-              </span>
-              <button className="w-6 h-6 border border-border hover:bg-muted font-mono text-sm" onClick={() => patchNested("vitalityPoints", "current", Math.min(vp.max || maxVP, vp.current + 1))}>+</button>
+        <div className="tc-vitals" aria-label="Vital resources">
+          <div className="tc-vital-card">
+            <div className="tc-card-head">
+              <div>
+                <GameTerm term="vitality points" className="tc-card-label">01 / Vitality points</GameTerm>
+                <div className={cn("tc-card-number mt-2", vpPercent <= 25 && "text-destructive")} data-testid="text-vitality">
+                  {vp.current} <small>/ {vp.max || maxVP} VP</small>
+                </div>
+              </div>
+              <div className="tc-stepper">
+                <button aria-label="Decrease vitality by one" data-testid="button-vitality-decrease" onClick={() => patchNested("vitalityPoints", "current", Math.max(0, vp.current - 1))}>−</button>
+                <button aria-label="Increase vitality by one" data-testid="button-vitality-increase" onClick={() => patchNested("vitalityPoints", "current", Math.min(vp.max || maxVP, vp.current + 1))}>+</button>
+              </div>
+            </div>
+            <div className="tc-meter" role="progressbar" aria-label="Vitality points" aria-valuenow={vp.current} aria-valuemin={0} aria-valuemax={vp.max || maxVP}>
+              <div className={cn("tc-meter-fill", vpPercent <= 25 ? "bg-destructive" : vpPercent <= 50 ? "bg-primary" : "bg-chart-2")} style={{ width: `${vpPercent}%` }} />
             </div>
           </div>
-          <div className="h-2 bg-background border border-border">
-            <div
-              className={cn("h-full transition-all duration-300", vpPercent <= 25 ? "bg-destructive" : vpPercent <= 50 ? "bg-primary" : "bg-accent")}
-              style={{ width: `${vpPercent}%` }}
-            />
+          <div className="tc-tension-card">
+            <div className="tc-card-head">
+              <div>
+                <GameTerm term="tension" className="tc-card-label">02 / Thread tension</GameTerm>
+                <div className="tc-card-number mt-2" data-testid="text-tension">{tension.current} <small>/ {tension.pool || maxPool} T</small></div>
+              </div>
+              <div className="tc-stepper">
+                <button aria-label="Release one tension" data-testid="button-tension-decrease" onClick={() => patchNested("tension", "current", Math.max(0, tension.current - 1))}>−</button>
+                <button aria-label="Gain one tension" data-testid="button-tension-increase" onClick={() => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + 1))}>+</button>
+              </div>
+            </div>
+            <div className="tc-tension-details">
+              <span>Safe limit <strong>{tension.safeLimit || safeLimit}</strong></span>
+              <span>{tension.current > (tension.safeLimit || safeLimit) ? "OVER SAFE LIMIT" : "WITHIN SAFE LIMIT"}</span>
+            </div>
           </div>
         </div>
 
         {/* Mend Panel */}
         {showMendPanel && (
-          <div className="mt-3 p-4 border border-chart-2/30 bg-chart-2/5 font-mono text-sm">
+          <div id="tc-mend-panel" className="tc-mend font-mono text-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-chart-2 uppercase text-xs tracking-widest">Mend — Spend Recovery Dice</span>
               <span className="text-muted-foreground text-xs">{recoveryDiceCurrent}/{maxRecoveryDice} dice remaining</span>
             </div>
-            <div className="flex gap-2 items-center flex-wrap">
+            {dicePreferencesLoading && <p className="mb-2 text-[10px] text-muted-foreground" role="status">Loading dice preferences… Mend is unavailable until your die selection loads.</p>}
+            {dicePreferenceError && <p className="mb-2 text-[10px] text-amber-500" role="status">Dice preference unavailable; the house die is being used.</p>}
+            {mendRoll && (
+              <div className="mb-3" aria-live="polite">
+                <DiceStage dice={[{ sides: 6, value: mendRoll.d1 }, { sides: 6, value: mendRoll.d2 }]} style={diceStyle} phase={mendRoll.rolling ? "rolling" : "settled"} rollKey={mendRoll.rollKey} height={150} />
+                <p className="mt-2 text-xs text-foreground">
+                  Mend roll: d6 {mendRoll.d1} + d6 {mendRoll.d2} = {mendRoll.d1 + mendRoll.d2}; {mendRoll.diceUsed} × {mendRoll.d1 + mendRoll.d2} = {mendRoll.diceRoll}; healed {mendRoll.healed} VP.
+                  {mendRoll.rolling ? " Rolling…" : ""}
+                </p>
+              </div>
+            )}
+            <div className="tc-mend-dice">
               <span className="text-muted-foreground text-xs">Dice to spend:</span>
               {Array.from({ length: recoveryDiceCurrent }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setRecoveryDiceUsed(i + 1)}
+                  disabled={isMendRolling || dicePreferencesLoading}
+                  aria-label={`Spend ${i + 1} recovery ${i === 0 ? "die" : "dice"}`}
+                  aria-pressed={recoveryDiceUsed === i + 1}
                   className={cn(
-                    "w-8 h-8 border text-xs font-bold transition-colors",
+                    "text-xs font-bold transition-colors",
                     recoveryDiceUsed > i ? "border-chart-2 bg-chart-2/20 text-chart-2" : "border-border text-muted-foreground"
                   )}
                 >
@@ -653,7 +738,7 @@ ${([
               {recoveryDiceCurrent === 0 && <span className="text-muted-foreground text-xs">No dice remaining. Long Rest to recover.</span>}
             </div>
             {recoveryDiceUsed > 0 && (
-              <button onClick={doMend} className="mt-3 px-4 py-1.5 bg-chart-2/20 border border-chart-2/50 text-chart-2 text-xs hover:bg-chart-2/30 transition-colors">
+              <button onClick={doMend} disabled={isMendRolling || dicePreferencesLoading} className="tc-command mt-4 border-chart-2/50 text-chart-2 hover:bg-chart-2/20 disabled:cursor-not-allowed disabled:opacity-50">
                 SPEND {recoveryDiceUsed}d6+{calcMod(attrs.res || 10)} → MEND
               </button>
             )}
@@ -661,7 +746,7 @@ ${([
         )}
 
         {/* Quick Stats Row */}
-        <div className="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-xs">
+        <div className="tc-readouts font-mono text-xs">
           <QuickStat label={<GameTerm term="guard rating">GUARD</GameTerm>} value={localData.guardRating ?? guardRating} />
           <QuickStat label={<GameTerm term="ward rating">WARD</GameTerm>} value={localData.wardRating ?? wardRating} />
           <QuickStat label={<GameTerm term="refinement bonus">RB</GameTerm>} value={`+${rb}`} highlight />
@@ -672,13 +757,13 @@ ${([
       </div>
 
       {/* ===== TABS ===== */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full rounded-none border-b border-border bg-card h-11 justify-start overflow-x-auto">
+      <Tabs defaultValue="overview" className="w-full tc-workspace">
+        <TabsList className="tc-tabs">
           {["overview","actions","skills","strings","feats","inventory","background","notes"].map(tab => (
             <TabsTrigger
               key={tab}
               value={tab}
-              className="font-mono text-[11px] rounded-none data-[state=active]:bg-background data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary h-full px-4 capitalize tracking-wide"
+              className="tc-tab"
             >
               {tab === "feats" && featSlotsRemaining > 0
                 ? <span className="flex items-center gap-1">{tab} <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center">{featSlotsRemaining}</span></span>
@@ -689,72 +774,78 @@ ${([
         </TabsList>
 
         {/* ===== OVERVIEW ===== */}
-        <TabsContent value="overview" className="p-0 m-0">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <TabsContent value="overview" className="tc-panel m-0">
+          <div className="tc-overview-grid">
             {/* Attributes column */}
-            <div className="lg:col-span-5 border-r border-border p-5 space-y-4">
-              <h3 className="font-[family-name:'Cinzel',serif] text-xs text-muted-foreground uppercase tracking-widest">Attributes</h3>
-              <div>
+            <div className="tc-surface">
+              <h3 className="tc-section-title">Attributes <small>Tap modifier to roll</small></h3>
+              <div className="tc-attribute-grid">
                 {ATTRIBUTE_DEFS.map(attr => {
                   const baseScore = baseAttrs[attr.key] || 10;
                   const bonus = asiAttrBonuses[attr.key] || 0;
-                  const score = baseScore + bonus;
+                  const score = attrs[attr.key] || 10;
                   const mod = calcMod(score);
                   return (
-                    <div key={attr.key} className="flex items-center py-2 border-b border-border/20 last:border-0 hover:bg-muted/20 px-1 group">
-                      <GameTerm term={attr.key} className="w-24 font-mono text-xs text-muted-foreground">{attr.abbr} <span className="text-muted-foreground/50">{attr.label}</span></GameTerm>
-                      <input
-                        type="number"
-                        className="w-14 bg-transparent text-center font-mono text-lg focus:outline-none"
-                        value={baseScore}
-                        min={1} max={20}
-                        onChange={e => {
-                          const v = parseInt(e.target.value) || 10;
-                          patch({ attributes: { ...baseAttrs, [attr.key]: v } });
-                        }}
-                      />
-                      {bonus > 0 && <span className="text-[10px] font-mono text-chart-2 ml-0.5">+{bonus}={score}</span>}
-                      <button
-                        className="ml-auto w-14 text-center text-primary font-mono font-bold hover:bg-primary/15 py-1 rounded transition-colors"
-                        onClick={() => openRoll(`${attr.label} Check`, mod, character.name)}
-                      >
-                        {fmtMod(mod)}
-                      </button>
+                    <div key={attr.key} className="tc-attribute" data-testid={`card-attribute-${attr.key}`}>
+                      <GameTerm term={attr.key} className="tc-card-label">{attr.abbr}</GameTerm>
+                      <div className="text-[10px] text-muted-foreground truncate">{attr.label}</div>
+                      <div className="tc-attribute-top mt-2">
+                        <input
+                          type="number"
+                          aria-label={`${attr.label} base score`}
+                          data-testid={`input-attribute-${attr.key}`}
+                          value={baseScore}
+                          min={1} max={20}
+                          onChange={e => {
+                            const v = parseInt(e.target.value) || 10;
+                            patch({ attributes: { ...baseAttrs, [attr.key]: v } });
+                          }}
+                        />
+                        <button
+                          className="tc-roll"
+                          aria-label={`Roll ${attr.label} check with ${fmtMod(mod)} modifier`}
+                          data-testid={`button-roll-attribute-${attr.key}`}
+                          onClick={() => openRoll(`${attr.label} Check`, mod, character.name)}
+                        >{fmtMod(mod)}</button>
+                      </div>
+                      {(score !== baseScore) && <div className="text-[10px] font-mono text-chart-2 mt-1" title="Total includes feat and guild bonuses">Total {score}{bonus > 0 ? ` · feat +${bonus}` : ""}</div>}
                     </div>
                   );
                 })}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="tc-defense-grid">
                 {[
                   { key: "guardRating", label: "Guard Rating", computed: guardRating, term: "guard rating" },
                   { key: "wardRating", label: "Ward Rating", computed: wardRating, term: "ward rating" },
                 ].map(stat => (
-                  <div key={stat.key} className="text-center p-2 border border-border/50 bg-background/50">
-                    <GameTerm term={stat.term} className="text-[10px] font-mono text-muted-foreground block mb-1">{stat.label.toUpperCase()}</GameTerm>
+                  <div key={stat.key} className="tc-defense">
+                    <GameTerm term={stat.term} className="tc-card-label block mb-1">{stat.label}</GameTerm>
                     <input
                       type="number"
-                      className="w-full bg-transparent text-center text-2xl font-mono focus:outline-none"
+                      aria-label={`${stat.label} override`}
+                      className="w-full"
                       value={(localData as any)[stat.key] ?? stat.computed}
                       onChange={e => patch({ [stat.key]: parseInt(e.target.value) || stat.computed } as any)}
                     />
-                    <div className="text-[9px] text-muted-foreground/50 font-mono">auto: {stat.computed}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono">Calculated {stat.computed}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="tc-condition">
+                <div className="tc-card-label mb-4">Conditions / long-term strain</div>
                 <TrackerRow
                   label={<GameTerm term="corruption">Corruption</GameTerm>}
                   value={corruption} max={10}
-                  color={corruption >= 6 ? "bg-destructive" : "bg-purple-500"}
+                  color={corruption >= 6 ? "bg-destructive" : "bg-chart-2"}
                   onDec={() => patch({ corruption: Math.max(0, corruption - 1) })}
                   onInc={() => patch({ corruption: Math.min(10, corruption + 1) })}
                 />
                 <TrackerRow
                   label={<GameTerm term="fatigue">Fatigue</GameTerm>}
                   value={fatigue} max={5}
-                  color={fatigue >= 3 ? "bg-destructive" : "bg-yellow-600"}
+                  color={fatigue >= 3 ? "bg-destructive" : "bg-primary"}
                   onDec={() => patch({ fatigue: Math.max(0, fatigue - 1) })}
                   onInc={() => patch({ fatigue: Math.min(5, fatigue + 1) })}
                 />
@@ -762,7 +853,9 @@ ${([
             </div>
 
             {/* Tension + Burnout column */}
-            <div className="lg:col-span-7 p-5 flex flex-col items-center gap-6">
+            <div className="tc-surface">
+              <h3 className="tc-section-title">The thread <small>Tension & burnout</small></h3>
+              <div className="tc-gauge-surface">
               <TensionGauge
                 current={tension.current}
                 max={tension.pool || maxPool}
@@ -770,50 +863,57 @@ ${([
                 onSpend={() => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + 1))}
                 onRelease={() => patchNested("tension", "current", Math.max(0, tension.current - 1))}
               />
-              <div className="w-full max-w-sm">
+              <div className="w-full">
+                <div className="tc-card-label mb-3">Burnout / {burnout} of 6</div>
                 <BurnoutTrack level={burnout} />
-                <div className="flex gap-2 justify-center mt-3">
-                  <button className="px-3 py-1 text-xs border border-border hover:bg-muted font-mono transition-colors" onClick={() => patch({ burnout: Math.max(0, burnout - 1) })}>− BURN</button>
-                  <button className="px-3 py-1 text-xs border border-destructive/40 text-destructive/70 hover:bg-destructive/10 font-mono transition-colors" onClick={() => patch({ burnout: Math.min(6, burnout + 1) })}>+ BURN</button>
+                <div className="flex gap-2 mt-4">
+                  <button className="tc-command flex-1" aria-label="Decrease burnout by one" data-testid="button-burnout-decrease" onClick={() => patch({ burnout: Math.max(0, burnout - 1) })}>− Burnout</button>
+                  <button className="tc-command flex-1 border-destructive/40 text-destructive" aria-label="Increase burnout by one" data-testid="button-burnout-increase" onClick={() => patch({ burnout: Math.min(6, burnout + 1) })}>+ Burnout</button>
                 </div>
-                <div className="mt-4 space-y-1">
+                <div className="tc-burnout-list">
                   {BURNOUT_LEVELS.map(bl => (
-                    <div key={bl.level} className={cn("flex gap-2 text-[10px] font-mono py-1 px-2", bl.level === burnout && "bg-destructive/10 border-l-2 border-destructive")}>
-                      <span className={cn("font-bold w-16 flex-shrink-0", bl.level === burnout ? "text-destructive" : "text-muted-foreground/40")}>
+                    <div key={bl.level} data-current={bl.level === burnout}>
+                      <span className={cn("font-bold", bl.level === burnout ? "text-destructive" : "text-muted-foreground")}>
                         {bl.level}: {bl.label}
                       </span>
-                      <span className="text-muted-foreground/60">{bl.penalty}</span>
+                      <span className="text-muted-foreground">{bl.penalty}</span>
                     </div>
                   ))}
                 </div>
+              </div>
               </div>
             </div>
           </div>
         </TabsContent>
 
         {/* ===== ACTIONS ===== */}
-        <TabsContent value="actions" className="p-4 m-0 space-y-5">
+        <TabsContent value="actions" className="tc-panel m-0 space-y-7">
+          <div><div className="tc-eyebrow">Combat / quick rolls</div><h2 className="tc-section-title mt-1">Actions <small>Ready at the table</small></h2></div>
           {/* Unarmed Strike — always present */}
           <div>
-            <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Basic Attacks</h3>
-            <div className="border border-border p-3 bg-card flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
+            <h3 className="tc-card-label mb-3">Basic attacks</h3>
+            <div className="tc-action">
+              <div className="tc-action-main">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">Unarmed Strike</span>
+                  <span className="tc-action-name">Unarmed Strike</span>
                   <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">Melee</span>
                   <span className="text-[10px] font-mono text-muted-foreground">RES</span>
                 </div>
-                <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">
+                <p className="tc-action-sub">
                   1 + RES mod (min 1) bludgeoning · May follow up for free after hitting with another attack
                 </p>
               </div>
-              <div className="flex gap-1.5 flex-shrink-0">
+              <div className="tc-action-buttons">
                 <button
-                  className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                  className="tc-roll"
+                  aria-label="Roll unarmed strike attack"
+                  data-testid="button-roll-unarmed-attack"
                   onClick={() => openRoll("Unarmed Strike — Attack", calcMod(attrs.res || 10), character.name)}
                 >ATK {fmtMod(calcMod(attrs.res || 10))}</button>
                 <button
-                  className="px-2.5 py-1.5 text-xs font-mono border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors"
+                  className="tc-roll"
+                  aria-label="Roll unarmed strike damage"
+                  data-testid="button-roll-unarmed-damage"
                   onClick={() => openRoll("Unarmed Strike — Damage", Math.max(1, calcMod(attrs.res || 10)), character.name)}
                 >1{fmtMod(Math.max(1, calcMod(attrs.res || 10)))} blunt</button>
               </div>
@@ -823,31 +923,33 @@ ${([
           {/* Equipped Weapons */}
           {equippedWeapons.length > 0 && (
             <div>
-              <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Equipped Weapons</h3>
-              <div className="space-y-2">
+              <h3 className="tc-card-label mb-3">Equipped weapons / {equippedWeapons.length}</h3>
+              <div className="tc-action-list">
                 {equippedWeapons.map(item => {
                   const bonus = ITEM_BONUS[item.id];
                   const atkKey = bonus?.attackAttr || "res";
                   const atkMod = calcMod((attrs as Record<string, number>)[atkKey] || 10);
                   return (
-                    <div key={item.id} className="border border-border p-3 bg-card flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
+                    <div key={item.id} className="tc-action">
+                      <div className="tc-action-main">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">{item.name}</span>
+                          <span className="tc-action-name">{item.name}</span>
                           <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">{bonus?.range || "Melee"}</span>
                           <span className="text-[10px] font-mono text-muted-foreground">{atkKey.toUpperCase()}</span>
                           {bonus?.twoHanded && <span className="text-[10px] font-mono text-primary/50 border border-primary/20 px-1">2H</span>}
                           {bonus?.damageType && <span className="text-[10px] font-mono text-muted-foreground/50">{bonus.damageType}</span>}
                         </div>
-                        {item.mechanical && <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">{item.mechanical}</p>}
+                        {item.mechanical && <p className="tc-action-sub">{item.mechanical}</p>}
                       </div>
-                      <div className="flex gap-1.5 flex-shrink-0">
+                      <div className="tc-action-buttons">
                         <button
-                          className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                          className="tc-roll"
+                          aria-label={`Roll ${item.name} attack`}
                           onClick={() => openRoll(`${item.name} — Attack`, atkMod, character.name)}
                         >ATK {fmtMod(atkMod)}</button>
                         <button
-                          className="px-2.5 py-1.5 text-xs font-mono border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors"
+                          className="tc-roll"
+                          aria-label={`Roll ${item.name} damage`}
                           onClick={() => openRoll(`${item.name} — Damage`, atkMod, character.name)}
                         >{bonus?.damageDice || "1d6"}{fmtMod(atkMod)}{bonus?.damageBonusDice ? ` ${bonus.damageBonusDice}` : ""}</button>
                       </div>
@@ -861,25 +963,26 @@ ${([
           {/* Per-Rest Combat Abilities */}
           {activeCombatFeats.length > 0 && (
             <div>
-              <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-2">Combat Abilities</h3>
-              <div className="space-y-2">
+              <h3 className="tc-card-label mb-3">Combat abilities</h3>
+              <div className="tc-action-list">
                 {activeCombatFeats.map(feat => {
                   const avail = isFeatAvailable(feat.name);
                   return (
-                    <div key={feat.name} className={cn("border p-3 bg-card flex items-start justify-between gap-3 transition-opacity", avail ? "border-border" : "border-border/30 opacity-60")}>
-                      <div className="flex-1 min-w-0">
+                    <div key={feat.name} className={cn("tc-action transition-opacity", !avail && "opacity-60")}>
+                      <div className="tc-action-main">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-[family-name:'Cinzel',serif] text-sm text-foreground">{feat.name}</span>
+                          <span className="tc-action-name">{feat.name}</span>
                           <span className="text-[10px] font-mono text-muted-foreground border border-border/40 px-1.5 py-0.5">
                             {feat.restType === "mend" ? "1/MEND" : feat.restType === "long" ? "1/LONG REST" : "1/COMBAT"}
                           </span>
                         </div>
-                        <p className="text-[10px] font-mono text-primary/70 leading-relaxed">{feat.mechanical}</p>
+                        <p className="tc-action-sub">{feat.mechanical}</p>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="tc-action-buttons">
                         {avail ? (
                           <button
-                            className="px-2.5 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors"
+                            className="tc-command"
+                            aria-label={`Use ${feat.name}`}
                             onClick={() => useFeat(feat.name)}
                           >USE</button>
                         ) : (
@@ -894,19 +997,22 @@ ${([
           )}
 
           {equippedWeapons.length === 0 && activeCombatFeats.length === 0 && (
-            <p className="text-center font-mono text-sm text-muted-foreground py-8">
+            <p className="tc-surface text-center font-mono text-sm text-muted-foreground py-8">
               Equip weapons in the Inventory tab · Per-rest feats appear once selected in the Feats tab
             </p>
           )}
         </TabsContent>
 
         {/* ===== SKILLS ===== */}
-        <TabsContent value="skills" className="p-5 m-0">
+        <TabsContent value="skills" className="tc-panel m-0">
+          <div className="tc-eyebrow">Aptitudes / checks</div>
+          <h2 className="tc-section-title mt-1">Skills <small>Tap result to roll</small></h2>
           <div className="mb-4 flex items-center gap-4 font-mono text-xs text-muted-foreground">
             <span><GameTerm term="refinement bonus">Refinement Bonus</GameTerm>: <strong className="text-primary">+{rb}</strong></span>
             <span>Attuned: {attunedSkills.length}/{ALL_SKILLS.length}</span>
           </div>
-          <table className="w-full text-left font-mono text-sm">
+          <div className="tc-skills-wrap tc-surface !p-0">
+          <table className="tc-skills-table">
             <thead>
               <tr className="text-muted-foreground/50 border-b border-border text-xs">
                 <th className="pb-2 font-normal">Skill</th>
@@ -936,8 +1042,11 @@ ${([
                     </td>
                     <td className="py-2.5 text-center">
                       <button
-                        className={cn("w-5 h-5 inline-flex items-center justify-center border transition-colors text-xs",
+                        className={cn("tc-attune",
                           isAttuned ? "border-primary bg-primary/10 text-primary" : "border-border/60 hover:border-primary/40")}
+                        aria-label={`${isAttuned ? "Remove" : "Add"} attunement for ${skill.name}${isFeatAttuned ? " (granted by feat)" : ""}`}
+                        aria-pressed={isAttuned}
+                        disabled={isFeatAttuned}
                         onClick={() => {
                           if (isFeatAttuned) return;
                           const next = isAttuned ? attunedSkillsBase.filter(s => s !== skill.name) : [...attunedSkillsBase, skill.name];
@@ -945,7 +1054,7 @@ ${([
                         }}
                         title={isFeatAttuned ? "Attuned via feat" : undefined}
                       >
-                        {isAttuned ? (isExpert ? "★" : "●") : ""}
+                        {isAttuned ? (isExpert ? "E" : "A") : "—"}
                       </button>
                     </td>
                     <td className="py-2.5 text-center text-muted-foreground">
@@ -954,7 +1063,8 @@ ${([
                     </td>
                     <td className="py-2.5 text-center">
                       <button
-                        className="text-primary hover:bg-primary/15 px-2 py-0.5 rounded font-bold transition-colors"
+                        className="tc-roll"
+                        aria-label={`Roll ${skill.name} check with ${fmtMod(total)} modifier`}
                         onClick={() => openRoll(`${skill.name} Check`, total, character.name)}
                       >
                         {fmtMod(total)}
@@ -965,10 +1075,14 @@ ${([
               })}
             </tbody>
           </table>
+          </div>
         </TabsContent>
 
         {/* ===== STRINGS ===== */}
-        <TabsContent value="strings" className="p-4 m-0 space-y-4">
+        {/* Keep pending casts mounted while switching tabs so the spent Tension's result remains visible. */}
+        <TabsContent value="strings" forceMount className="tc-panel m-0 space-y-5">
+          <div className="tc-eyebrow">Casting / threadwork</div>
+          <h2 className="tc-section-title mt-1">Strings <small>{(localData.strings || []).length} attuned</small></h2>
           {(localData.strings || []).length === 0 && (
             <div className="py-8 text-center font-mono text-muted-foreground text-sm">No Strings attuned. Add them via character editing.</div>
           )}
@@ -977,10 +1091,10 @@ ${([
             <div className="flex flex-wrap gap-2 font-mono text-[10px] pb-2 border-b border-border/30">
               {primaryMode && <span className="px-2 py-0.5 border border-chart-2/40 text-chart-2"><span className="opacity-60">Primary:</span> {primaryMode} → HARMONY</span>}
               {secondaryModes.map(m => <span key={m} className="px-2 py-0.5 border border-border text-muted-foreground"><span className="opacity-60">Secondary:</span> {m} → NORMAL</span>)}
-              {tertiaryModes.map(m => <span key={m} className="px-2 py-0.5 border border-destructive/30 text-destructive/70"><span className="opacity-60">Tertiary:</span> {m} → DISCORD</span>)}
+              {tertiaryModes.map(m => <span key={m} className="px-2 py-0.5 border border-border text-muted-foreground"><span className="opacity-60">Tertiary:</span> {m} → NORMAL</span>)}
             </div>
           )}
-          {(localData.strings || []).map((sName, i) => {
+          <div className="tc-string-list">{(localData.strings || []).map((sName, i) => {
             const strData = findString(sName);
             const checkAttrKey = strData?.checkAttr ?? "ths";
             const attrScore = attrs[checkAttrKey] || 10;
@@ -994,29 +1108,32 @@ ${([
             }
             return (
               <CastStringPanel
-                key={i}
+                key={`${character.id}-${i}`}
                 str={strData}
                 attrScore={attrScore}
                 characterName={character.name}
-                onCast={cost => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + cost))}
+                availableTension={availableTension}
+                onCast={cost => attemptCast(cost)}
                 primaryMode={primaryMode}
                 secondaryModes={secondaryModes}
                 tertiaryModes={tertiaryModes}
                 level={level}
               />
             );
-          })}
+          })}</div>
           {/* Add String */}
-          <div className="border border-dashed border-border/50 p-3">
+          <div className="tc-string-tools">
             <p className="text-xs font-mono text-muted-foreground mb-2">Add a String name:</p>
             <div className="flex gap-2">
               <input
                 id="add-string-input"
-                className="flex-1 bg-background border border-border px-2 py-1 font-mono text-sm focus:outline-none focus:border-primary"
+                aria-label="String name to add"
+                className="flex-1 min-w-0 bg-background border border-border px-3 py-2 font-mono text-sm focus:outline-none focus:border-primary"
                 placeholder="e.g. Flow String"
               />
               <button
-                className="px-3 py-1 text-xs border border-primary/50 text-primary hover:bg-primary/10 font-mono"
+                className="tc-command"
+                aria-label="Add String"
                 onClick={() => {
                   const el = document.getElementById("add-string-input") as HTMLInputElement;
                   if (el.value.trim()) {
@@ -1045,13 +1162,14 @@ ${([
                   };
                   patch({ weavings: [...(localData.weavings || []), newWeave] });
                 }}
-                className="px-3 py-1 text-xs border border-primary/50 text-primary hover:bg-primary/10 font-mono"
+                className="tc-command"
+                aria-label="Add weaving combination"
               >
                 + ADD WEAVE
               </button>
             </div>
             <div className="text-[10px] font-mono text-muted-foreground/60 border border-border/20 p-2 space-y-0.5">
-              <div>2 STRINGS — Normal Thread Check · Enhanced effect · ×1 Tension cost</div>
+              <div>2 STRINGS — {feats.includes("Precision Weave") ? "Harmony" : "Normal"} Thread Check · Enhanced effect · ×1 Tension cost</div>
               <div>3 STRINGS — Discord Thread Check · Dramatic effect · ×2 Tension cost</div>
               <div>4 STRINGS (Lv7+) — Discord Thread Check · Catastrophic potential · ×3 Tension cost</div>
             </div>
@@ -1060,7 +1178,7 @@ ${([
             )}
             {(localData.weavings || []).map((weave, wi) => (
               <WeaveCastRow
-                key={weave.id}
+                key={`${character.id}-${weave.id}`}
                 weave={weave}
                 wi={wi}
                 maxStrings={level >= 7 ? 4 : 3}
@@ -1070,14 +1188,17 @@ ${([
                 secondaryModes={secondaryModes}
                 tertiaryModes={tertiaryModes}
                 ctrScore={attrs.ctr || 10}
-                onCast={cost => patchNested("tension", "current", Math.min(tension.pool || maxPool, tension.current + cost))}
+                availableTension={availableTension}
+                hasPrecisionWeave={feats.includes("Precision Weave")}
+                precisionWeaveChargeAvailable={isFeatAvailable("Precision Weave")}
+                onCast={(cost, consumePrecisionWeave) => attemptCast(cost, consumePrecisionWeave)}
               />
             ))}
           </div>
         </TabsContent>
 
         {/* ===== FEATS ===== */}
-        <TabsContent value="feats" className="p-4 m-0">
+        <TabsContent value="feats" className="tc-panel m-0">
           {/* Guild Rank Benefits */}
           {guildRankData && (
             <div className="mb-5 border border-chart-2/30 bg-chart-2/5 p-4">
@@ -1365,7 +1486,7 @@ ${([
         </TabsContent>
 
         {/* ===== INVENTORY ===== */}
-        <TabsContent value="inventory" className="p-4 m-0">
+        <TabsContent value="inventory" className="tc-panel m-0">
           <div className="flex justify-between items-center mb-4">
             <span className="font-mono text-xs text-muted-foreground">{inventory.length} items carried</span>
             <div className="flex gap-2">
@@ -1598,7 +1719,7 @@ ${([
         </TabsContent>
 
         {/* ===== BACKGROUND ===== */}
-        <TabsContent value="background" className="p-5 m-0">
+        <TabsContent value="background" className="tc-panel m-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
             <div className="space-y-4">
               <EditableField label="Background" value={localData.background || ""} onChange={v => patch({ background: v })} placeholder="Guild-Raised, Self-Taught..." />
@@ -1658,7 +1779,7 @@ ${([
         </TabsContent>
 
         {/* ===== NOTES ===== */}
-        <TabsContent value="notes" className="p-4 m-0">
+        <TabsContent value="notes" className="tc-panel m-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {([
               { key: "notesBackstory"   as const, label: "Backstory",          placeholder: "Where did you come from? What shaped you?" },
@@ -1713,21 +1834,21 @@ function Badge({ children, variant = "affinity" }: { children: React.ReactNode; 
 function QuickStat({ label, value, highlight, warning }: { label: React.ReactNode; value: string | number; highlight?: boolean; warning?: boolean }) {
   return (
     <div className="text-center">
-      <div className="text-[9px] text-muted-foreground/60 uppercase mb-0.5 leading-tight">{label}</div>
-      <div className={cn("font-mono text-base font-bold", highlight && "text-primary", warning && "text-destructive")}>{value}</div>
+      <div className="text-[10px] text-muted-foreground uppercase mb-1 leading-tight">{label}</div>
+      <div className={cn("font-mono text-lg font-bold", highlight && "text-primary", warning && "text-destructive")}>{value}</div>
     </div>
   );
 }
 
 function TrackerRow({ label, value, max, color, onDec, onInc }: { label: React.ReactNode; value: number; max: number; color: string; onDec: () => void; onInc: () => void }) {
   return (
-    <div>
-      <div className="flex justify-between text-xs font-mono mb-1">
-        <span className="text-muted-foreground">{label}</span>
+    <div className="tc-track">
+      <div className="flex justify-between items-center gap-2 text-xs font-mono mb-2">
+        <span className="text-foreground">{label}</span>
         <div className="flex gap-1 items-center">
-          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={onDec}>−</button>
-          <span className="w-12 text-center">{value}/{max}</span>
-          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={onInc}>+</button>
+          <button className="tc-track-button" aria-label={`Decrease ${typeof label === "string" ? label : "condition"} by one`} onClick={onDec}>−</button>
+          <span className="w-12 text-center tabular-nums">{value}/{max}</span>
+          <button className="tc-track-button" aria-label={`Increase ${typeof label === "string" ? label : "condition"} by one`} onClick={onInc}>+</button>
         </div>
       </div>
       <div className="h-1.5 bg-background border border-border">
@@ -1754,32 +1875,45 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
 // ===== WEAVE CAST ROW =====
 function WeaveCastRow({
   weave, wi, maxStrings, localData, patch,
-  primaryMode, secondaryModes, tertiaryModes, ctrScore, onCast,
+  primaryMode, secondaryModes, tertiaryModes, ctrScore, availableTension,
+  hasPrecisionWeave, precisionWeaveChargeAvailable, onCast,
 }: {
   weave: WeavingEntry; wi: number; maxStrings: number;
   localData: any; patch: (p: any) => void;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[];
-  ctrScore: number; onCast: (cost: number) => void;
+  ctrScore: number; availableTension: number;
+  hasPrecisionWeave: boolean; precisionWeaveChargeAvailable: boolean;
+  onCast: (cost: number, consumePrecisionWeave?: boolean) => boolean;
 }) {
   type WModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const mod = calcMod(ctrScore);
+  const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
+  const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [castOpen, setCastOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState<WModeOption | null>(null);
   const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
   const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number } | null>(null);
-  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [rolledCost, setRolledCost] = useState<number | null>(null);
+  const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [rollKey, setRollKey] = useState(0);
 
-  const checkType = weave.numStrings === 2 ? "Normal" : "Discord";
+  useEffect(() => () => {
+    if (rollTimerRef.current) clearTimeout(rollTimerRef.current);
+  }, []);
+
+  const checkType = weave.numStrings === 2 ? (hasPrecisionWeave ? "Harmony" : "Normal") : "Discord";
   const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
   const costMultiplier = weave.numStrings === 2 ? 1 : weave.numStrings === 3 ? 2 : 3;
-  const baseCost = (weave.strings || []).reduce((sum: number, sName: string, si: number) => {
+  const baseCost = (weave.strings || []).slice(0, weave.numStrings).reduce((sum: number, sName: string, si: number) => {
     const sData = findString(sName);
     const pl = (weave.powerLevels || [])[si] || 1;
     return sum + (sData?.levels?.[pl - 1]?.cost ?? pl);
   }, 0);
   const totalCost = baseCost * costMultiplier;
+  const precisionDiscount = weave.numStrings === 2 && hasPrecisionWeave && precisionWeaveChargeAvailable && totalCost > 0;
+  const castCost = Math.max(0, totalCost - (precisionDiscount ? 1 : 0));
   const weaveDC = (() => {
-    const dcs = (weave.strings || []).map((sName: string, si: number) => {
+    const dcs = (weave.strings || []).slice(0, weave.numStrings).map((sName: string, si: number) => {
       const sData = findString(sName);
       const pl = (weave.powerLevels || [])[si] || 1;
       return sData?.levels?.[pl - 1]?.dc ?? (10 + pl * 2);
@@ -1789,49 +1923,71 @@ function WeaveCastRow({
   })();
 
   const normalSet = new Set([...secondaryModes, ...tertiaryModes]);
+  const availableStrings: string[] = Array.isArray(localData.strings) ? localData.strings : [];
+  const isConfigured = Number.isInteger(weave.numStrings) && weave.numStrings >= 2 && weave.numStrings <= maxStrings &&
+    Array.from({ length: weave.numStrings }).every((_, si) => {
+      const selectedString = weave.strings?.[si];
+      const powerLevel = weave.powerLevels?.[si];
+      return typeof selectedString === "string" &&
+        selectedString.trim().length > 0 &&
+        availableStrings.includes(selectedString) &&
+        Number.isFinite(powerLevel) &&
+        Number.isInteger(powerLevel) &&
+        powerLevel >= 1 &&
+        powerLevel <= 5;
+    });
+  const weaveRollType: "HARMONY" | "NORMAL" | "DISCORD" = weave.numStrings === 2
+    ? (hasPrecisionWeave ? "HARMONY" : "NORMAL")
+    : "DISCORD";
   const availableModes: WModeOption[] = ALL_MODES.map(m => {
-    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: "HARMONY" as const, tier: "Primary" as const };
+    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: weaveRollType, tier: "Primary" as const };
     if (normalSet.has(m.name)) {
       const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
-      return { name: m.name, rollType: "NORMAL" as const, tier };
+      return { name: m.name, rollType: weaveRollType, tier };
     }
-    return { name: m.name, rollType: "DISCORD" as const, tier: "Other" as const };
+    return { name: m.name, rollType: weaveRollType, tier: "Other" as const };
   });
 
-  function openCast() { setCastOpen(true); setSelectedMode(null); setCastResult(null); if (animRef.current) { clearInterval(animRef.current); animRef.current = null; } setAnimDice(null); }
-  function closeCast() { setCastOpen(false); setSelectedMode(null); setCastResult(null); if (animRef.current) { clearInterval(animRef.current); animRef.current = null; } setAnimDice(null); }
+  function openCast() { setCastOpen(true); setSelectedMode(null); setCastResult(null); setRolledCost(null); if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; } setAnimDice(null); }
+  function closeCast() {
+    if (animDice) return;
+    setCastOpen(false); setSelectedMode(null); setCastResult(null); setRolledCost(null);
+    if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
+    setAnimDice(null);
+  }
 
   function doRoll() {
-    if (!selectedMode) return;
+    if (!selectedMode || !isConfigured || dicePreferencesLoading || castCost > availableTension) return;
     const mode = selectedMode;
-    onCast(totalCost);
+    if (!onCast(castCost, precisionDiscount)) return;
+    setRolledCost(castCost);
     setSelectedMode(null);
     const needs2 = mode.rollType !== "NORMAL";
-    setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
-    animRef.current = setInterval(() => {
-      setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
-    }, 60);
-    setTimeout(() => {
-      if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
-      const d1 = Math.floor(Math.random() * 20) + 1;
-      let d2: number | undefined;
+    const d1 = rollDie(20);
+    const d2 = needs2 ? rollDie(20) : undefined;
+    setRollKey(key => key + 1);
+    setAnimDice({ d1, d2, rollType: mode.rollType });
+    rollTimerRef.current = setTimeout(() => {
+      rollTimerRef.current = null;
       let finalDie = d1;
-      if (mode.rollType === "HARMONY") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.max(d1, d2); }
-      if (mode.rollType === "DISCORD") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.min(d1, d2); }
+      if (mode.rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
+      if (mode.rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
       const total = finalDie + mod;
       setAnimDice(null);
       setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: weaveDC });
-    }, 1100);
+    }, ROLL_DURATION_MS);
   }
 
   const rtBadge = (rt: string) => ({ HARMONY: "text-chart-2 bg-chart-2/10 border-chart-2/40", NORMAL: "text-muted-foreground bg-muted/30 border-border", DISCORD: "text-destructive bg-destructive/10 border-destructive/30" }[rt] ?? "");
   const diceCol = (rt: "HARMONY" | "NORMAL" | "DISCORD") => ({ HARMONY: "border-chart-2 text-chart-2", NORMAL: "border-border text-foreground", DISCORD: "border-destructive text-destructive" }[rt]);
+  const displayedDice = animDice ?? castResult;
+  const displayedCost = animDice || castResult ? (rolledCost ?? castCost) : castCost;
 
   return (
     <div className="border border-border p-3 bg-card/50 space-y-2">
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs font-semibold text-foreground">Weave {wi + 1}</span>
-        <button onClick={() => patch({ weavings: (localData.weavings || []).filter((_: any, i: number) => i !== wi) })} className="text-[10px] font-mono text-muted-foreground/40 hover:text-destructive">× Remove</button>
+        <button onClick={() => patch({ weavings: (localData.weavings || []).filter((_: any, i: number) => i !== wi) })} disabled={!!animDice} className="text-[10px] font-mono text-muted-foreground/40 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40">× Remove</button>
       </div>
       {/* String count */}
       <div className="flex items-center gap-2">
@@ -1868,25 +2024,31 @@ function WeaveCastRow({
           </select>
         </div>
       ))}
+      {!isConfigured && <p className="text-[10px] font-mono text-muted-foreground">Choose a saved String and a valid PL (1–5) for each slot to enable casting.</p>}
       {/* Cast area */}
       {castOpen ? (
         <div className="border border-primary/30 bg-primary/5 p-3 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
-              Weave {wi + 1} · {weave.numStrings} strings · DC {weaveDC} · {totalCost}T
+              Weave {wi + 1} · {weave.numStrings} strings · DC {weaveDC} · {displayedCost}T
               <span className="text-muted-foreground/60 ml-1">({checkType} · {effectType})</span>
             </span>
-            <button onClick={closeCast} className="text-muted-foreground hover:text-foreground text-xs font-mono">CLOSE ✕</button>
+            <button onClick={closeCast} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed">CLOSE ✕</button>
           </div>
+          {hasPrecisionWeave && weave.numStrings === 2 && (
+            <p className="text-[10px] font-mono text-chart-2">
+              Precision Weave — Harmony{precisionDiscount ? "; first two-string cast this Mend costs 1 less Tension." : "."}
+            </p>
+          )}
+          {isConfigured && castCost > availableTension && (
+            <p className="text-[10px] font-mono text-amber-500">This cost exceeds available Thread Pool room ({Math.max(0, availableTension)}T available); automatic Snapback requires Weavekeeper/manual resolution. Automated roll disabled.</p>
+          )}
+          {dicePreferenceError && <p className="text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}
+          {dicePreferencesLoading && <p className="text-[10px] font-mono text-muted-foreground">Loading dice preferences… rolling is unavailable until your die selection loads.</p>}
+          {displayedDice && <DiceStage dice={[{ sides: 20 as const, value: displayedDice.d1 }, ...(displayedDice.d2 === undefined ? [] : [{ sides: 20 as const, value: displayedDice.d2 }])]} style={diceStyle} phase={animDice ? "rolling" : "settled"} rollKey={rollKey} height={190} className="mb-3" />}
           {animDice ? (
             <div className="py-3 text-center">
-              <div className="flex items-center justify-center gap-4 mb-3">
-                <div className={cn("w-16 h-16 border-2 flex items-center justify-center text-3xl font-mono font-bold select-none", diceCol(animDice.rollType))}>{animDice.d1}</div>
-                {animDice.d2 !== undefined && (<>
-                  <div className="flex flex-col items-center gap-1"><span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">{animDice.rollType === "HARMONY" ? "keep highest" : "keep lowest"}</span><span className="text-muted-foreground font-mono text-lg">⟷</span></div>
-                  <div className={cn("w-16 h-16 border-2 flex items-center justify-center text-3xl font-mono font-bold select-none", diceCol(animDice.rollType))}>{animDice.d2}</div>
-                </>)}
-              </div>
+              <p className="mt-2 text-[10px] font-mono text-muted-foreground">Rolled d20: {animDice.d1}{animDice.d2 === undefined ? "" : ` · d20: ${animDice.d2}`}</p>
               <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest animate-pulse">{animDice.rollType === "HARMONY" ? "weaving harmony…" : animDice.rollType === "DISCORD" ? "embracing discord…" : "threading the weave…"}</p>
             </div>
           ) : castResult ? (
@@ -1920,7 +2082,7 @@ function WeaveCastRow({
               <div className="text-[10px] font-mono text-muted-foreground mb-3">{selectedMode.rollType === "HARMONY" && "Rolling 2d20 — keep highest. "}{selectedMode.rollType === "NORMAL" && "Rolling 1d20. "}{selectedMode.rollType === "DISCORD" && "Rolling 2d20 — keep lowest. "}Thread Check: CTR {fmtMod(mod)}</div>
               <div className="flex gap-2">
                 <button onClick={() => setSelectedMode(null)} className="px-3 py-2 text-xs font-mono border border-border text-muted-foreground hover:text-foreground transition-colors">← CHANGE</button>
-                <button onClick={doRoll} className={cn("flex-1 py-2.5 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors", selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" : selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" : "border-primary text-primary hover:bg-primary/10")}>⚄ ROLL THE WEAVE</button>
+                <button onClick={doRoll} disabled={!isConfigured || dicePreferencesLoading || castCost > availableTension} className={cn("flex-1 py-2.5 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50", selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" : selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" : "border-primary text-primary hover:bg-primary/10")}>⚄ ROLL THE WEAVE</button>
               </div>
             </div>
           ) : (
@@ -1940,11 +2102,13 @@ function WeaveCastRow({
       ) : (
         <div className="flex items-center justify-between bg-primary/5 border border-primary/10 px-2 py-1.5 font-mono text-[10px]">
           <span className="text-muted-foreground">
-            <span className={cn(weave.numStrings === 2 ? "text-chart-2" : "text-destructive/80")}>{checkType}</span> Check · {effectType} · <span className="text-primary font-semibold">{totalCost}T</span>
+            <span className={cn(weave.numStrings === 2 ? "text-chart-2" : "text-destructive/80")}>{checkType}</span> Check · {effectType} · <span className="text-primary font-semibold">{castCost}T</span>
             {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
+            {precisionDiscount && <span className="text-chart-2 ml-1">(Precision Weave −1T)</span>}
+            {isConfigured && castCost > availableTension && <span className="text-amber-500 block sm:inline sm:ml-2">Exceeds available Thread Pool ({Math.max(0, availableTension)}T available); Weavekeeper/manual Snapback resolution required.</span>}
             {weaveDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {weaveDC}</span>}
           </span>
-          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors" onClick={openCast}>CAST (+{totalCost}T)</button>
+          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={!isConfigured}>CAST (+{castCost}T)</button>
         </div>
       )}
     </div>
@@ -1955,19 +2119,26 @@ interface CastPL { pl: number; cost: number; dc: number; effect: string }
 interface CastResult { d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number }
 
 function CastStringPanel({
-  str, attrScore, characterName, onCast,
+  str, attrScore, characterName, availableTension, onCast,
   primaryMode, secondaryModes, tertiaryModes, level,
 }: {
-  str: any; attrScore: number; characterName: string; onCast: (cost: number) => void;
+  str: any; attrScore: number; characterName: string; availableTension: number; onCast: (cost: number) => boolean;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
 }) {
   const mod = calcMod(attrScore);
+  const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
+  const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [expanded, setExpanded] = useState(true);
   const [castPL, setCastPL] = useState<CastPL | null>(null);
   const [selectedMode, setSelectedMode] = useState<ModeOption | null>(null);
   const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
   const [castResult, setCastResult] = useState<CastResult | null>(null);
-  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [rollKey, setRollKey] = useState(0);
+
+  useEffect(() => () => {
+    if (rollTimerRef.current) clearTimeout(rollTimerRef.current);
+  }, []);
 
   type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const normalModes = new Set([...secondaryModes, ...tertiaryModes]);
@@ -1981,45 +2152,44 @@ function CastStringPanel({
   });
 
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
+    if (animDice) return;
     setCastPL({ pl, cost, dc, effect });
     setSelectedMode(null);
     setCastResult(null);
-    if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
+    if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
     setAnimDice(null);
   }
 
   function closeOverlay() {
+    if (animDice) return;
     setCastPL(null);
     setSelectedMode(null);
     setCastResult(null);
-    if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
+    if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
     setAnimDice(null);
   }
 
   function doRoll() {
-    if (!selectedMode || !castPL) return;
+    if (!selectedMode || !castPL || dicePreferencesLoading || castPL.cost > availableTension) return;
     const mode = selectedMode;
     const pl = castPL;
-    onCast(pl.cost);
+    if (!onCast(pl.cost)) return;
     setSelectedMode(null);
 
     const needs2 = mode.rollType !== "NORMAL";
-    setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
-    animRef.current = setInterval(() => {
-      setAnimDice({ d1: Math.floor(Math.random() * 20) + 1, d2: needs2 ? Math.floor(Math.random() * 20) + 1 : undefined, rollType: mode.rollType });
-    }, 60);
-
-    setTimeout(() => {
-      if (animRef.current) { clearInterval(animRef.current); animRef.current = null; }
-      const d1 = Math.floor(Math.random() * 20) + 1;
-      let d2: number | undefined;
+    const d1 = rollDie(20);
+    const d2 = needs2 ? rollDie(20) : undefined;
+    setRollKey(key => key + 1);
+    setAnimDice({ d1, d2, rollType: mode.rollType });
+    rollTimerRef.current = setTimeout(() => {
+      rollTimerRef.current = null;
       let finalDie = d1;
-      if (mode.rollType === "HARMONY") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.max(d1, d2); }
-      if (mode.rollType === "DISCORD") { d2 = Math.floor(Math.random() * 20) + 1; finalDie = Math.min(d1, d2); }
+      if (mode.rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
+      if (mode.rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
       const total = finalDie + mod;
       setAnimDice(null);
       setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: pl.dc });
-    }, 1100);
+    }, ROLL_DURATION_MS);
   }
 
   const rollTypeBadge = (rt: string) => ({
@@ -2033,10 +2203,11 @@ function CastStringPanel({
     NORMAL: "border-border text-foreground",
     DISCORD: "border-destructive text-destructive",
   }[rt]);
+  const displayedDice = animDice ?? castResult;
 
   return (
     <div className="border border-border bg-background">
-      <button className="w-full flex items-center justify-between px-4 py-3 text-left" onClick={() => setExpanded(v => !v)}>
+      <button className="w-full flex items-center justify-between px-4 py-3 text-left disabled:cursor-not-allowed" onClick={() => setExpanded(v => !v)} disabled={!!animDice}>
         <span className="font-[family-name:'Cinzel',serif] text-base text-chart-2">{str.name}</span>
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-mono text-muted-foreground">
@@ -2058,32 +2229,19 @@ function CastStringPanel({
                 <span className="font-mono text-xs text-primary uppercase tracking-widest">
                   {str.name} · PL{castPL.pl} · DC {castPL.dc} · {castPL.cost} TP
                 </span>
-                <button onClick={closeOverlay} className="text-muted-foreground hover:text-foreground text-xs font-mono transition-colors">
+                <button onClick={closeOverlay} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   CLOSE ✕
                 </button>
               </div>
+              {castPL.cost > availableTension && <p className="mb-3 text-[10px] font-mono text-amber-500">This cost exceeds available Thread Pool room ({Math.max(0, availableTension)}T available); automatic Snapback requires Weavekeeper/manual resolution. Automated roll disabled.</p>}
+              {dicePreferenceError && <p className="mb-3 text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}
+              {dicePreferencesLoading && <p className="mb-3 text-[10px] font-mono text-muted-foreground">Loading dice preferences… rolling is unavailable until your die selection loads.</p>}
+              {displayedDice && <DiceStage dice={[{ sides: 20 as const, value: displayedDice.d1 }, ...(displayedDice.d2 === undefined ? [] : [{ sides: 20 as const, value: displayedDice.d2 }])]} style={diceStyle} phase={animDice ? "rolling" : "settled"} rollKey={rollKey} height={220} className="mb-3" />}
 
               {/* ── ROLLING ANIMATION ── */}
               {animDice ? (
                 <div className="py-4 text-center">
-                  <div className="flex items-center justify-center gap-4 mb-4">
-                    <div className={cn("w-24 h-24 border-2 flex items-center justify-center text-5xl font-mono font-bold transition-none select-none", diceColor(animDice.rollType))}>
-                      {animDice.d1}
-                    </div>
-                    {animDice.d2 !== undefined && (
-                      <>
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">
-                            {animDice.rollType === "HARMONY" ? "keep highest" : "keep lowest"}
-                          </span>
-                          <span className="text-muted-foreground font-mono text-lg">⟷</span>
-                        </div>
-                        <div className={cn("w-24 h-24 border-2 flex items-center justify-center text-5xl font-mono font-bold transition-none select-none", diceColor(animDice.rollType))}>
-                          {animDice.d2}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <p className="mt-2 mb-3 text-[10px] font-mono text-muted-foreground">Rolled d20: {animDice.d1}{animDice.d2 === undefined ? "" : ` · d20: ${animDice.d2}`}</p>
                   <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest animate-pulse">
                     {animDice.rollType === "HARMONY" ? "weaving harmony…" : animDice.rollType === "DISCORD" ? "embracing discord…" : "threading the weave…"}
                   </p>
@@ -2187,8 +2345,9 @@ function CastStringPanel({
                     </button>
                     <button
                       onClick={doRoll}
+                      disabled={dicePreferencesLoading || castPL.cost > availableTension}
                       className={cn(
-                        "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors",
+                        "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                         selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" :
                         selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" :
                         "border-primary text-primary hover:bg-primary/10"
@@ -2246,6 +2405,7 @@ function CastStringPanel({
                   <td className="py-1.5 text-right">
                     <button
                       onClick={() => initiateCast(lvl.pl, lvl.cost, lvl.dc, lvl.effect)}
+                      disabled={!!animDice}
                       className="px-2 py-0.5 text-[10px] border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors font-mono"
                     >
                       CAST

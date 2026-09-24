@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Scroll, ShieldHalf, LogOut, Swords, Sun, Moon } from "lucide-react";
+import { BookOpen, Scroll, ShieldHalf, LogOut, Swords, Sun, Moon, Dices } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Navbar() {
@@ -49,6 +49,17 @@ export default function Navbar() {
                 <span>Compendium</span>
               </div>
             </Link>
+            <Link href="/dice">
+              <div className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
+                location.startsWith("/dice")
+                  ? "text-foreground bg-primary/10 border border-primary/20"
+                  : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+              )}>
+                <Dices className="w-3.5 h-3.5" />
+                <span>Dice Atelier</span>
+              </div>
+            </Link>
             {user?.role === "weavekeeper" && (
               <Link href="/weavekeeper">
                 <div className={cn(
@@ -66,6 +77,9 @@ export default function Navbar() {
         </div>
 
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+          <Link href="/characters" className="md:hidden font-[family-name:'Cinzel',serif] text-primary tracking-wide text-sm font-bold">
+            THREADCAST
+          </Link>
           <div className="w-full flex-1 md:w-auto md:flex-none" />
           <nav className="flex items-center gap-2">
             {/* Theme toggle */}
@@ -103,6 +117,21 @@ export default function Navbar() {
           </nav>
         </div>
       </div>
+      {user && (
+        <nav className="md:hidden flex items-center gap-1 overflow-x-auto border-t border-border/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide" aria-label="Main navigation">
+          {[
+            { href: "/characters", name: "Characters", icon: Scroll },
+            { href: "/compendium", name: "Compendium", icon: BookOpen },
+            { href: "/dice", name: "Dice Atelier", icon: Dices },
+            ...(user.role === "weavekeeper" ? [{ href: "/weavekeeper", name: "Weavekeeper", icon: ShieldHalf }] : []),
+          ].map(({ href, name, icon: Icon }) => (
+            <Link key={href} href={href} data-testid={`link-mobile-${href.slice(1)}`}
+              className={cn("flex shrink-0 items-center gap-1 px-2 py-1.5", location.startsWith(href) ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              <Icon className="w-3.5 h-3.5" />{name}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }

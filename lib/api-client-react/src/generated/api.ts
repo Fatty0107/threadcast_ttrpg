@@ -24,6 +24,7 @@ import type {
   Character,
   CharacterInput,
   CharacterUpdate,
+  DicePreferences,
   HealthStatus,
   LoginInput
 } from './api.schemas';
@@ -701,5 +702,153 @@ export const useDeleteCharacter = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteCharacterMutationOptions(options));
+    }
+
+export const getGetDicePreferencesUrl = () => {
+
+
+
+
+  return `/api/dice/preferences`
+}
+
+/**
+ * @summary Get saved dice preferences for the current user
+ */
+export const getDicePreferences = async ( options?: RequestInit): Promise<DicePreferences> => {
+
+  return customFetch<DicePreferences>(getGetDicePreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDicePreferencesQueryKey = () => {
+    return [
+    `/api/dice/preferences`
+    ] as const;
+    }
+
+
+export const getGetDicePreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getDicePreferences>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDicePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDicePreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDicePreferences>>> = ({ signal }) => getDicePreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDicePreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDicePreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getDicePreferences>>>
+export type GetDicePreferencesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get saved dice preferences for the current user
+ */
+
+export function useGetDicePreferences<TData = Awaited<ReturnType<typeof getDicePreferences>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDicePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDicePreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPutDicePreferencesUrl = () => {
+
+
+
+
+  return `/api/dice/preferences`
+}
+
+/**
+ * @summary Replace saved dice preferences for the current user
+ */
+export const putDicePreferences = async (dicePreferences: DicePreferences, options?: RequestInit): Promise<DicePreferences> => {
+
+  return customFetch<DicePreferences>(getPutDicePreferencesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      dicePreferences,)
+  }
+);}
+
+
+
+
+export const getPutDicePreferencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDicePreferences>>, TError,{data: BodyType<DicePreferences>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putDicePreferences>>, TError,{data: BodyType<DicePreferences>}, TContext> => {
+
+const mutationKey = ['putDicePreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putDicePreferences>>, {data: BodyType<DicePreferences>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  putDicePreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutDicePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof putDicePreferences>>>
+    export type PutDicePreferencesMutationBody = BodyType<DicePreferences>
+    export type PutDicePreferencesMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace saved dice preferences for the current user
+ */
+export const usePutDicePreferences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDicePreferences>>, TError,{data: BodyType<DicePreferences>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putDicePreferences>>,
+        TError,
+        {data: BodyType<DicePreferences>},
+        TContext
+      > => {
+      return useMutation(getPutDicePreferencesMutationOptions(options));
     }
 

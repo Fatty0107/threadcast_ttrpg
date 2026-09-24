@@ -72,3 +72,46 @@ export interface CharacterUpdate {
   isDraft?: boolean;
 }
 
+export type DiceStyleFinish = typeof DiceStyleFinish[keyof typeof DiceStyleFinish];
+
+
+export const DiceStyleFinish = {
+  matte: 'matte',
+  polished: 'polished',
+  glass: 'glass',
+} as const;
+
+export type DiceStyleMotif = typeof DiceStyleMotif[keyof typeof DiceStyleMotif];
+
+
+export const DiceStyleMotif = {
+  plain: 'plain',
+  weave: 'weave',
+  stars: 'stars',
+  etched: 'etched',
+} as const;
+
+export interface DiceStyle {
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  name: string;
+  /** @pattern ^#[0-9A-Fa-f]{6}$ */
+  bodyColor: string;
+  /** @pattern ^#[0-9A-Fa-f]{6}$ */
+  inkColor: string;
+  /** @pattern ^#[0-9A-Fa-f]{6}$ */
+  edgeColor: string;
+  finish: DiceStyleFinish;
+  motif: DiceStyleMotif;
+}
+
+export interface DicePreferences {
+  /** @maxItems 12 */
+  sets: DiceStyle[];
+  /** @nullable */
+  selectedId: string | null;
+}
+

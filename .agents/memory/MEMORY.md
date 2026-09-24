@@ -2,3 +2,6 @@
 - [TanStack Query cache invalidation pattern](tanstack-cache-invalidation.md) — Orval-generated hooks have NO auto-invalidation; must call queryClient.invalidateQueries manually on mutation success.
 - [JSX string attribute escaping](jsx-string-escaping.md) — escaped quotes inside JSX attribute strings cause parse errors; use double-quotes or avoid apostrophes in placeholder/attribute values.
 - [ThemeContext light mode](theme-context.md) — ThemeProvider toggles dark/light class on html; .light {} CSS block at index.css line ~175 overrides all HSL vars; html.light sets color-scheme: light.
+- [Equipped dice belong to the player](personal-dice-scope.md) — saving does not equip; one selected set follows that account across its characters.
+- [Threadcast casting rules](threadcast-rules-source.md) — use the source rules over inconsistent older sheet labels, especially for Weaves and pool overflow.
+- [Scoped pnpm installs](scoped-pnpm-installs.md) — the package helper can refuse pnpm workspace child installs; use a scoped pnpm command instead.

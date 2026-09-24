@@ -14,6 +14,7 @@ import CharacterSheet from "@/pages/CharacterSheet";
 import CharacterBuilder from "@/pages/CharacterBuilder";
 import Compendium from "@/pages/Compendium";
 import Weavekeeper from "@/pages/Weavekeeper";
+import DiceAtelier from "@/pages/DiceAtelier";
 import Navbar from "@/components/layout/Navbar";
 
 const queryClient = new QueryClient({
@@ -62,12 +63,16 @@ function CharacterBuilderEditPage({ id }: { id: string }) {
 }
 
 function Router() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   return (
     <Switch>
-      <Route path="/" component={() => <Redirect to={user ? "/characters" : "/login"} />} />
+      <Route path="/" component={() => isLoading
+        ? <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground font-mono text-sm tracking-widest">CONNECTING TO WEAVE...</div>
+        : <Redirect to={user ? "/characters" : "/login"} />
+      } />
       <Route path="/login" component={Login} />
       <ProtectedRoute path="/characters" component={Characters} />
+      <ProtectedRoute path="/dice" component={DiceAtelier} />
       <ProtectedRoute path="/build" component={CharacterBuilder} />
       <Route path="/characters/:id/build">
         {(params) => <CharacterBuilderEditPage id={params!.id} />}
@@ -87,12 +92,12 @@ function App() {
         <ThemeProvider>
           <AuthProvider>
             <HomebrewProvider>
-              <DiceRollerProvider>
-                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <DiceRollerProvider>
                   <Router />
                   <RollLog />
-                </WouterRouter>
-              </DiceRollerProvider>
+                </DiceRollerProvider>
+              </WouterRouter>
             </HomebrewProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import charactersRouter from "./characters";
 import homebrewRouter from "./homebrew";
+import diceRouter from "./dice";
 
 const router: IRouter = Router();
 
@@ -10,5 +11,6 @@ router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/characters", charactersRouter);
 router.use("/homebrew", homebrewRouter);
+router.use(diceRouter);
 
 export default router;

@@ -134,3 +134,77 @@ export const DeleteCharacterParams = zod.object({
 })
 
 
+/**
+ * @summary Get saved dice preferences for the current user
+ */
+export const getDicePreferencesResponseSetsItemNameMax = 40;
+
+export const getDicePreferencesResponseSetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getDicePreferencesResponseSetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getDicePreferencesResponseSetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getDicePreferencesResponseSetsMax = 12;
+
+
+
+export const GetDicePreferencesResponse = zod.object({
+  "sets": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1).max(getDicePreferencesResponseSetsItemNameMax),
+  "bodyColor": zod.string().regex(getDicePreferencesResponseSetsItemBodyColorRegExp),
+  "inkColor": zod.string().regex(getDicePreferencesResponseSetsItemInkColorRegExp),
+  "edgeColor": zod.string().regex(getDicePreferencesResponseSetsItemEdgeColorRegExp),
+  "finish": zod.enum(['matte', 'polished', 'glass']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+})).max(getDicePreferencesResponseSetsMax),
+  "selectedId": zod.string().uuid().nullable()
+})
+
+
+/**
+ * @summary Replace saved dice preferences for the current user
+ */
+export const putDicePreferencesBodySetsItemNameMax = 40;
+
+export const putDicePreferencesBodySetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesBodySetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesBodySetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesBodySetsMax = 12;
+
+
+
+export const PutDicePreferencesBody = zod.object({
+  "sets": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1).max(putDicePreferencesBodySetsItemNameMax),
+  "bodyColor": zod.string().regex(putDicePreferencesBodySetsItemBodyColorRegExp),
+  "inkColor": zod.string().regex(putDicePreferencesBodySetsItemInkColorRegExp),
+  "edgeColor": zod.string().regex(putDicePreferencesBodySetsItemEdgeColorRegExp),
+  "finish": zod.enum(['matte', 'polished', 'glass']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+})).max(putDicePreferencesBodySetsMax),
+  "selectedId": zod.string().uuid().nullable()
+})
+
+export const putDicePreferencesResponseSetsItemNameMax = 40;
+
+export const putDicePreferencesResponseSetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesResponseSetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesResponseSetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesResponseSetsMax = 12;
+
+
+
+export const PutDicePreferencesResponse = zod.object({
+  "sets": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string().min(1).max(putDicePreferencesResponseSetsItemNameMax),
+  "bodyColor": zod.string().regex(putDicePreferencesResponseSetsItemBodyColorRegExp),
+  "inkColor": zod.string().regex(putDicePreferencesResponseSetsItemInkColorRegExp),
+  "edgeColor": zod.string().regex(putDicePreferencesResponseSetsItemEdgeColorRegExp),
+  "finish": zod.enum(['matte', 'polished', 'glass']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+})).max(putDicePreferencesResponseSetsMax),
+  "selectedId": zod.string().uuid().nullable()
+})
+
+

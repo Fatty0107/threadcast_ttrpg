@@ -2,14 +2,18 @@ import { useState } from "react";
 import { useDiceRoller } from "@/components/shared/DiceRoller";
 import { formatModifier } from "@/lib/game-rules";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 export function RollLog() {
+  const { user } = useAuth();
   const { rolls } = useDiceRoller();
   const [open, setOpen] = useState(false);
+
+  if (!user) return null;
 
   return (
     <>
@@ -72,6 +76,8 @@ export function RollLog() {
                       ? "border-destructive text-destructive bg-destructive/10"
                       : "border-border text-foreground"
                   )}
+                  title={`Rolled with ${roll.diceName}`}
+                  style={{ borderColor: roll.diceColor }}
                 >
                   {roll.total}
                 </div>

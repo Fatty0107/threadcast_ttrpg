@@ -14,6 +14,8 @@ tags:
     description: Authentication
   - name: characters
     description: Character management
+  - name: dice
+    description: Saved dice preferences
 paths:
   /healthz:
     get:
@@ -163,7 +165,52 @@ paths:
         "204":
           description: Deleted
 
+  /dice/preferences:
+    get:
+      operationId: getDicePreferences
+      tags: [dice]
+      summary: Get saved dice preferences for the current user
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Saved dice preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DicePreferences"
+        "401":
+          description: Not authenticated
+    put:
+      operationId: putDicePreferences
+      tags: [dice]
+      summary: Replace saved dice preferences for the current user
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DicePreferences"
+      responses:
+        "200":
+          description: Updated dice preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DicePreferences"
+        "400":
+          description: Invalid dice preferences
+        "401":
+          description: Not authenticated
+
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
   schemas:
     HealthStatus:
       type: object
@@ -257,3 +304,45 @@ components:
           additionalProperties: true
         isDraft:
           type: boolean
+
+    DiceStyle:
+      type: object
+      additionalProperties: false
+      required: [id, name, bodyColor, inkColor, edgeColor, finish, motif]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 40
+        bodyColor:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        inkColor:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        edgeColor:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        finish:
+          type: string
+          enum: [matte, polished, glass]
+        motif:
+          type: string
+          enum: [plain, weave, stars, etched]
+
+    DicePreferences:
+      type: object
+      additionalProperties: false
+      required: [sets, selectedId]
+      properties:
+        sets:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/DiceStyle"
+        selectedId:
+          type: [string, "null"]
+          format: uuid
