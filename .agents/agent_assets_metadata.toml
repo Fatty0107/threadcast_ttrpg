@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "eD8bAlbkMNnmPYBZf6BdI"
+uri = "file://docs/characters/aeolus-player-handoff.md"
+type = "text"
+title = "Aeolus — Player Handoff"
+description = "A player-facing THREADCAST character roster with background, roleplay cues, and open connections."
+logical_id = "92393ed5-5af5-4dfe-81a1-3c874abdbb94"
+content_hash = "sha256:36db73c0699d12085dfb12c04dec61c79d3a0dd417a0a62885dd24bf19c7bfaa"
+size = 2933
+mtime_ms = 1790279715618
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:2e86bbe8-e825-4cd2-982e-9c14d250f75a/92393ed5-5af5-4dfe-81a1-3c874abdbb94/fde38d27-3b82-4781-bff7-46340182b8a8"
+storage_version_token = "1790279731945687"
+content_type = "text/markdown"
