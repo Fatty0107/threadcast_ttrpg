@@ -168,6 +168,8 @@
 .tc-sheet [role="tabpanel"] .border-dashed { border-style: dashed; }
 .tc-sheet [role="tabpanel"] input::placeholder,
 .tc-sheet [role="tabpanel"] textarea::placeholder { color: hsl(var(--muted-foreground) / .65); }
+/* The Strings panel stays mounted to preserve an in-progress cast; hide it when another tab is selected. */
+.tc-sheet [role="tabpanel"][data-state="inactive"] { display: none; }
 .tc-sheet [data-state="active"][role="tabpanel"] { animation: tc-enter .22s ease-out; }
 @keyframes tc-enter { from {opacity:0;transform:translateY(5px)} to {opacity:1;transform:translateY(0)} }
 @media (max-width: 900px) {

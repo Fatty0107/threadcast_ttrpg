@@ -5,3 +5,4 @@
 - [Equipped dice belong to the player](personal-dice-scope.md) — saving does not equip; one selected set follows that account across its characters.
 - [Threadcast casting rules](threadcast-rules-source.md) — use the source rules over inconsistent older sheet labels, especially for Weaves and pool overflow.
 - [Scoped pnpm installs](scoped-pnpm-installs.md) — the package helper can refuse pnpm workspace child installs; use a scoped pnpm command instead.
+- [Radix forced tab panels](radix-forced-tabs.md) — forceMount retains state but can leave inactive panels visible in normal flow; hide them explicitly.
