@@ -42,18 +42,18 @@ export default function Characters() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-5xl py-8 px-4">
-        <div className="flex justify-between items-center mb-8">
+    <div className="tc-page bg-background">
+      <div className="container mx-auto max-w-6xl py-8 px-4 sm:px-6">
+        <div className="tc-page-intro flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8">
           <div>
-            <h1 className="text-3xl font-[family-name:'Cinzel',serif] text-foreground tracking-wider">
+            <h1 className="tc-page-title text-3xl sm:text-4xl text-foreground">
               Character Roster
             </h1>
             <p className="font-mono text-xs text-muted-foreground mt-1">Select your thread or weave anew.</p>
           </div>
           <button
             onClick={handleCreate}
-            className="group relative px-5 py-2.5 bg-primary text-primary-foreground font-mono text-sm hover:bg-primary/90 transition-all duration-200 hover:shadow-[0_0_20px_rgba(180,120,60,0.35)] overflow-hidden"
+            className="group relative px-5 py-2.5 min-h-11 bg-primary text-primary-foreground font-mono text-xs tracking-wide hover:bg-primary/90 transition-colors overflow-hidden"
           >
             <span className="relative z-10">+ WEAVE NEW CHARACTER</span>
           </button>
@@ -65,13 +65,13 @@ export default function Characters() {
               <div key={i} className="h-56 bg-card border border-border animate-pulse" />
             ))
           ) : characters?.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
+            <div className="col-span-full py-16 text-center tc-panel-surface">
               <div className="inline-flex flex-col items-center gap-4">
-                <div className="w-16 h-16 border border-border/40 flex items-center justify-center text-muted-foreground/20">
+                <div className="w-16 h-16 border border-border flex items-center justify-center text-primary">
                   <Scroll className="w-8 h-8" />
                 </div>
                 <div className="text-muted-foreground font-mono text-sm">No active threads found.</div>
-                <button onClick={handleCreate} className="px-6 py-3 border border-primary/50 text-primary font-mono text-sm hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(180,120,60,0.2)] transition-all">
+                <button onClick={handleCreate} className="px-6 py-3 min-h-11 border border-primary/50 text-primary font-mono text-sm hover:bg-primary/10 transition-colors">
                   WEAVE YOUR FIRST CHARACTER →
                 </button>
               </div>
@@ -92,8 +92,8 @@ export default function Characters() {
                 <div
                   key={char.id}
                   className={cn(
-                    "group relative p-5 bg-card border border-border transition-all duration-200 overflow-hidden flex flex-col",
-                    "hover:border-primary/30 hover:shadow-[0_0_20px_rgba(180,120,60,0.08)]",
+                    "tc-roster-card group relative p-5 bg-card border border-border transition-transform duration-200 overflow-hidden flex flex-col",
+                    "hover:border-primary/50",
                     isDeleting && "opacity-40 pointer-events-none"
                   )}
                 >
@@ -148,7 +148,7 @@ export default function Characters() {
                       const mod = calcMod(val);
                       return (
                         <div key={a.key} className="text-center">
-                          <div className="text-muted-foreground/40 mb-0.5">{a.abbr}</div>
+                          <div className="text-muted-foreground mb-0.5">{a.abbr}</div>
                           <div className="text-foreground">{val}</div>
                           <div className={cn("text-[9px]", mod >= 0 ? "text-chart-2/70" : "text-destructive/70")}>
                             {mod >= 0 ? "+" : ""}{mod}
@@ -187,23 +187,23 @@ export default function Characters() {
                   <div className="flex-1" />
 
                   {/* Action buttons */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-border/30">
+                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-border/60">
                     <button
                       onClick={() => setLocation(`/characters/${char.id}`)}
-                      className="py-1.5 text-[11px] font-mono border border-primary/40 text-primary hover:bg-primary/10 hover:shadow-[0_0_8px_rgba(180,120,60,0.2)] transition-all"
+                      className="min-h-10 py-1.5 text-[11px] font-mono border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
                     >
                       VIEW
                     </button>
                     <button
                       onClick={() => setLocation(`/characters/${char.id}/build`)}
-                      className="py-1.5 text-[11px] font-mono border border-chart-2/40 text-chart-2 hover:bg-chart-2/10 transition-all"
+                      className="min-h-10 py-1.5 text-[11px] font-mono border border-chart-2/40 text-chart-2 hover:bg-chart-2/10 transition-colors"
                     >
                       EDIT
                     </button>
                     <button
                       onClick={() => handleDelete(char.id, char.name)}
                       disabled={isDeleting}
-                      className="py-1.5 text-[11px] font-mono border border-destructive/30 text-destructive/60 hover:border-destructive hover:text-destructive disabled:opacity-30 transition-all"
+                      className="min-h-10 py-1.5 text-[11px] font-mono border border-destructive/50 text-destructive hover:border-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors"
                     >
                       {isDeleting ? "..." : "DELETE"}
                     </button>

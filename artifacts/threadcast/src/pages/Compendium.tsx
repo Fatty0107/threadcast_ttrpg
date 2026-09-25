@@ -5,10 +5,11 @@ import { ChevronDown, ChevronRight, BookOpen, Zap, Shield, Star, Eye } from "luc
 function Section({ id, title, icon, children }: { id: string; title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="border border-border bg-card overflow-hidden">
+    <div className="tc-panel-surface overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between p-5 text-left hover:bg-primary/5 transition-colors"
+        aria-expanded={open}
+        className="w-full min-h-16 flex items-center justify-between p-5 text-left hover:bg-primary/5 transition-colors"
       >
         <div className="flex items-center gap-3">
           {icon && <span className="text-primary/70">{icon}</span>}
@@ -17,7 +18,7 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
         {open ? <ChevronDown className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 border-t border-border/30 pt-4">
+        <div id={`compendium-${id}`} className="px-5 pb-5 border-t border-border/60 pt-4">
           {children}
         </div>
       )}
@@ -27,8 +28,8 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 
 function Rule({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 py-2 border-b border-border/20 last:border-0">
-      <span className="text-primary font-mono text-xs pt-0.5 flex-shrink-0 min-w-[120px]">{label}</span>
+    <div className="flex flex-col sm:flex-row gap-1 sm:gap-3 py-2.5 border-b border-border/40 last:border-0">
+      <span className="text-primary font-mono text-xs pt-0.5 flex-shrink-0 sm:min-w-[160px]">{label}</span>
       <span className="text-sm font-mono text-muted-foreground leading-relaxed">{children}</span>
     </div>
   );
@@ -140,10 +141,10 @@ const MODES = [
 
 export default function Compendium() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-5xl py-8 px-4 space-y-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-[family-name:'Cinzel',serif] text-foreground tracking-wider mb-2">Compendium</h1>
+    <div className="tc-page bg-background">
+      <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 space-y-4">
+        <div className="tc-page-intro mb-8">
+          <h1 className="tc-page-title text-3xl sm:text-4xl text-foreground mb-2">Compendium</h1>
           <p className="text-xs font-mono text-muted-foreground">The complete reference for World of Aethros mechanics. Click any section header to collapse.</p>
         </div>
 

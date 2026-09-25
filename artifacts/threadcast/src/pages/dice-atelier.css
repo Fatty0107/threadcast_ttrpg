@@ -25,7 +25,7 @@
 .dice-atelier * { box-sizing: border-box; }
 .dice-atelier button { cursor: pointer; }
 .dice-atelier button:disabled { cursor: not-allowed; opacity: .45; }
-.dice-atelier button:focus-visible, .dice-atelier input:focus-visible { outline: 1px solid var(--atelier-gold); outline-offset: 3px; }
+.dice-atelier :is(button, input):focus-visible { outline: 2px solid var(--atelier-gold); outline-offset: 3px; }
 .atelier-shell { max-width: 1380px; margin: 0 auto; }
 .atelier-topline { height: 45px; border-bottom: 1px solid var(--atelier-line); display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--atelier-dim); font: 10px 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; }
 .atelier-topline span:last-child { color: var(--atelier-gold); }
@@ -169,3 +169,25 @@
 @media(prefers-reduced-motion: reduce) {
   .dice-atelier *, .dice-atelier *:before, .dice-atelier *:after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Keep the atelier's instrument-like identity while honoring the workspace theme. */
+.light .dice-atelier {
+  --atelier-ink: hsl(var(--foreground));
+  --atelier-dim: hsl(var(--muted-foreground));
+  --atelier-line: hsl(var(--border));
+  --atelier-gold: hsl(var(--primary));
+  --atelier-red: hsl(var(--destructive));
+  --atelier-panel: hsl(var(--card));
+  --atelier-deep: hsl(var(--background));
+  background: radial-gradient(ellipse at 54% 0%, hsl(var(--primary) / .08), transparent 58%), hsl(var(--background));
+}
+.light .atelier-stage-wrap { background: radial-gradient(ellipse at 50% 45%, hsl(var(--primary) / .12), transparent 60%), hsl(var(--secondary)); }
+.light .atelier-stage-wrap:after { border-color: hsl(var(--border)); }
+.light :is(.atelier-shape, .atelier-name, .atelier-color-well, .atelier-option, .atelier-confirm) { background: hsl(var(--card)); color: hsl(var(--foreground)); }
+.light :is(.atelier-shape, .atelier-option)[aria-pressed=true] { background: hsl(var(--primary) / .12); color: hsl(var(--primary)); }
+.light .atelier-color-well input[type=text] { color: hsl(var(--foreground)); }
+.light .atelier-name::placeholder { color: hsl(var(--muted-foreground)); }
+.light :is(.atelier-roll, .atelier-primary) { color: hsl(var(--primary-foreground)); }
+.light .atelier-card { background: hsl(var(--card) / .65); }
+.light .atelier-skeleton { background: linear-gradient(90deg, hsl(var(--secondary)), hsl(var(--card)), hsl(var(--secondary))); background-size: 200% 100%; }
+.light .atelier-confirm-backdrop { background: hsl(var(--foreground) / .6); }

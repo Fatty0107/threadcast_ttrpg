@@ -913,16 +913,16 @@ export default function Weavekeeper() {
   const hbBackgrounds = allHomebrew.filter(h => h.type === "background");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="tc-page bg-background">
       {affinityWizard && <AffinityWizard onClose={() => setAffinityWizard(false)} onSave={refetch} />}
       {itemWizard && <ItemWizard onClose={() => setItemWizard(false)} onSave={refetch} />}
       {bgWizard && <BackgroundWizard onClose={() => setBgWizard(false)} onSave={refetch} />}
 
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="flex items-center gap-3 mb-8">
+      <div className="container mx-auto py-8 px-4 sm:px-6 max-w-6xl">
+        <div className="tc-page-intro flex items-center gap-3 mb-8">
           <ShieldHalf className="w-8 h-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-[family-name:'Cinzel',serif] text-primary">Weavekeeper</h1>
+            <h1 className="tc-page-title text-3xl sm:text-4xl text-primary">Weavekeeper</h1>
             <p className="text-xs font-mono text-muted-foreground">Campaign control panel · {user.displayName}</p>
           </div>
         </div>

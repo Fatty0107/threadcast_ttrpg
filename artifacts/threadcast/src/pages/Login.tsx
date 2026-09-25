@@ -24,33 +24,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: Math.random() * 3 + 1 + "px",
-              height: Math.random() * 3 + 1 + "px",
-              left: Math.random() * 100 + "%",
-              top: Math.random() * 100 + "%",
-              background: `hsl(28 55% ${40 + Math.random() * 20}%)`,
-              opacity: Math.random() * 0.6 + 0.1,
-              animation: `pulse ${Math.random() * 5 + 3}s infinite alternate`,
-            }}
-          />
-        ))}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background relative overflow-hidden px-4 py-12">
+      <div className="tc-login-decoration absolute inset-0 pointer-events-none" aria-hidden="true" />
 
-      <div className="relative z-10 w-full max-w-md p-8 bg-card border border-border shadow-2xl shadow-primary/10">
-        <div className="text-center mb-10">
+      <div className="tc-login-panel relative z-10 w-full max-w-md p-6 sm:p-10 bg-card border border-border">
+        <div className="text-center mb-9">
           <div className="inline-block mb-2">
-            <span className="text-primary/40 font-mono text-xs tracking-[0.4em] uppercase">⟨ Enter ⟩</span>
+            <span className="text-primary font-mono text-xs tracking-[0.4em] uppercase">⟨ Enter ⟩</span>
           </div>
-          <h1 className="text-5xl font-[family-name:'Cinzel',serif] text-primary mb-2 tracking-wider drop-shadow-[0_0_20px_rgba(180,120,60,0.3)]">
+          <h1 className="text-[clamp(2.2rem,9vw,3rem)] font-[family-name:'Cinzel',serif] text-primary mb-2 tracking-wider">
             THREADCAST
           </h1>
           <p className="text-sm font-mono tracking-[0.3em] text-muted-foreground uppercase">World of Aethros</p>
@@ -63,23 +45,25 @@ export default function Login() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <Label className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Identifier</Label>
+            <Label htmlFor="login-username" className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Identifier</Label>
             <Input
+              id="login-username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="font-mono bg-background/80 border-border/60 focus:border-primary/60 transition-colors"
+              className="h-11 font-mono bg-background border-border focus:border-primary transition-colors"
               data-testid="input-username"
               autoComplete="username"
             />
           </div>
           <div className="space-y-2">
-            <Label className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Passphrase</Label>
+            <Label htmlFor="login-password" className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Passphrase</Label>
             <Input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="font-mono bg-background/80 border-border/60 focus:border-primary/60 transition-colors"
+              className="h-11 font-mono bg-background border-border focus:border-primary transition-colors"
               data-testid="input-password"
               autoComplete="current-password"
             />
@@ -87,7 +71,7 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full font-mono tracking-[0.2em] bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-[0_0_20px_rgba(180,120,60,0.3)] uppercase"
+            className="w-full h-11 font-mono tracking-[0.12em] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors uppercase"
             disabled={loginMutation.isPending}
             data-testid="button-submit-login"
           >
@@ -95,8 +79,8 @@ export default function Login() {
           </Button>
 
           {loginMutation.isError && (
-            <p className="text-sm text-destructive text-center font-mono animate-in fade-in">
-              ✗ Access denied. Check your credentials.
+            <p role="alert" className="text-sm text-destructive text-center font-mono">
+              Access denied. Check your credentials.
             </p>
           )}
         </form>

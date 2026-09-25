@@ -109,9 +109,9 @@ const ATTR_ICONS: Record<AttrKey, React.ReactNode> = {
 // ---- Small helper components ----
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-5">
-      <div className="border-b border-border/30 pb-3">
-        <h2 className="text-xl font-[family-name:'Cinzel',serif] text-foreground">{title}</h2>
+    <div className="space-y-6">
+      <div className="border-b border-border pb-4">
+        <h2 className="text-2xl font-[family-name:'Cinzel',serif] text-foreground">{title}</h2>
         {subtitle && <p className="text-xs font-mono text-muted-foreground mt-1 leading-relaxed">{subtitle}</p>}
       </div>
       {children}
@@ -403,11 +403,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const lockedSkills = [...new Set([...bgStartingSkills, ...guildAttunements])];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="tc-page bg-background">
       {/* Progress Header */}
-      <div className="border-b border-border bg-card/80 sticky top-14 z-30 backdrop-blur">
+      <div className="border-b border-border bg-card/95 sticky top-[calc(4rem+51px)] md:top-16 z-30 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center gap-0 overflow-x-auto py-3">
+          <div className="flex items-center gap-0 overflow-x-auto py-2.5" aria-label="Character creation progress">
             {STEPS.map((s, i) => (
               <div key={s.id} className="flex items-center flex-shrink-0">
                 <button
@@ -416,7 +416,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                     "flex items-center gap-2 px-3 py-1.5 font-mono text-xs transition-all",
                     i === step ? "text-primary border-b-2 border-primary" :
                     i < step ? "text-muted-foreground hover:text-foreground cursor-pointer" :
-                    "text-muted-foreground/30 cursor-not-allowed"
+                    "text-muted-foreground/70 cursor-not-allowed"
                   )}
                 >
                   <span className={cn(
@@ -436,7 +436,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
 
           {/* STEP 0: IDENTITY */}
@@ -1265,7 +1265,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
         {/* Sidebar */}
         <div className="hidden lg:block">
-          <div className="sticky top-32 space-y-4">
+          <div className="lg:sticky lg:top-36 self-start space-y-4">
             <div className="border border-border/60 bg-card/60 p-4 font-mono text-xs">
               <div className="text-muted-foreground/50 uppercase tracking-widest mb-3 text-[10px]">Character Preview</div>
               <div className="space-y-2.5">

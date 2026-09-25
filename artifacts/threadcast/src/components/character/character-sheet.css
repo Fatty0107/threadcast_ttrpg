@@ -8,7 +8,7 @@
   --tc-panel: hsl(var(--card));
   --tc-ground: hsl(var(--background));
   color: var(--tc-ink);
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   border: 1px solid var(--tc-line);
   background: var(--tc-ground);
   box-shadow: 0 20px 80px hsl(30 20% 2% / .25);
@@ -106,7 +106,7 @@
 .tc-mend-dice { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 14px; }
 .tc-mend-dice button { min-width: 42px; height: 42px; font: 600 12px 'JetBrains Mono', monospace; border: 1px solid var(--tc-line); }
 .tc-mend-dice button[aria-pressed="true"] { border-color: var(--tc-teal); background: hsl(var(--chart-2) / .2); color: var(--tc-teal); }
-.tc-tabs { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-start; width: 100%; height: auto; min-height: 58px; padding: 0 18px; gap: 2px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--tc-line); border-radius: 0; background: var(--tc-panel); }
+.tc-tabs { position: sticky; top: 64px; z-index: 20; display: flex; justify-content: flex-start; width: 100%; height: auto; min-height: 58px; padding: 0 18px; gap: 2px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid var(--tc-line); border-radius: 0; background: var(--tc-panel); }
 .tc-tab { flex: none; min-height: 56px; padding: 0 14px; border-bottom: 2px solid transparent; border-radius: 0; color: var(--tc-dim); font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .045em; text-transform: uppercase; }
 .tc-tab[data-state="active"] { color: var(--tc-brass); border-bottom-color: var(--tc-brass); background: hsl(var(--primary) / .07); }
 .tc-tab:hover { color: var(--tc-ink); }
@@ -184,15 +184,15 @@
   .tc-identity { gap: 11px; }
   .tc-portrait { width: 54px; height:54px; }
   .tc-name { font-size: 26px; }
-  .tc-head-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:20px; }
+  .tc-head-actions { display:flex; flex-wrap:wrap; margin-top:20px; }
   .tc-command { padding: 8px 5px; font-size: 9px; text-align:center; }
   .tc-vitals { grid-template-columns: 1fr; gap:0; margin-top:17px; }
   .tc-tension-card { border-top:0; }
   .tc-vital-card, .tc-tension-card { padding:14px; }
   .tc-card-number { font-size:32px; }
   .tc-stepper { gap:7px; }
-  .tc-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:minmax(46px,auto); height:auto; padding:0 7px; top:0; min-height:0; overflow:visible; }
-  .tc-tab { width:100%; min-width:0; min-height:46px; padding:0 3px; font-size:10px; line-height:1.2; white-space:normal; text-align:center; justify-content:center; }
+  .tc-tabs { display:flex; height:auto; padding:0 7px; top:115px; min-height:0; overflow-x:auto; overscroll-behavior-x:contain; }
+  .tc-tab { flex:none; width:auto; min-width:0; min-height:46px; padding:0 12px; font-size:10px; line-height:1.2; white-space:nowrap; text-align:center; justify-content:center; }
   .tc-panel { padding:14px; }
   .tc-surface { padding:16px 13px; }
   .tc-attribute-grid { gap:6px; }

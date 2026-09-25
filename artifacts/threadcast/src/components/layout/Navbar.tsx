@@ -15,58 +15,58 @@ export default function Navbar() {
     : "?";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
+      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-4 sm:px-6">
         <div className="mr-4 hidden md:flex items-center">
-          <Link href="/characters" className="mr-6 flex items-center gap-2 group">
+          <Link href="/characters" className="mr-7 flex items-center gap-2.5 group">
             <div className="relative">
-              <Swords className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" />
+              <Swords className="w-5 h-5 text-primary group-hover:text-primary transition-colors" />
             </div>
             <span className="font-[family-name:'Cinzel',serif] font-bold sm:inline-block text-primary tracking-wider text-sm group-hover:text-primary/90 transition-colors">
               THREADCAST
             </span>
           </Link>
-          <nav className="flex items-center gap-1 text-sm font-medium">
-            <Link href="/characters">
+          <nav className="flex items-center gap-1 text-sm font-medium" aria-label="Main navigation">
+            <Link href="/characters" aria-current={location.startsWith("/characters") || location.startsWith("/build") ? "page" : undefined} className="tc-nav-link rounded-sm">
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
-                location.startsWith("/characters")
+                location.startsWith("/characters") || location.startsWith("/build")
                   ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}>
                 <Scroll className="w-3.5 h-3.5" />
                 <span>Characters</span>
               </div>
             </Link>
-            <Link href="/compendium">
+            <Link href="/compendium" aria-current={location.startsWith("/compendium") ? "page" : undefined} className="tc-nav-link rounded-sm">
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
                 location.startsWith("/compendium")
                   ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}>
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Compendium</span>
               </div>
             </Link>
-            <Link href="/dice">
+            <Link href="/dice" aria-current={location.startsWith("/dice") ? "page" : undefined} className="tc-nav-link rounded-sm">
               <div className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
                 location.startsWith("/dice")
                   ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-foreground/50 hover:text-foreground hover:bg-muted/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}>
                 <Dices className="w-3.5 h-3.5" />
                 <span>Dice Atelier</span>
               </div>
             </Link>
             {user?.role === "weavekeeper" && (
-              <Link href="/weavekeeper">
+              <Link href="/weavekeeper" aria-current={location.startsWith("/weavekeeper") ? "page" : undefined} className="tc-nav-link rounded-sm">
                 <div className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
                   location.startsWith("/weavekeeper")
                     ? "text-primary bg-primary/10 border border-primary/20"
-                    : "text-primary/50 hover:text-primary hover:bg-primary/5"
+                    : "text-primary hover:text-primary hover:bg-primary/5"
                 )}>
                   <ShieldHalf className="w-3.5 h-3.5" />
                   <span>Weavekeeper</span>
@@ -85,8 +85,9 @@ export default function Navbar() {
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center border border-border/40 text-muted-foreground/60 hover:text-foreground hover:border-border/80 transition-all"
+              className="w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-primary/60 transition-colors"
               title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
@@ -106,8 +107,9 @@ export default function Navbar() {
                   variant="ghost"
                   size="sm"
                   onClick={() => logout()}
-                  className="text-muted-foreground/60 hover:text-foreground font-mono text-xs gap-1.5 h-8"
+                  className="text-muted-foreground hover:text-foreground font-mono text-xs gap-1.5 h-9"
                   data-testid="button-logout"
+                  aria-label="Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span className="hidden sm:block">Logout</span>
@@ -118,7 +120,7 @@ export default function Navbar() {
         </div>
       </div>
       {user && (
-        <nav className="md:hidden flex items-center gap-1 overflow-x-auto border-t border-border/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide" aria-label="Main navigation">
+        <nav className="tc-mobile-nav md:hidden flex items-center gap-1 overflow-x-auto border-t border-border px-3 py-1 font-mono text-[11px] uppercase tracking-wide" aria-label="Main navigation">
           {[
             { href: "/characters", name: "Characters", icon: Scroll },
             { href: "/compendium", name: "Compendium", icon: BookOpen },
@@ -126,7 +128,8 @@ export default function Navbar() {
             ...(user.role === "weavekeeper" ? [{ href: "/weavekeeper", name: "Weavekeeper", icon: ShieldHalf }] : []),
           ].map(({ href, name, icon: Icon }) => (
             <Link key={href} href={href} data-testid={`link-mobile-${href.slice(1)}`}
-              className={cn("flex shrink-0 items-center gap-1 px-2 py-1.5", location.startsWith(href) ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+              aria-current={location.startsWith(href) || (href === "/characters" && location.startsWith("/build")) ? "page" : undefined}
+              className={cn("flex shrink-0 items-center gap-1.5 px-3 py-1.5 border-b-2", location.startsWith(href) || (href === "/characters" && location.startsWith("/build")) ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:text-foreground")}>
               <Icon className="w-3.5 h-3.5" />{name}
             </Link>
           ))}
