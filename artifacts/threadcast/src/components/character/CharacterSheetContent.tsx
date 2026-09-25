@@ -9,6 +9,7 @@ import {
   calcRecoveryDice, getGuildRankData, GUILDS,
 } from "@/lib/ttrpg-data";
 import { findString } from "@/lib/affinity-data";
+import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier } from "@/lib/casting-rules";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
 import { DiceStage, ROLL_DURATION_MS } from "@/components/shared/DiceStage";
@@ -49,6 +50,8 @@ interface WeavingEntry {
   strings: string[];
   powerLevels: number[];
   modes: string[];
+  intent?: string;
+  dcOverride?: number;
 }
 
 interface SheetData {
@@ -111,6 +114,9 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
   const [recoveryDiceUsed, setRecoveryDiceUsed] = useState(0);
+  const [supportTension, setSupportTension] = useState(1);
+  const [supporting, setSupporting] = useState(false);
+  const [supportCheck, setSupportCheck] = useState<{ die: number; total: number } | null>(null);
   const [mendRoll, setMendRoll] = useState<{ d1: number; d2: number; diceUsed: number; diceRoll: number; healed: number; rolling: boolean; rollKey: number } | null>(null);
   const isMendRolling = !!mendRoll?.rolling;
   const [expandedKitItem, setExpandedKitItem] = useState<string | null>(null);
@@ -124,6 +130,8 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
 
   useEffect(() => {
     setLocalData((character.data as SheetData) || {});
+    setSupporting(false);
+    setSupportCheck(null);
   }, [character.id]);
 
   const save = useCallback((next: SheetData) => {
@@ -178,6 +186,7 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const fatigue = localData.fatigue || 0;
   const corruption = localData.corruption || 0;
   const level = character.level || 1;
+  const safePowerLevel = maximumSafePowerLevel(level, attrs.pot || 10);
   const rb = getRefinementBonus(level);
   const inventory = localData.inventory || [];
 
@@ -264,6 +273,18 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
       patch({ tension: nextTension });
     }
     return true;
+  }
+
+  function rollSupportCheck() {
+    const die = rollDie(20);
+    setSupportCheck({ die, total: die + calcMod(attrs.ctr || 10) });
+  }
+
+  function beginSupport() {
+    if (!Number.isInteger(supportTension) || supportTension < 1 || supportTension > availableTension ||
+        dicePreferencesLoading || !attemptCast(supportTension)) return;
+    setSupporting(true);
+    rollSupportCheck();
   }
 
   // ---- Mend handler ----
@@ -408,6 +429,17 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     if (!printWindow) { alert("Allow pop-ups to export PDF."); return; }
 
     const totalStr = (localData.strings || []).length;
+    const printEscape = (value: string) => value.replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[ch] || ch);
+    const weaveRows = (localData.weavings || []).map((w, wi) => {
+      const count = Math.max(2, Math.min(4, w.numStrings || 2));
+      const cost = (w.strings || []).slice(0, count).reduce((sum, name, index) => {
+        const pl = w.powerLevels?.[index] || 1;
+        return sum + (findString(name)?.levels?.[pl - 1]?.cost ?? CORE_POWER_LEVELS[pl - 1]?.cost ?? 0);
+      }, 0) * weaveMultiplier(count);
+      return `<tr><td>${wi + 1}</td><td>${(w.strings || []).slice(0, count).map(printEscape).join(", ")}</td><td>${(w.powerLevels || []).slice(0, count).map(pl => `PL${pl}`).join(", ")}</td><td>${(w.modes || []).slice(0, count).map(printEscape).join(", ")}</td><td>${count === 2 ? feats.includes("Precision Weave") ? "Harmony" : "Normal" : "Discord"}</td><td>${cost}T</td></tr>${w.intent?.trim() ? `<tr><td colspan="6" style="font-size:7.5pt;color:#555">Shared effect: ${printEscape(w.intent.trim())}</td></tr>` : ""}`;
+    }).join("");
     const activeFeatDefsAll = FEATS.filter(f => feats.includes(f.name));
 
     const burnoutLabel = ["Clear","Frayed","Stretched","Scorched","Cracked","Breaking","Thread Death"][burnout] || "Clear";
@@ -541,7 +573,7 @@ ${ALL_SKILLS.map(skill => {
 </tbody></table>
 
 ${totalStr > 0 ? `<h2>Strings (${totalStr})</h2><div>${(localData.strings||[]).map((s:string)=>`<div style="border:1px solid #bbb;padding:3px 7px;margin-bottom:3px;font-size:9pt">${s}</div>`).join("")}</div>` : ""}
-${(localData.weavings||[]).length > 0 ? `<h2>Weaving Combinations</h2><div style="font-size:7.5pt;color:#555;font-family:monospace;margin-bottom:4px">2 strings = Normal check; 3 = Discord ×2 cost; 4 = Discord ×3 cost (Lv7+)</div><table><thead><tr><th>#</th><th>Strings</th><th>Power Levels</th><th>Modes</th><th>Check</th><th>Effect</th><th>Tension</th></tr></thead><tbody>${(localData.weavings||[]).map((w:WeavingEntry,wi:number)=>{const cm=w.numStrings===2?1:w.numStrings===3?2:3;const bc=(w.strings||[]).reduce((s:number,sn:string,si:number)=>{const sd=findString(sn);const pl=(w.powerLevels||[])[si]||1;return s+(sd?.levels?.[pl-1]?.cost??pl);},0);return `<tr><td style="font-family:monospace">${wi+1}</td><td>${(w.strings||[]).map((s:string,si:number)=>s||`—`).join(", ")}</td><td style="font-family:monospace">${(w.powerLevels||[]).slice(0,w.numStrings).map((pl:number)=>`PL${pl}`).join(", ")}</td><td style="font-family:monospace">${(w.modes||[]).slice(0,w.numStrings).map((m:string)=>m||"?").join(", ")}</td><td style="font-family:monospace">${w.numStrings===2?"Normal":"Discord"}</td><td>${w.numStrings===2?"Enhanced":w.numStrings===3?"Dramatic":"Catastrophic"}</td><td style="font-family:monospace;font-weight:bold">${bc*cm}T</td></tr>`;}).join("")}</tbody></table>` : ""}
+${(localData.weavings||[]).length > 0 ? `<h2>Weaving Combinations</h2><div style="font-size:7.5pt;color:#555;font-family:monospace;margin-bottom:4px">2 Strings = Normal (Precision Weave: Harmony); 3 = Discord ×2 cost; 4 = Discord ×3 cost (Lv7+). Strings are domains, not spells.</div><table><thead><tr><th>#</th><th>Strings</th><th>Power Levels</th><th>Modes</th><th>Check</th><th>Tension</th></tr></thead><tbody>${weaveRows}</tbody></table>` : ""}
 </div>
 
 <!-- PAGE 3: FEATS + INVENTORY -->
@@ -1083,6 +1115,12 @@ ${([
         <TabsContent value="strings" forceMount className="tc-panel m-0 space-y-5">
           <div className="tc-eyebrow">Casting / threadwork</div>
           <h2 className="tc-section-title mt-1">Strings <small>{(localData.strings || []).length} attuned</small></h2>
+          <p className="text-xs text-muted-foreground leading-relaxed border border-border/30 bg-muted/10 p-3">
+            Your String is a part of your Affinity, not a fixed spell. The PL table shows examples of scale.
+            Choose a String, Power Level, and Mode, then describe what you want to achieve; the Weavekeeper
+            decides whether it fits and whether extra control, range, or concentration is needed.
+            Safe maximum: PL {safePowerLevel}. Higher PL casts roll at Discord.
+          </p>
           {(localData.strings || []).length === 0 && (
             <div className="py-8 text-center font-mono text-muted-foreground text-sm">No Strings attuned. Add them via character editing.</div>
           )}
@@ -1096,20 +1134,20 @@ ${([
           )}
           <div className="tc-string-list">{(localData.strings || []).map((sName, i) => {
             const strData = findString(sName);
-            const checkAttrKey = strData?.checkAttr ?? "ths";
+            const str = strData ?? {
+              name: sName,
+              flavor: "Custom String — use your Affinity and this String's scope to describe an effect. Core PL values are a starting point; the Weavekeeper adjudicates the result.",
+              checkAttr: "ctr" as const,
+              mishap: "Roll on the core Mishap Table with the Weavekeeper.",
+              snapback: "Roll on the core Snapback Table with the Weavekeeper.",
+              levels: CORE_POWER_LEVELS,
+            };
+            const checkAttrKey = str.checkAttr;
             const attrScore = attrs[checkAttrKey] || 10;
-            if (!strData) {
-              return (
-                <div key={i} className="border border-border p-4 font-mono text-sm flex justify-between">
-                  <span className="text-primary">{sName}</span>
-                  <span className="text-muted-foreground text-xs">See Compendium</span>
-                </div>
-              );
-            }
             return (
               <CastStringPanel
                 key={`${character.id}-${i}`}
-                str={strData}
+                str={str}
                 attrScore={attrScore}
                 characterName={character.name}
                 availableTension={availableTension}
@@ -1118,6 +1156,8 @@ ${([
                 secondaryModes={secondaryModes}
                 tertiaryModes={tertiaryModes}
                 level={level}
+                safePowerLevel={safePowerLevel}
+                custom={!strData}
               />
             );
           })}</div>
@@ -1172,6 +1212,7 @@ ${([
               <div>2 STRINGS — {feats.includes("Precision Weave") ? "Harmony" : "Normal"} Thread Check · Enhanced effect · ×1 Tension cost</div>
               <div>3 STRINGS — Discord Thread Check · Dramatic effect · ×2 Tension cost</div>
               <div>4 STRINGS (Lv7+) — Discord Thread Check · Catastrophic potential · ×3 Tension cost</div>
+              <div>Each String has its own PL and Mode. Describe the effect they create together; listed effects are examples, not limits.</div>
             </div>
             {(localData.weavings || []).length === 0 && (
               <p className="text-xs font-mono text-muted-foreground/50 text-center py-2">No weaving combinations saved. Add one above.</p>
@@ -1184,9 +1225,7 @@ ${([
                 maxStrings={level >= 7 ? 4 : 3}
                 localData={localData}
                 patch={patch}
-                primaryMode={primaryMode}
-                secondaryModes={secondaryModes}
-                tertiaryModes={tertiaryModes}
+                safePowerLevel={safePowerLevel}
                 ctrScore={attrs.ctr || 10}
                 availableTension={availableTension}
                 hasPrecisionWeave={feats.includes("Precision Weave")}
@@ -1194,6 +1233,37 @@ ${([
                 onCast={(cost, consumePrecisionWeave) => attemptCast(cost, consumePrecisionWeave)}
               />
             ))}
+          </div>
+          <div className="border border-border/40 p-4 space-y-2">
+            <h4 className="font-mono text-xs uppercase tracking-widest text-primary">Collaborative casting & weaving</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              The Lead declares one shared effect and its Power Level, directs the Weave, and makes the Thread Checks.
+              A supporter contributes their own String and Mode if the Weavekeeper agrees, and spends Tension from
+              their own sheet. Supporting mages roll CTR vs DC 12 each round they contribute. On failure,
+              the Lead immediately makes a Strain Check vs DC 15. Agree on each contribution with the Weavekeeper;
+              this sheet does not transfer Tension or rolls between characters automatically.
+            </p>
+            {!supporting ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <label htmlFor="support-tension">Tension to contribute</label>
+                <input id="support-tension" type="number" min={1} max={Math.max(1, availableTension)} value={supportTension}
+                  onChange={e => setSupportTension(Number(e.target.value))}
+                  className="w-16 bg-background border border-border px-2 py-1" />
+                <button className="tc-command disabled:opacity-50" onClick={beginSupport}
+                  disabled={dicePreferencesLoading || !Number.isInteger(supportTension) || supportTension < 1 || supportTension > availableTension}>CONTRIBUTE & CHECK CTR</button>
+                {supportTension > availableTension && <span className="text-amber-500">Exceeds available pool; automatic Snapback needs Weavekeeper resolution.</span>}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                <span className="text-primary">Supporting · Tension spent on your sheet</span>
+                <button className="tc-command" onClick={rollSupportCheck} disabled={dicePreferencesLoading}>NEXT ROUND: CTR CHECK</button>
+                <button className="px-2 py-1 border border-border" onClick={() => { setSupporting(false); setSupportCheck(null); }}>END SUPPORT</button>
+              </div>
+            )}
+            {supporting && supportCheck && <p className={cn("font-mono text-xs", supportCheck.total < 12 ? "text-destructive" : "text-chart-2")}>
+              CTR: {supportCheck.die} {fmtMod(calcMod(attrs.ctr || 10))} = {supportCheck.total} vs DC 12 —
+              {supportCheck.total >= 12 ? " connection maintained." : " failed! Tell the Lead to make a Strain Check vs DC 15 immediately."}
+            </p>}
           </div>
         </TabsContent>
 
@@ -1875,24 +1945,21 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
 // ===== WEAVE CAST ROW =====
 function WeaveCastRow({
   weave, wi, maxStrings, localData, patch,
-  primaryMode, secondaryModes, tertiaryModes, ctrScore, availableTension,
+  safePowerLevel, ctrScore, availableTension,
   hasPrecisionWeave, precisionWeaveChargeAvailable, onCast,
 }: {
   weave: WeavingEntry; wi: number; maxStrings: number;
   localData: any; patch: (p: any) => void;
-  primaryMode: string; secondaryModes: string[]; tertiaryModes: string[];
-  ctrScore: number; availableTension: number;
+  safePowerLevel: number; ctrScore: number; availableTension: number;
   hasPrecisionWeave: boolean; precisionWeaveChargeAvailable: boolean;
   onCast: (cost: number, consumePrecisionWeave?: boolean) => boolean;
 }) {
-  type WModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const mod = calcMod(ctrScore);
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [castOpen, setCastOpen] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<WModeOption | null>(null);
   const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
-  const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number } | null>(null);
+  const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; dc: number; intent: string; modes: string[] } | null>(null);
   const [rolledCost, setRolledCost] = useState<number | null>(null);
   const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [rollKey, setRollKey] = useState(0);
@@ -1901,13 +1968,14 @@ function WeaveCastRow({
     if (rollTimerRef.current) clearTimeout(rollTimerRef.current);
   }, []);
 
-  const checkType = weave.numStrings === 2 ? (hasPrecisionWeave ? "Harmony" : "Normal") : "Discord";
+  const overSafePL = (weave.powerLevels || []).slice(0, weave.numStrings).some(pl => pl > safePowerLevel);
+  const checkType = overSafePL ? "Discord" : weave.numStrings === 2 ? (hasPrecisionWeave ? "Harmony" : "Normal") : "Discord";
   const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
-  const costMultiplier = weave.numStrings === 2 ? 1 : weave.numStrings === 3 ? 2 : 3;
+  const costMultiplier = weaveMultiplier(weave.numStrings);
   const baseCost = (weave.strings || []).slice(0, weave.numStrings).reduce((sum: number, sName: string, si: number) => {
     const sData = findString(sName);
     const pl = (weave.powerLevels || [])[si] || 1;
-    return sum + (sData?.levels?.[pl - 1]?.cost ?? pl);
+    return sum + (sData?.levels?.[pl - 1]?.cost ?? CORE_POWER_LEVELS[pl - 1]?.cost ?? 0);
   }, 0);
   const totalCost = baseCost * costMultiplier;
   const precisionDiscount = weave.numStrings === 2 && hasPrecisionWeave && precisionWeaveChargeAvailable && totalCost > 0;
@@ -1916,13 +1984,13 @@ function WeaveCastRow({
     const dcs = (weave.strings || []).slice(0, weave.numStrings).map((sName: string, si: number) => {
       const sData = findString(sName);
       const pl = (weave.powerLevels || [])[si] || 1;
-      return sData?.levels?.[pl - 1]?.dc ?? (10 + pl * 2);
+      return sData?.levels?.[pl - 1]?.dc ?? CORE_POWER_LEVELS[pl - 1]?.dc ?? 0;
     }).filter(Boolean);
     if (!dcs.length) return 14;
     return Math.max(...dcs) + (weave.numStrings - 2) * 2;
   })();
+  const adjudicatedDC = weave.dcOverride && weave.dcOverride >= 1 && weave.dcOverride <= 40 ? weave.dcOverride : weaveDC;
 
-  const normalSet = new Set([...secondaryModes, ...tertiaryModes]);
   const availableStrings: string[] = Array.isArray(localData.strings) ? localData.strings : [];
   const isConfigured = Number.isInteger(weave.numStrings) && weave.numStrings >= 2 && weave.numStrings <= maxStrings &&
     Array.from({ length: weave.numStrings }).every((_, si) => {
@@ -1934,51 +2002,43 @@ function WeaveCastRow({
         Number.isFinite(powerLevel) &&
         Number.isInteger(powerLevel) &&
         powerLevel >= 1 &&
-        powerLevel <= 5;
-    });
-  const weaveRollType: "HARMONY" | "NORMAL" | "DISCORD" = weave.numStrings === 2
+        powerLevel <= 5 &&
+        ALL_MODES.some(mode => mode.name === weave.modes?.[si]);
+    }) && new Set((weave.strings || []).slice(0, weave.numStrings)).size === weave.numStrings;
+  const weaveRollType: "HARMONY" | "NORMAL" | "DISCORD" = overSafePL ? "DISCORD" : weave.numStrings === 2
     ? (hasPrecisionWeave ? "HARMONY" : "NORMAL")
     : "DISCORD";
-  const availableModes: WModeOption[] = ALL_MODES.map(m => {
-    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: weaveRollType, tier: "Primary" as const };
-    if (normalSet.has(m.name)) {
-      const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
-      return { name: m.name, rollType: weaveRollType, tier };
-    }
-    return { name: m.name, rollType: weaveRollType, tier: "Other" as const };
-  });
-
-  function openCast() { setCastOpen(true); setSelectedMode(null); setCastResult(null); setRolledCost(null); if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; } setAnimDice(null); }
+  function openCast() { setCastOpen(true); setCastResult(null); setRolledCost(null); if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; } setAnimDice(null); }
   function closeCast() {
     if (animDice) return;
-    setCastOpen(false); setSelectedMode(null); setCastResult(null); setRolledCost(null);
+    setCastOpen(false); setCastResult(null); setRolledCost(null);
     if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
     setAnimDice(null);
   }
 
   function doRoll() {
-    if (!selectedMode || !isConfigured || dicePreferencesLoading || castCost > availableTension) return;
-    const mode = selectedMode;
+    if (!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension || animDice) return;
+    const rollType = weaveRollType;
+    const intent = weave.intent.trim();
+    const modes = weave.modes.slice(0, weave.numStrings);
     if (!onCast(castCost, precisionDiscount)) return;
     setRolledCost(castCost);
-    setSelectedMode(null);
-    const needs2 = mode.rollType !== "NORMAL";
+    const needs2 = rollType !== "NORMAL";
     const d1 = rollDie(20);
     const d2 = needs2 ? rollDie(20) : undefined;
     setRollKey(key => key + 1);
-    setAnimDice({ d1, d2, rollType: mode.rollType });
+    setAnimDice({ d1, d2, rollType });
     rollTimerRef.current = setTimeout(() => {
       rollTimerRef.current = null;
       let finalDie = d1;
-      if (mode.rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
-      if (mode.rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
+      if (rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
+      if (rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
       const total = finalDie + mod;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: weaveDC });
+      setCastResult({ d1, d2, finalDie, total, rollType, dc: adjudicatedDC, intent, modes });
     }, ROLL_DURATION_MS);
   }
 
-  const rtBadge = (rt: string) => ({ HARMONY: "text-chart-2 bg-chart-2/10 border-chart-2/40", NORMAL: "text-muted-foreground bg-muted/30 border-border", DISCORD: "text-destructive bg-destructive/10 border-destructive/30" }[rt] ?? "");
   const diceCol = (rt: "HARMONY" | "NORMAL" | "DISCORD") => ({ HARMONY: "border-chart-2 text-chart-2", NORMAL: "border-border text-foreground", DISCORD: "border-destructive text-destructive" }[rt]);
   const displayedDice = animDice ?? castResult;
   const displayedCost = animDice || castResult ? (rolledCost ?? castCost) : castCost;
@@ -1993,7 +2053,7 @@ function WeaveCastRow({
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-mono text-muted-foreground">Strings:</span>
         {[2, 3, 4].filter(n => n <= maxStrings).map(n => (
-          <button key={n} className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors", weave.numStrings === n ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}
+          <button key={n} disabled={!!animDice} className={cn("px-2 py-0.5 text-[10px] font-mono border transition-colors disabled:opacity-50", weave.numStrings === n ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}
             onClick={() => {
               const next = [...(localData.weavings || [])];
               next[wi] = { ...weave, numStrings: n, strings: (weave.strings || []).slice(0, n), powerLevels: [...(weave.powerLevels || [1,1,1,1]).slice(0, n), ...(Array(Math.max(0, n - (weave.powerLevels||[]).length)).fill(1))], modes: (weave.modes || []).slice(0, n) };
@@ -2005,18 +2065,18 @@ function WeaveCastRow({
       {/* Per-string config */}
       {Array.from({ length: weave.numStrings }).map((_, si) => (
         <div key={si} className="grid grid-cols-3 gap-1.5">
-          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.strings || [])[si] || ""}
             onChange={e => { const next = [...(localData.weavings||[])]; const ns = [...(weave.strings||[])]; ns[si] = e.target.value; next[wi] = { ...weave, strings: ns }; patch({ weavings: next }); }}>
             <option value="">String {si + 1}</option>
             {(localData.strings || []).map((s: string) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.powerLevels || [])[si] || 1}
             onChange={e => { const next = [...(localData.weavings||[])]; const np = [...(weave.powerLevels||[1,1,1,1])]; np[si] = parseInt(e.target.value); next[wi] = { ...weave, powerLevels: np }; patch({ weavings: next }); }}>
             {[1,2,3,4,5].map(pl => <option key={pl} value={pl}>PL {pl}</option>)}
           </select>
-          <select className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.modes || [])[si] || ""}
             onChange={e => { const next = [...(localData.weavings||[])]; const nm = [...(weave.modes||[])]; nm[si] = e.target.value; next[wi] = { ...weave, modes: nm }; patch({ weavings: next }); }}>
             <option value="">Mode</option>
@@ -2024,20 +2084,34 @@ function WeaveCastRow({
           </select>
         </div>
       ))}
-      {!isConfigured && <p className="text-[10px] font-mono text-muted-foreground">Choose a saved String and a valid PL (1–5) for each slot to enable casting.</p>}
+      {!isConfigured && <p className="text-[10px] font-mono text-muted-foreground">Choose different saved Strings, a PL (1–5), and a Mode for each contribution to enable casting.</p>}
+      <label className="block text-[10px] font-mono text-muted-foreground" htmlFor={`weave-intent-${weave.id}`}>Shared effect — what do these Strings create together?</label>
+      <textarea id={`weave-intent-${weave.id}`} value={weave.intent || ""} maxLength={500} rows={2} disabled={!!animDice || !!castResult}
+        onChange={e => { const next = [...(localData.weavings || [])]; next[wi] = { ...weave, intent: e.target.value }; patch({ weavings: next }); }}
+        placeholder="Describe how each String and Mode contributes to one effect…"
+        className="w-full bg-background border border-border p-2 text-xs focus:outline-none focus:border-primary resize-y" />
+      {overSafePL && <p className="text-[10px] text-amber-500">A String exceeds your safe maximum (PL {safePowerLevel}); this Weave rolls at Discord.</p>}
+      <p className="text-[10px] text-muted-foreground">The Weavekeeper confirms the combined effect, control, range, and concentration before casting. DC is a sheet estimate.</p>
+      <label className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground" htmlFor={`weave-dc-${weave.id}`}>
+        Weavekeeper DC
+        <input id={`weave-dc-${weave.id}`} type="number" min={1} max={40} value={weave.dcOverride ?? weaveDC}
+          disabled={!!animDice || !!castResult}
+          onChange={e => { const value = Number(e.target.value); const next = [...(localData.weavings || [])]; next[wi] = { ...weave, dcOverride: value >= 1 && value <= 40 ? value : undefined }; patch({ weavings: next }); }}
+          className="w-16 bg-background border border-border px-1 py-0.5" />
+      </label>
       {/* Cast area */}
       {castOpen ? (
         <div className="border border-primary/30 bg-primary/5 p-3 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
-              Weave {wi + 1} · {weave.numStrings} strings · DC {weaveDC} · {displayedCost}T
+              Weave {wi + 1} · {weave.numStrings} strings · DC {adjudicatedDC} · {displayedCost}T
               <span className="text-muted-foreground/60 ml-1">({checkType} · {effectType})</span>
             </span>
             <button onClick={closeCast} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed">CLOSE ✕</button>
           </div>
           {hasPrecisionWeave && weave.numStrings === 2 && (
             <p className="text-[10px] font-mono text-chart-2">
-              Precision Weave — Harmony{precisionDiscount ? "; first two-string cast this Mend costs 1 less Tension." : "."}
+              Precision Weave — {overSafePL ? "Discord applies because a PL exceeds your safe maximum" : "Harmony"}{precisionDiscount ? "; first two-string cast this Mend costs 1 less Tension." : "."}
             </p>
           )}
           {isConfigured && castCost > availableTension && (
@@ -2061,41 +2135,26 @@ function WeaveCastRow({
                     <div className={cn("w-12 h-12 border-2 flex items-center justify-center text-2xl font-mono font-bold", castResult.finalDie === castResult.d2 && castResult.d1 !== castResult.d2 ? diceCol(castResult.rollType) : "border-border/40 text-muted-foreground")}>{castResult.d2}</div>
                   </>)}
                   <div className="ml-auto text-right">
-                    <div className="text-[10px] font-mono text-muted-foreground">{castResult.chosenMode} · {castResult.rollType} {fmtMod(mod)}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">{castResult.modes.join(" + ")} · {castResult.rollType} {fmtMod(mod)}</div>
                     <div className={cn("text-3xl font-bold font-mono", castResult.finalDie === 1 ? "text-destructive" : castResult.finalDie === 20 ? "text-primary" : castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground")}>{castResult.total}</div>
                     <div className="text-[10px] font-mono text-muted-foreground">vs DC {castResult.dc}</div>
                   </div>
                 </div>
                 {castResult.finalDie === 20 && <div className="font-mono text-[10px] text-primary font-bold mb-1">✦ THREAD BREAK — Exceptional weave!</div>}
                 {castResult.finalDie === 1 ? <div className="font-mono text-[10px] text-destructive font-bold">✸ MISFIRE — Weave collapses. Snapback on primary string.</div>
-                  : castResult.total >= castResult.dc ? <div className="font-mono text-[10px] text-chart-2 font-bold">SUCCESS — {effectType} effect achieved.</div>
+                  : castResult.total >= castResult.dc ? <div className="font-mono text-[10px] text-chart-2 font-bold">SUCCESS — {effectType} effect: {castResult.intent} (as adjudicated by the Weavekeeper).</div>
                   : <div className="font-mono text-[10px] text-muted-foreground font-bold">MISHAP — Weave fails. Tension was still spent.</div>}
               </div>
-              <button onClick={() => setCastResult(null)} className="px-3 py-1 text-[10px] font-mono border border-border/50 text-muted-foreground hover:text-foreground transition-colors">← SELECT MODE AGAIN</button>
-            </div>
-          ) : selectedMode ? (
-            <div>
-              <div className="flex items-center gap-3 mb-3 p-2 border border-border bg-background">
-                <div><div className="font-mono text-xs text-foreground">{selectedMode.name}</div>{selectedMode.tier !== "Other" && <div className="text-[10px] font-mono text-muted-foreground">{selectedMode.tier} Mode</div>}</div>
-                <span className={cn("text-[10px] font-mono px-2 py-0.5 border ml-auto", rtBadge(selectedMode.rollType))}>{selectedMode.rollType}</span>
-              </div>
-              <div className="text-[10px] font-mono text-muted-foreground mb-3">{selectedMode.rollType === "HARMONY" && "Rolling 2d20 — keep highest. "}{selectedMode.rollType === "NORMAL" && "Rolling 1d20. "}{selectedMode.rollType === "DISCORD" && "Rolling 2d20 — keep lowest. "}Thread Check: CTR {fmtMod(mod)}</div>
-              <div className="flex gap-2">
-                <button onClick={() => setSelectedMode(null)} className="px-3 py-2 text-xs font-mono border border-border text-muted-foreground hover:text-foreground transition-colors">← CHANGE</button>
-                <button onClick={doRoll} disabled={!isConfigured || dicePreferencesLoading || castCost > availableTension} className={cn("flex-1 py-2.5 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50", selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" : selectedMode.rollType === "DISCORD" ? "border-destructive text-destructive hover:bg-destructive/10" : "border-primary text-primary hover:bg-primary/10")}>⚄ ROLL THE WEAVE</button>
-              </div>
+              <button onClick={() => setCastResult(null)} className="px-3 py-1 text-[10px] font-mono border border-border/50 text-muted-foreground hover:text-foreground transition-colors">CAST AGAIN</button>
             </div>
           ) : (
             <div>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-2">Select casting mode:</p>
-              <div className="grid grid-cols-2 gap-1">
-                {availableModes.map(m => (
-                  <button key={m.name} onClick={() => setSelectedMode(m)} className="text-left p-2 border border-border hover:border-primary/50 bg-background transition-colors group">
-                    <div className="flex items-center justify-between mb-0.5"><span className="font-mono text-[10px] text-foreground group-hover:text-primary transition-colors">{m.name}</span><span className={cn("text-[9px] font-mono px-1.5 py-0.5 border", rtBadge(m.rollType))}>{m.rollType}</span></div>
-                    {m.tier !== "Other" && <span className="text-[9px] font-mono text-muted-foreground/60">{m.tier}</span>}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3 mb-3 p-2 border border-border bg-background">
+                <div className="font-mono text-xs text-foreground">{(weave.modes || []).slice(0, weave.numStrings).filter(Boolean).join(" + ") || "Choose Modes for each String"}</div>
+                <span className="text-[10px] font-mono ml-auto">{weaveRollType}</span>
               </div>
+              <div className="text-[10px] font-mono text-muted-foreground mb-3">{weaveRollType === "HARMONY" ? "Roll 2d20, keep highest." : weaveRollType === "DISCORD" ? "Roll 2d20, keep lowest." : "Roll 1d20."} Thread Check: CTR {fmtMod(mod)}</div>
+              <button onClick={doRoll} disabled={!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">⚄ ROLL THE WEAVE</button>
             </div>
           )}
         </div>
@@ -2106,9 +2165,9 @@ function WeaveCastRow({
             {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
             {precisionDiscount && <span className="text-chart-2 ml-1">(Precision Weave −1T)</span>}
             {isConfigured && castCost > availableTension && <span className="text-amber-500 block sm:inline sm:ml-2">Exceeds available Thread Pool ({Math.max(0, availableTension)}T available); Weavekeeper/manual Snapback resolution required.</span>}
-            {weaveDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {weaveDC}</span>}
+            {adjudicatedDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {adjudicatedDC}</span>}
           </span>
-          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={!isConfigured}>CAST (+{castCost}T)</button>
+          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={!isConfigured || !weave.intent?.trim()}>CAST (+{castCost}T)</button>
         </div>
       )}
     </div>
@@ -2120,16 +2179,20 @@ interface CastResult { d1: number; d2?: number; finalDie: number; total: number;
 
 function CastStringPanel({
   str, attrScore, characterName, availableTension, onCast,
-  primaryMode, secondaryModes, tertiaryModes, level,
+  primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom,
 }: {
   str: any; attrScore: number; characterName: string; availableTension: number; onCast: (cost: number) => boolean;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
+  safePowerLevel: number; custom: boolean;
 }) {
   const mod = calcMod(attrScore);
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [expanded, setExpanded] = useState(true);
   const [castPL, setCastPL] = useState<CastPL | null>(null);
+  const [castDC, setCastDC] = useState(8);
+  const [castIntent, setCastIntent] = useState("");
+  const [rolledIntent, setRolledIntent] = useState("");
   const [selectedMode, setSelectedMode] = useState<ModeOption | null>(null);
   const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
   const [castResult, setCastResult] = useState<CastResult | null>(null);
@@ -2143,10 +2206,10 @@ function CastStringPanel({
   type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const normalModes = new Set([...secondaryModes, ...tertiaryModes]);
   const availableModes: ModeOption[] = ALL_MODES.map(m => {
-    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: "HARMONY" as const, tier: "Primary" as const };
+    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: castPL && castPL.pl > safePowerLevel ? "DISCORD" as const : "HARMONY" as const, tier: "Primary" as const };
     if (normalModes.has(m.name)) {
       const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
-      return { name: m.name, rollType: "NORMAL" as const, tier };
+      return { name: m.name, rollType: castPL && castPL.pl > safePowerLevel ? "DISCORD" as const : "NORMAL" as const, tier };
     }
     return { name: m.name, rollType: "DISCORD" as const, tier: "Other" as const };
   });
@@ -2154,6 +2217,8 @@ function CastStringPanel({
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
     if (animDice) return;
     setCastPL({ pl, cost, dc, effect });
+    setCastDC(dc);
+    setCastIntent("");
     setSelectedMode(null);
     setCastResult(null);
     if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
@@ -2170,10 +2235,11 @@ function CastStringPanel({
   }
 
   function doRoll() {
-    if (!selectedMode || !castPL || dicePreferencesLoading || castPL.cost > availableTension) return;
+    if (!selectedMode || !castPL || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension) return;
     const mode = selectedMode;
     const pl = castPL;
     if (!onCast(pl.cost)) return;
+    setRolledIntent(castIntent.trim());
     setSelectedMode(null);
 
     const needs2 = mode.rollType !== "NORMAL";
@@ -2188,7 +2254,7 @@ function CastStringPanel({
       if (mode.rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
       const total = finalDie + mod;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: pl.dc });
+      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: castDC });
     }, ROLL_DURATION_MS);
   }
 
@@ -2220,6 +2286,7 @@ function CastStringPanel({
       {expanded && (
         <div className="px-4 pb-4 border-t border-border/30">
           <p className="text-xs font-mono text-muted-foreground my-3 leading-relaxed">{str.flavor}</p>
+          <p className="text-[10px] font-mono text-muted-foreground mb-3">{custom ? "Core PL cost / DC for this custom String." : "PL effects below are examples, not a spell list. Their listed cost / DC are used as the starting values for a cast."} Describe your own effect when casting.</p>
 
           {/* Cast Overlay */}
           {castPL && (
@@ -2227,12 +2294,29 @@ function CastStringPanel({
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs text-primary uppercase tracking-widest">
-                  {str.name} · PL{castPL.pl} · DC {castPL.dc} · {castPL.cost} TP
+                  {str.name} · PL{castPL.pl} · DC {castDC} · {castPL.cost} TP
                 </span>
                 <button onClick={closeOverlay} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   CLOSE ✕
                 </button>
               </div>
+              <label className="block text-[10px] font-mono text-primary uppercase tracking-widest mb-1" htmlFor={`cast-intent-${characterName}-${str.name}`}>What are you trying to do?</label>
+              <textarea id={`cast-intent-${characterName}-${str.name}`} value={castIntent} onChange={e => setCastIntent(e.target.value)}
+                disabled={!!animDice || !!castResult} maxLength={500} rows={2}
+                placeholder={`I use ${str.name} at PL ${castPL.pl} through my chosen Mode to…`}
+                className="w-full bg-background border border-border px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary mb-2 resize-y" />
+              <div className="flex justify-between items-center gap-2 mb-3 text-[10px] text-muted-foreground">
+                <span>Example only: {castPL.effect}</span>
+                <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>
+              </div>
+              {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): Thread Check at Discord.</p>}
+              <p className="mb-3 text-[10px] text-muted-foreground">The Weavekeeper confirms conceptual fit, magnitude, control, range, and concentration before the roll.</p>
+              <label className="mb-3 flex items-center gap-2 font-mono text-[10px] text-muted-foreground" htmlFor={`cast-dc-${characterName}-${str.name}`}>
+                Weavekeeper DC
+                <input id={`cast-dc-${characterName}-${str.name}`} type="number" min={1} max={40} value={castDC}
+                  disabled={!!animDice || !!castResult} onChange={e => setCastDC(Number(e.target.value))}
+                  className="w-16 bg-background border border-border px-1 py-0.5" />
+              </label>
               {castPL.cost > availableTension && <p className="mb-3 text-[10px] font-mono text-amber-500">This cost exceeds available Thread Pool room ({Math.max(0, availableTension)}T available); automatic Snapback requires Weavekeeper/manual resolution. Automated roll disabled.</p>}
               {dicePreferenceError && <p className="mb-3 text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}
               {dicePreferencesLoading && <p className="mb-3 text-[10px] font-mono text-muted-foreground">Loading dice preferences… rolling is unavailable until your die selection loads.</p>}
@@ -2300,7 +2384,7 @@ function CastStringPanel({
                     ) : castResult.total >= castResult.dc ? (
                       <div>
                         <div className="font-mono text-xs text-chart-2 font-bold mb-1">SUCCESS</div>
-                        <div className="font-mono text-xs text-foreground leading-relaxed">{castPL.effect}</div>
+                        <div className="font-mono text-xs text-foreground leading-relaxed">{rolledIntent} <span className="text-muted-foreground">(as adjudicated by the Weavekeeper)</span></div>
                       </div>
                     ) : (
                       <div>
@@ -2345,7 +2429,7 @@ function CastStringPanel({
                     </button>
                     <button
                       onClick={doRoll}
-                      disabled={dicePreferencesLoading || castPL.cost > availableTension}
+                      disabled={!castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension}
                       className={cn(
                         "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                         selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" :
@@ -2391,7 +2475,7 @@ function CastStringPanel({
                 <th className="pb-1 font-normal w-8 text-center"><GameTerm term="pl">PL</GameTerm></th>
                 <th className="pb-1 font-normal w-10 text-center"><GameTerm term="tp">TP</GameTerm></th>
                 <th className="pb-1 font-normal w-10 text-center"><GameTerm term="dc">DC</GameTerm></th>
-                <th className="pb-1 font-normal">Effect</th>
+                <th className="pb-1 font-normal">Example effect / scale</th>
                 <th className="pb-1 font-normal w-16 text-right">Cast</th>
               </tr>
             </thead>

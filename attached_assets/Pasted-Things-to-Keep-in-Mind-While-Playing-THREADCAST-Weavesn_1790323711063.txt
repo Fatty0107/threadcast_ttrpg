@@ -1,0 +1,224 @@
+Things to Keep in Mind While Playing THREADCAST
+Weavesnatcher
+OP
+ — 01:12 pm
+THREADCAST is not a game where your character has a list of spells that they can only use exactly as written. Your Affinity gives you a domain of magic, your Strings define the parts of that domain you have developed, and your Modes determine how you manipulate those Strings. The examples in your String tables are there to show the kind of scale and possibilities available to you; they are not a list of everything your character is allowed to do. The core rules explicitly treat Power Levels as measures of scale rather than specific spells, and casting is designed to be flexible and descriptive.
+Weavesnatcher
+OP
+ — 01:14 pm
+Affinity → String → Power Level → Mode
+Think of your magic as having several layers.
+
+Your Affinity is the broad domain. It tells you what kind of thing your character can interact with. Fire, Emotion, Illusion, Healing, Luck, Cosmic phenomena, Mirrors, and so on are examples of Affinities. Your Affinity is the overall magical language your character speaks.
+
+Your Strings are sub-domains within that Affinity. A String represents a particular aspect of your Affinity that your character has developed an understanding of. It is not a spell. For example, a Fire Affinity might have Strings concerning heat, flame, light, combustion, pressure, or something much stranger depending on what that character's Affinity actually represents.
+
+Power Level determines magnitude. PL does not tell you what spell you are casting. It tells you how much magical force you are trying to put behind what you're doing. A PL 3 effect could be a concentrated attack, a significant defensive structure, forced movement, environmental manipulation, or something completely different depending on the Affinity and String. The same PL can therefore look wildly different between two characters.
+
+Your Mode determines how you manipulate that String. This is extremely important. The same String can behave very differently depending on the Mode you choose. A Striker might use a String offensively, an Anchor might stabilize or hold something in place, a Slider might redirect or reposition its effect, a Binder might combine or structure it into something persistent, and so on. The Mode is not simply a bonus applied to the String; it changes how you are attempting to use the magic.
+
+So, when casting, think:
+
+What part of my Affinity am I using? → How powerful am I making it? → How am I manipulating it? → What am I actually trying to accomplish?
+The String Tables Are Examples, Not Spell Lists
+The biggest thing to remember is this:
+
+You are not limited to what is written in your String table.
+
+If a String table says that your String can create a particular effect at PL 2, that does not mean that effect is the only thing you can do with that String at PL 2. It is an example of what that level of magical magnitude can look like.
+
+The question isn't, “Is this exact ability written on the sheet?” The question is, “Does this make sense as an expression of this String, through this Mode, at the Power Level the player declared?”
+
+If yes, the Weavekeeper can allow it and determine the appropriate resolution.
+
+If the player proposes something that is beyond the magnitude of the declared PL, the Weavekeeper can tell them that the effect needs to be reduced, changed, or attempted at a higher PL.
+Choosing a Power Level
+When you want to cast, you choose the Power Level you want to attempt.
+
+PL represents the magnitude of the magical effect you are trying to produce. It is not a difficulty rating for a particular spell and it does not determine the exact shape of the effect.
+
+For reference, the core scale is:
+
+PL 1 — Flicker: small, trivial magical effects.
+
+PL 2 — Touch: room-scale effects and meaningful but limited manipulation.
+
+PL 3 — Surge: significant effects capable of substantially affecting creatures, objects, or an area.
+
+PL 4 — Fierce: major effects capable of affecting larger groups, structures, or environments.
+
+PL 5 — Breaking: catastrophic, enormous-scale magic. Think siege-scale destruction, major terrain alteration, or effects whose consequences can extend across enormous areas.
+
+So don't look at PL 5 and think “the strongest version of the spell.” PL 5 is an enormous amount of magical force.
+
+The important thing is that PL measures what you're trying to accomplish, not whether the exact example exists in your table.
+You Can Change the Shape of an Effect
+You are also allowed to make an effect smaller, narrower, weaker, more focused, or more controlled than the example in the String table.
+
+Suppose the example for your PL 3 String affects a large area. You might instead say:
+
+“I want to concentrate the entire effect into one tiny point.”
+
+Or:
+
+“I want the effect to curve around my allies.”
+
+Or:
+
+“I want the same amount of power, but I want it to affect only one target.”
+
+The fact that the table doesn't explicitly show that configuration does not automatically make it impossible.
+
+However, magnitude and control are different things. A powerful effect being extremely precise can introduce a separate challenge involving control or concentration. You aren't necessarily reducing the magical magnitude just because you are making the effect more precise.
+The Mode Is Your Method
+Once you have chosen your String and PL, you choose the Mode you are using. The Mode tells the table how your character is interacting with the String.
+
+For example, suppose you have a String concerned with heat. You could potentially approach it as:
+
+Heat + Striker: “I focus the heat into an aggressive blast.”
+
+Heat + Anchor: “I create a stable zone of intense heat that remains in one place.”
+
+Heat + Slider: “I move the heat from one location to another.”
+
+Heat + Binder: “I weave the heat into a persistent magical structure.”
+
+Those are not necessarily separate abilities you learned. They are different ways of expressing the same String.
+
+This is why the Modes matter so much. A String doesn't completely determine what the final effect looks like. The player chooses the method of manipulation and then describes what they are trying to accomplish with it.
+
+The core Mode descriptions support this distinction: for example, Slider is concerned with moving where tension manifests, while Binder concerns intertwining multiple leylines into a unified structure.
+Your Turn During The Session
+When you want to do something unusual with your magic, you don't need to search your character sheet for a spell that says exactly what you want.
+
+Instead, tell the Weavekeeper something like:
+
+“I'm using my [String] at PL [X] through [Mode]. I want to [describe what you're trying to accomplish].”
+
+The exact effect doesn't have to exist in your String table. The Weavekeeper then determines whether the proposed effect makes sense for the String + PL + Mode combination and whether any additional control, concentration, range, target, or other requirements apply.
+Weavesnatcher
+OP
+ — 01:21 pm
+Creative Casting Is Encouraged
+THREADCAST expects players to experiment.
+
+The system is specifically designed around describing what you want to do rather than selecting a predetermined spell.
+
+So don't think:
+
+“My sheet doesn't say I can do that.”
+
+Think:
+
+“Is this something my Affinity and String could reasonably accomplish, and how would my Mode let me attempt it?”
+
+The important limitation is that creativity does not mean unlimited power. Your proposed effect still has to belong to the conceptual territory of your String, fit the chosen Mode, and be appropriate for the PL you declared.
+Using Multiple Strings: Weaving
+The moment you use two or more Strings simultaneously, you are Weaving. Weaving allows Strings to interact and create an effect that neither String could necessarily produce by itself.
+
+For example, a character might have:
+
+Heat String + Pressure String
+
+Instead of using either one independently, they could say:
+
+“I'm Weaving Heat and Pressure at PL 2 and PL 3 respectively through Striker. I want to create a compressed blast of superheated air.”
+
+Each String has its own Power Level. The resulting Weave then uses the system's combined calculation for its Thread Check DC and Tension cost.
+
+The Strings don't need to have identical PLs, and they don't have to produce the same kind of effect.
+
+You also have freedom in how the Modes interact. You could use:
+Heat → Striker
+Pressure → Striker
+to create one unified offensive manipulation.
+
+Or:
+Heat → Striker
+Pressure → Slider
+if the two Strings need to be manipulated differently to accomplish the effect.
+Weaving Can Create Something New
+A Weave is not simply:
+“String A does its thing + String B does its thing.”
+
+The entire point of Weaving is that the Strings can interact.
+Fire + Wind might become a directed firestorm.
+Sound + Pressure might become a concussive shockwave.
+Light + Mirror might produce a complicated reflected-light construct.
+Emotion + Illusion might allow a character to create an illusion specifically shaped around an existing emotional response.
+
+The exact possibilities depend on the Strings, the Modes being used, the PLs selected, and what the player is actually attempting. Creative liberty is part of the system.
+Weaving Has a Cost
+The more Strings you combine, the more dangerous the casting becomes.
+
+With two Strings, you make a normal Weave at the calculated combined cost.
+
+With three Strings, the Thread Check is made with Discord, and the normal Tension cost is doubled.
+
+With four Strings, the Thread Check is also made with Discord, and the normal Tension cost is tripled. Four-String Weaving represents extremely high-level magical manipulation.
+
+So Weaving gives you more creative possibilities, but you're deliberately pushing more magical threads together at once.
+The Table Is Your Starting Point, Not Your Ceiling
+Your String table should be treated as a reference guide.
+
+It shows the kinds of things your character has already demonstrated, the scale those effects can reach, and examples of what different PLs might look like. It gives both you and the Weavekeeper something to compare your ideas against.
+
+But your character is not restricted to those examples.
+
+If you have an idea that isn't written there, try it.
+Weavesnatcher
+OP
+ — 01:33 pm
+Collaborative Weaving — Can Multiple Players Weave Together?
+Yes. Weaving does not have to be performed by a single mage.
+
+Normally, when you Weave, you are combining multiple Strings that you have access to. However, two or more mages can also work together to create a single magical effect. This is called Collaborative Weaving.
+
+Think of it less like one person grabbing several strings and more like several people grabbing different parts of the same piece of music and making it play together.
+
+How Collaborative Weaving Works
+One mage is designated as the Lead. The Lead is responsible for defining the overall effect and directing the Weave. The supporting mages contribute their own magic to the effect.
+
+The resulting effect can be something that neither mage could have produced with their String alone.
+
+The Lead makes the required Thread Checks and controls the overall casting. Supporting mages contribute Tension from their own Thread Pools and must maintain their connection to the Weave.
+
+The Supporting Mage Still Matters
+A supporting mage isn't simply giving the Lead extra Tension. Their contribution is part of the magic itself. If the Weavekeeper allows the supporting mage's String to become part of the actual Weave, that String can influence what the final effect is capable of.
+
+Who Chooses the Power Level?
+The Lead declares the intended effect and the overall Power Level, with the Weavekeeper adjudicating whether the proposed magnitude fits that PL.
+
+The supporting mage does not get to independently declare a second spell and simply attach it to the first. Their contribution is part of the same magical effect.
+
+However, the supporting mage and Lead should work together to describe how their respective Strings interact.
+What About Modes?
+Modes can also be coordinated between players.
+
+For example:
+Mage A — Fire / Heat/ Striker
+Mage B — Wind / Pressure / Slider
+Mage A creates a concentrated wall of flame while Mage B continuously redirects and curves it around the battlefield.
+
+Or both mages can use the same Mode:
+Fire / Striker + Wind / Striker
+producing a more aggressively offensive combined effect.
+
+The Mode determines how each mage manipulates their contribution, while the Weave determines how those contributions interact.
+Collaborative Casting vs. Weaving
+These are related, but they aren't exactly the same thing.
+
+Collaborative Casting means multiple mages are contributing to one large-scale magical effect and pooling their resources. The core rules explicitly allow this: one mage becomes the Lead, makes the Thread Checks, and supporting mages contribute Tension from their own Thread Pools.
+
+Weaving specifically means combining Strings to produce an effect that the individual Strings could not produce alone. Normally those Strings belong to one character, but Collaborative Weaving allows Strings belonging to different characters to become part of the same magical effect.
+
+So:
+One mage + multiple Strings = Weaving
+Multiple mages + one shared magical effect = Collaborative Casting
+Multiple mages + their individual Strings intentionally interacting = Collaborative Weaving
+There Is Still a Limit
+Collaborative Weaving does not mean that everyone can throw a String into the same effect with no consequences.
+
+The Weavekeeper still determines whether the proposed combination makes conceptual sense and whether its magnitude fits the declared Power Level. The more complicated the interaction becomes, the more carefully the group should define what each String is contributing.
+
+Supporting mages contribute Tension from their own Thread Pools, and that they make a CTR Check each round they contribute; if they fail, the Lead immediately makes a Strain Check.
