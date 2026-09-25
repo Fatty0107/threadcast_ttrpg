@@ -1,14 +1,15 @@
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
-import { db, charactersTable, rollsTable } from "@workspace/db";
-import { calcMod, guildAttributeBonus } from "@workspace/casting-rules";
-import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, ListRollsResponse } from "@workspace/api-zod";
+import { db, charactersTable, rollsTable, collaborativeCastsTable } from "@workspace/db";
+import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, ListRollsResponse,
+  StartCollaborativeCastBody, GetCollaborativeCastParams, GetCollaborativeCastResponse,
+  ResolveCollaborativeSupportParams, ResolveCollaborativeSupportBody, ResolveCollaborativeSupportResponse } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { postRollEmbed } from "../lib/discord-roll";
 
 const router = Router();
 router.use("/rolls", requireAuth);
+router.use("/collaborative-casts", requireAuth);
 
 function webhookUrl(): string | null {
   const raw = process.env.DISCORD_WEBHOOK_URL;
@@ -26,35 +27,183 @@ function webhookUrl(): string | null {
 
 type SavedRoll = typeof rollsTable.$inferSelect;
 function responseRoll(roll: SavedRoll) {
-  const { userId, characterId, requestId, deliveryStatus, ...visible } = roll;
+  const { userId, requestId, deliveryStatus, ...visible } = roll;
   return { ...visible, d2: roll.d2 ?? undefined, dc: roll.dc ?? undefined,
     isBreak: !!roll.isBreak, isMisfire: !!roll.isMisfire, createdAt: roll.createdAt.toISOString() };
 }
 
-function getAttributeScore(data: any, key: "pot" | "ctr" | "res" | "ths"): number {
-  const base = data?.attributes?.[key] || 10;
-  if (!Number.isFinite(base)) return 10;
-  let asiBonus = 0;
-  const feats: string[] = Array.isArray(data?.feats) ? data.feats : [];
-  feats.forEach((feat, index) => {
-    if (feat !== "Attribute Score Improvement") return;
-    const choice = data?.featChoices?.[String(index)];
-    if (choice?.mode === "one" && choice.attrs?.[0] === key) asiBonus += 2;
-    if (choice?.mode === "two" && Array.isArray(choice.attrs)) {
-      asiBonus += choice.attrs.filter((attribute: string) => attribute === key).length;
-    }
-  });
-  return base + asiBonus + guildAttributeBonus(data?.guild, data?.guildRank, key);
-}
+router.post("/collaborative-casts", async (req, res): Promise<void> => {
+  const parsed = StartCollaborativeCastBody.safeParse(req.body);
+  if (!parsed.success || !parsed.data.effect.trim()) {
+    res.status(400).json({ error: "Invalid cast" }); return;
+  }
+  const user = (req as any).user;
+  const [lead] = await db.select({ id: charactersTable.id }).from(charactersTable)
+    .where(and(eq(charactersTable.id, parsed.data.leadCharacterId), eq(charactersTable.userId, user.id))).limit(1);
+  if (!lead) { res.status(403).json({ error: "Lead character unavailable" }); return; }
+  const [cast] = await db.insert(collaborativeCastsTable).values({
+    id: randomUUID(), leadCharacterId: lead.id, leadUserId: user.id,
+    participantIds: [lead.id], effect: parsed.data.effect.trim(),
+  }).returning();
+  res.status(201).json(GetCollaborativeCastResponse.parse({ ...cast, createdAt: cast.createdAt.toISOString(), rolls: [] }));
+});
 
-function senseKey(value: string): string {
-  return value.trim().toLocaleLowerCase();
-}
+router.get("/collaborative-casts/:id", async (req, res): Promise<void> => {
+  const parsed = GetCollaborativeCastParams.safeParse(req.params);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid cast ID" }); return; }
+  const [cast] = await db.select().from(collaborativeCastsTable).where(eq(collaborativeCastsTable.id, parsed.data.id)).limit(1);
+  if (!cast) { res.status(404).json({ error: "Cast not found" }); return; }
+  const rolls = await db.select().from(rollsTable).where(eq(rollsTable.castId, cast.id)).orderBy(rollsTable.id);
+  res.json(GetCollaborativeCastResponse.parse({ ...cast, createdAt: cast.createdAt.toISOString(), rolls: rolls.map(responseRoll) }));
+});
+
+// Matches the Snapback table in threadcast/src/lib/casting-rules.ts. This path
+// resolves the entire automatic consequence in a single transaction.
+const snapbackEffects = [
+  { name: "Flinch", sides: 6, count: 1, condition: "Lose Minor Action next turn" },
+  { name: "Burn", sides: 8, count: 2, condition: "−1 to Thread Checks until Mend" },
+  { name: "Rupture", sides: 10, count: 2 },
+  { name: "Discharge", sides: 10, count: 3 },
+  { name: "Overload", sides: 12, count: 3, condition: "Stunned until end of next turn", resetTension: true },
+  { name: "Collapse", sides: 12, count: 4, condition: "Unconscious for 1 minute", burnout: 2 },
+  { name: "Total Break", condition: "Permanent injury — resolve at the table", burnout: 3 },
+] as const;
+
+router.post("/collaborative-casts/:id/resolve-support", async (req, res): Promise<void> => {
+  const params = ResolveCollaborativeSupportParams.safeParse(req.params);
+  const body = ResolveCollaborativeSupportBody.safeParse(req.body);
+  if (!params.success || !body.success) { res.status(400).json({ error: "Invalid support resolution" }); return; }
+  const user = (req as any).user;
+  const [cast] = await db.select().from(collaborativeCastsTable).where(eq(collaborativeCastsTable.id, params.data.id)).limit(1);
+  if (!cast || cast.leadUserId !== user.id) { res.status(403).json({ error: "Only the Lead can resolve support" }); return; }
+  const [source] = await db.select().from(rollsTable).where(eq(rollsTable.id, body.data.supportRollId)).limit(1);
+  if (!source || source.castId !== cast.id || source.category !== "support" ||
+      (source.isBreak || (!source.isMisfire && source.total >= 12))) {
+    res.status(400).json({ error: "A failed support roll is required" }); return;
+  }
+  const style = user.dicePreferences?.sets?.find((set: { id: string }) => set.id === user.dicePreferences?.selectedId);
+  const url = webhookUrl();
+  const created: SavedRoll[] = [];
+  const resolution = await db.transaction(async tx => {
+    await tx.select({ id: collaborativeCastsTable.id }).from(collaborativeCastsTable)
+      .where(eq(collaborativeCastsTable.id, cast.id)).for("update");
+    const [existing] = await tx.select().from(rollsTable).where(eq(rollsTable.sourceRollId, source.id)).limit(1);
+    if (existing) {
+      const [snapback] = await tx.select().from(rollsTable).where(eq(rollsTable.parentRollId, existing.id)).limit(1);
+      const aftermath = snapback ? await tx.select().from(rollsTable).where(eq(rollsTable.parentRollId, snapback.id)) : [];
+      return { strain: existing, snapback: snapback ?? null,
+        damage: aftermath.find(r => r.category === "damage") ?? null,
+        rupture: aftermath.find(r => r.category === "check") ?? null,
+        effect: snapback ? snapbackEffects[snapback.finalDie === 12 ? 6 : Math.floor((snapback.finalDie - 1) / 2)].name : null };
+    }
+    const [sheet] = await tx.select().from(charactersTable)
+      .where(and(eq(charactersTable.id, cast.leadCharacterId), eq(charactersTable.userId, user.id))).for("update");
+    if (!sheet) throw new Error("Lead character unavailable");
+    const rollBase = {
+      userId: user.id, characterId: sheet.id, castId: cast.id, leadCharacterId: sheet.id,
+      playerName: user.displayName as string, characterName: sheet.name,
+      contributedString: null, contributedMode: null, tensionContribution: null,
+      diceName: style?.name ?? "Standard Issue", diceColor: style?.edgeColor ?? "#C48650",
+      deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
+      multiplier: 1,
+    };
+    async function store(fields: Omit<typeof rollsTable.$inferInsert, keyof typeof rollBase | "userId" | "characterId" | "castId" | "leadCharacterId">) {
+      const [roll] = await tx.insert(rollsTable).values({ ...rollBase, ...fields }).returning();
+      created.push(roll);
+      return roll;
+    }
+    const resMod = body.data.resModifier;
+    const strainDie = randomInt(1, 21);
+    const strainTotal = strainDie + resMod;
+    const strain = await store({
+      requestId: randomUUID(), sourceRollId: source.id, parentRollId: null,
+      title: `Support failure · Strain (roll #${source.id})`, category: "check",
+      mode: "NORMAL", diceSides: 20, d1: strainDie, d2: null, extraDice: [],
+      modifier: resMod, finalDie: strainDie, total: strainTotal, dc: 15,
+      isBreak: Number(strainDie === 20), isMisfire: Number(strainDie === 1),
+      outcome: strainDie === 20 ? "Thread Break" : strainDie === 1 ? "Misfire" : strainTotal >= 15 ? "Success" : "Failure",
+    });
+    if (strainDie === 20 || (strainDie !== 1 && strainTotal >= 15))
+      return { strain, snapback: null, damage: null, rupture: null, effect: null };
+    const tableDie = randomInt(1, 13);
+    const effect = snapbackEffects[tableDie === 12 ? 6 : Math.floor((tableDie - 1) / 2)];
+    const snapback = await store({
+      requestId: randomUUID(), sourceRollId: null, parentRollId: strain.id,
+      title: `Support failure · Snapback table (${effect.name})`, category: "table",
+      mode: "NORMAL", diceSides: 12, d1: tableDie, d2: null, extraDice: [],
+      modifier: 0, finalDie: tableDie, total: tableDie, dc: null, isBreak: 0, isMisfire: 0, outcome: "Rolled",
+    });
+    let damage: SavedRoll | null = null;
+    let rupture: SavedRoll | null = null;
+    if ("sides" in effect) {
+      const dice = Array.from({ length: effect.count }, () => randomInt(1, effect.sides + 1));
+      const total = dice.reduce((sum, die) => sum + die, 0);
+      damage = await store({
+        requestId: randomUUID(), sourceRollId: null, parentRollId: snapback.id,
+        title: `Snapback · ${effect.name} damage`, category: "damage",
+        mode: "NORMAL", diceSides: effect.sides, d1: dice[0], d2: dice[1] ?? null,
+        extraDice: dice.slice(2).map(value => ({ sides: effect.sides, value })),
+        modifier: 0, finalDie: total, total, dc: null, isBreak: 0, isMisfire: 0, outcome: "Damage",
+      });
+    }
+    if (effect.name === "Rupture") {
+      const die = randomInt(1, 21);
+      const total = die + resMod;
+      rupture = await store({
+        requestId: randomUUID(), sourceRollId: null, parentRollId: snapback.id,
+        title: "Rupture · RES check", category: "check", mode: "NORMAL", diceSides: 20,
+        d1: die, d2: null, extraDice: [], modifier: resMod, finalDie: die, total, dc: 14,
+        isBreak: Number(die === 20), isMisfire: Number(die === 1),
+        outcome: die === 20 ? "Thread Break" : die === 1 ? "Misfire" : total >= 14 ? "Success" : "Failure",
+      });
+    }
+    const data = sheet.data as {
+      tension?: { current: number; pool: number; safeLimit: number };
+      vitalityPoints?: { current: number; max: number };
+      burnout?: number; castingConditions?: string[];
+    };
+    const conditions = [...(data.castingConditions || [])];
+    if ("condition" in effect && !conditions.includes(effect.condition)) conditions.push(effect.condition);
+    if (rupture && (rupture.isMisfire || (!rupture.isBreak && rupture.total < 14)) &&
+        !conditions.includes("Shaking Hands")) conditions.push("Shaking Hands");
+    await tx.update(charactersTable).set({ data: {
+      ...data, castingConditions: conditions,
+      burnout: Math.min(6, (data.burnout || 0) + ("burnout" in effect ? effect.burnout : 0)),
+      tension: "resetTension" in effect && data.tension ? { ...data.tension, current: 0 } : data.tension,
+      vitalityPoints: damage && data.vitalityPoints
+        ? { ...data.vitalityPoints, current: Math.max(0, data.vitalityPoints.current - damage.total) }
+        : data.vitalityPoints,
+    } }).where(eq(charactersTable.id, sheet.id));
+    return { strain, snapback, damage, rupture, effect: effect.name };
+  });
+  res.json(ResolveCollaborativeSupportResponse.parse({
+    ...resolution, strain: responseRoll(resolution.strain),
+    snapback: resolution.snapback ? responseRoll(resolution.snapback) : null,
+    damage: resolution.damage ? responseRoll(resolution.damage) : null,
+    rupture: resolution.rupture ? responseRoll(resolution.rupture) : null,
+  }));
+  if (url) for (const roll of created) void sendToDiscord(roll, url, req.log);
+});
 
 async function sendToDiscord(roll: SavedRoll, url: string, log: { warn: (data: object, message: string) => void }) {
   let status = "failed";
   try {
-    const result = await postRollEmbed(roll, url);
+    const dieText = roll.d2 === null ? `${roll.d1}` : `[${roll.d1}, ${roll.d2}]`;
+    const signed = roll.modifier < 0 ? `${roll.modifier}` : `+${roll.modifier}`;
+    const formula = roll.category === "damage"
+      ? `${roll.diceSides === 0 ? "1 flat" : `${roll.d1}${roll.d2 === null ? "" : ` + ${roll.d2}`}`}${roll.extraDice.map(d => ` + ${d.value}(d${d.sides})`).join("")} ${signed}`
+      : roll.category === "mend"
+      ? `(${roll.d1} + ${roll.d2}) × ${roll.multiplier}`
+      : `${dieText} ${roll.mode}${roll.multiplier !== 1 ? ` × ${roll.multiplier}` : ""} ${signed}`;
+    const safe = (value: string) => value.replace(/[\r\n\t]+/g, " ").replace(/([\\`*_~|>])/g, "\\$1").replace(/@/g, "@\u200b");
+    const content = `🎲 **${safe(roll.playerName)}** (${safe(roll.characterName)}) — **${safe(roll.title)}**\n${formula}${roll.category === "damage" ? " (minimum 1)" : ""} = **${roll.total}**${roll.dc ? ` vs DC ${roll.dc}` : ""} · ${roll.outcome}`;
+    const result = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: content.slice(0, 2000), allowed_mentions: { parse: [] } }),
+      redirect: "error",
+      signal: AbortSignal.timeout(5000),
+    });
     if (result.ok) status = "sent";
     else log.warn({ rollId: roll.id, statusCode: result.status }, "Discord roll delivery failed");
   } catch {
@@ -76,24 +225,23 @@ router.get("/rolls", async (_req, res): Promise<void> => {
 router.post("/rolls", async (req, res): Promise<void> => {
   const parsed = CreateRollBody.safeParse(req.body);
   if (!parsed.success || !req.body || Object.keys(req.body).some(key =>
-    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "threadSenseType"].includes(key))) {
+    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "castId", "tensionContribution", "contributedString", "contributedMode"].includes(key))) {
     res.status(400).json({ error: "Invalid roll request" });
     return;
   }
   const input = parsed.data;
-  const typedThreadSense = input.threadSenseType !== undefined;
-  const threadSenseType = input.threadSenseType?.trim();
-  if (typedThreadSense && (!threadSenseType || input.category !== "check" || input.characterId === undefined)) {
-    res.status(400).json({ error: "threadSenseType requires a character-backed check" });
-    return;
-  }
   const isMend = input.category === "mend";
   const isDamage = input.category === "damage";
   const isTable = input.category === "table";
-  const invalidDiceConfiguration = typedThreadSense
-    ? input.diceSides !== 20 || input.multiplier !== 1 ||
-      input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
-    : isDamage
+  const isSupport = input.category === "support";
+  if ((isSupport && (!input.castId || !input.tensionContribution || !input.contributedString?.trim() || !input.contributedMode?.trim() || input.dc !== 12)) ||
+      (!isSupport && (input.contributedString !== undefined || input.contributedMode !== undefined ||
+        (input.tensionContribution !== undefined && (!input.castId || !["cast", "weave"].includes(input.category)))))) {
+    res.status(400).json({ error: "Invalid collaborative roll" }); return;
+  }
+  if (!input.title.trim() ||
+      ![input.characterId, input.modifier, input.diceSides, input.diceCount, input.bonusDiceSides, input.bonusDiceCount, input.multiplier, input.dc]
+        .every(value => value === undefined || Number.isInteger(value)) || (isDamage
     ? input.mode !== "NORMAL" || input.multiplier !== 1 || input.dc !== undefined ||
       (input.diceSides === 0 ? input.diceCount !== 0 || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
         : ![4, 6, 8, 10, 12].includes(input.diceSides) || input.diceCount < 1 ||
@@ -106,18 +254,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
       input.modifier !== 0 || input.multiplier !== 1 || input.dc !== undefined ||
       input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
     : input.diceSides !== 20 || input.multiplier !== 1 || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined ||
-      input.diceCount !== (input.mode === "NORMAL" ? 1 : 2);
-  if ((!typedThreadSense && !input.title.trim()) ||
-      ![input.characterId, input.modifier, input.diceSides, input.diceCount, input.bonusDiceSides, input.bonusDiceCount, input.multiplier, input.dc]
-        .every(value => value === undefined || Number.isInteger(value)) || invalidDiceConfiguration) {
+      input.diceCount !== (input.mode === "NORMAL" ? 1 : 2))) {
     res.status(400).json({ error: "Invalid dice configuration" });
     return;
   }
   const user = (req as any).user;
   let characterName = user.displayName as string;
-  let characterData: any;
   if (input.characterId !== undefined) {
-    const [character] = await db.select({ name: charactersTable.name, data: charactersTable.data })
+    const [character] = await db.select({ name: charactersTable.name })
       .from(charactersTable)
       .where(user.role === "weavekeeper"
         ? eq(charactersTable.id, input.characterId)
@@ -128,29 +272,18 @@ router.post("/rolls", async (req, res): Promise<void> => {
       return;
     }
     characterName = character.name;
-    characterData = character.data;
   } else if (input.category !== "check") {
     res.status(400).json({ error: "Character required for sheet rolls" });
     return;
   }
-  let title = input.title.trim();
-  let mode = input.mode;
-  let modifier = input.modifier;
-  let diceCount = input.diceCount;
-  if (typedThreadSense) {
-    const injuries = Array.isArray(characterData?.permanentInjuries) ? characterData.permanentInjuries : [];
-    const matchingMisread = injuries.some((injury: any) =>
-      injury?.name === "Leyline Misread" && typeof injury.senseType === "string" &&
-      senseKey(injury.senseType) === senseKey(threadSenseType!));
-    const hasShakes = injuries.some((injury: any) => injury?.name === "The Shakes");
-    const conditions: string[] = Array.isArray(characterData?.castingConditions) ? characterData.castingConditions : [];
-    const forcedDiscord = matchingMisread || hasShakes || (Number(characterData?.burnout) || 0) >= 1 ||
-      conditions.includes("Discord on Thread Checks until Mend") || conditions.includes("Shaking Hands");
-    mode = forcedDiscord ? "DISCORD" : "NORMAL";
-    diceCount = mode === "NORMAL" ? 1 : 2;
-    modifier = calcMod(getAttributeScore(characterData, "ths")) -
-      (conditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
-    title = `Thread Sense · ${threadSenseType}`;
+  let cast: typeof collaborativeCastsTable.$inferSelect | undefined;
+  if (input.castId) {
+    [cast] = await db.select().from(collaborativeCastsTable).where(eq(collaborativeCastsTable.id, input.castId)).limit(1);
+    if (!cast || !input.characterId || (isSupport
+      ? input.characterId === cast.leadCharacterId
+      : input.characterId !== cast.leadCharacterId || user.id !== cast.leadUserId)) {
+      res.status(403).json({ error: "Character cannot roll for this cast" }); return;
+    }
   }
   const [previous] = await db.select().from(rollsTable)
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
@@ -160,14 +293,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
   }
 
   const d1 = input.diceSides === 0 ? 1 : randomInt(1, input.diceSides + 1);
-  const d2 = diceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
+  const d2 = input.diceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
   const extraDice = Array.from({ length: input.bonusDiceCount ?? 0 }, () => ({
     sides: input.bonusDiceSides!, value: randomInt(1, input.bonusDiceSides! + 1),
   }));
   const finalDie = isDamage ? d1 + (d2 ?? 0) + extraDice.reduce((sum, die) => sum + die.value, 0)
     : isMend ? d1 + d2! : d2 === null ? d1
-    : mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
-  const total = isDamage ? Math.max(1, finalDie + modifier) : finalDie * input.multiplier + modifier;
+    : input.mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
+  const total = isDamage ? Math.max(1, finalDie + input.modifier) : finalDie * input.multiplier + input.modifier;
   const isBreak = !isTable && !isMend && !isDamage && finalDie === 20;
   const isMisfire = !isTable && !isMend && !isDamage && finalDie === 1;
   const outcome = isDamage ? "Damage" : isMend ? "Mend" : isTable ? "Rolled" : isBreak ? "Thread Break" : isMisfire ? "Misfire"
@@ -175,15 +308,51 @@ router.post("/rolls", async (req, res): Promise<void> => {
   const preferences = user.dicePreferences;
   const style = preferences?.sets?.find((set: { id: string }) => set.id === preferences.selectedId);
   const url = webhookUrl();
-  const [created] = await db.insert(rollsTable).values({
+  const values = {
     userId: user.id, requestId: input.requestId, characterId: input.characterId ?? null,
-    playerName: user.displayName, characterName, title,
-    category: input.category, mode, diceSides: input.diceSides,
-    d1, d2, extraDice, modifier, multiplier: input.multiplier, finalDie, total,
+    castId: cast?.id ?? null, leadCharacterId: cast?.leadCharacterId ?? null,
+    tensionContribution: input.tensionContribution ?? null,
+    contributedString: input.contributedString?.trim() ?? null,
+    contributedMode: input.contributedMode?.trim() ?? null,
+    sourceRollId: null,
+    playerName: user.displayName, characterName, title: input.title.trim(),
+    category: input.category, mode: input.mode, diceSides: input.diceSides,
+    d1, d2, extraDice, modifier: input.modifier, multiplier: input.multiplier, finalDie, total,
     dc: input.dc ?? null, isBreak: Number(isBreak), isMisfire: Number(isMisfire),
     outcome, diceName: style?.name ?? "Standard Issue", diceColor: style?.edgeColor ?? "#C48650",
     deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
-  }).onConflictDoNothing().returning();
+  };
+  let created: SavedRoll | undefined;
+  if (isSupport && cast && input.characterId) {
+    const result = await db.transaction(async tx => {
+      // Serialize contributions to this cast, then re-check the request for retries.
+      const [lockedCast] = await tx.select().from(collaborativeCastsTable)
+        .where(eq(collaborativeCastsTable.id, cast.id)).for("update");
+      const [repeat] = await tx.select().from(rollsTable)
+        .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
+      if (repeat) return { roll: repeat, error: null };
+      const [sheet] = await tx.select().from(charactersTable)
+        .where(and(eq(charactersTable.id, input.characterId!), eq(charactersTable.userId, user.id))).for("update");
+      if (!sheet) return { roll: undefined, error: "Character unavailable" };
+      const data = sheet.data as { tension?: { current: number; pool: number; safeLimit: number } };
+      const tension = data.tension;
+      if (!tension || !Number.isFinite(tension.current) || !Number.isFinite(tension.pool) ||
+          tension.current + input.tensionContribution! > tension.pool)
+        return { roll: undefined, error: "Not enough Thread Pool room on this character" };
+      const [roll] = await tx.insert(rollsTable).values(values).onConflictDoNothing().returning();
+      if (!roll) return { roll: undefined, error: "Roll request already recorded; refresh the cast" };
+      await tx.update(charactersTable).set({ data: { ...data, tension: { ...tension, current: tension.current + input.tensionContribution! } } })
+        .where(eq(charactersTable.id, sheet.id));
+      if (!lockedCast.participantIds.includes(sheet.id))
+        await tx.update(collaborativeCastsTable).set({ participantIds: [...lockedCast.participantIds, sheet.id] })
+          .where(eq(collaborativeCastsTable.id, lockedCast.id));
+      return { roll, error: null };
+    });
+    if (result.error) { res.status(409).json({ error: result.error }); return; }
+    created = result.roll;
+  } else {
+    [created] = await db.insert(rollsTable).values(values).onConflictDoNothing().returning();
+  }
   const roll = created ?? (await db.select().from(rollsTable)
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1))[0];
   res.status(201).json(ListRollsResponseItem.parse(responseRoll(roll)));

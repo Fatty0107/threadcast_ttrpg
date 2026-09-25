@@ -11,6 +11,8 @@ export type GameplayRollInputCategory = typeof GameplayRollInputCategory[keyof t
 
 export const GameplayRollInputCategory = {
   check: 'check',
+  cast: 'cast',
+  weave: 'weave',
   mend: 'mend',
   support: 'support',
   damage: 'damage',

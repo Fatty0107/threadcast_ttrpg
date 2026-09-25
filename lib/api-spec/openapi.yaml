@@ -351,6 +351,77 @@ paths:
         "409":
           description: Consequence already resolved with a different choice
 
+  /collaborative-casts:
+    post:
+      operationId: startCollaborativeCast
+      tags: [rolls]
+      summary: Start a shared cast as the Lead
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollaborativeCastInput"
+      responses:
+        "201":
+          description: Shared cast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollaborativeCast"
+  /collaborative-casts/{id}:
+    get:
+      operationId: getCollaborativeCast
+      tags: [rolls]
+      summary: Get a cast and all linked rolls
+      security:
+        - sessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cast history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollaborativeCast"
+        "404":
+          description: Cast not found
+  /collaborative-casts/{id}/resolve-support:
+    post:
+      operationId: resolveCollaborativeSupport
+      tags: [rolls]
+      summary: Resolve a failed support check and its Lead consequences exactly once
+      security:
+        - sessionCookie: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollaborativeSupportResolutionInput"
+      responses:
+        "200":
+          description: Existing or newly resolved Lead consequences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollaborativeSupportResolution"
+        "400":
+          description: Invalid or successful support roll
+        "403":
+          description: Only the Lead may resolve support
+
 
   /rolls/discord/status:
     get:
@@ -383,8 +454,12 @@ components:
       properties:
         requestId: { type: string, format: uuid }
         characterId: { type: integer, minimum: 1 }
+        castId: { type: string, format: uuid }
+        tensionContribution: { type: integer, minimum: 1, maximum: 1000 }
+        contributedString: { type: string, minLength: 1, maxLength: 100 }
+        contributedMode: { type: string, minLength: 1, maxLength: 100 }
         title: { type: string, minLength: 1, maxLength: 160 }
-        category: { type: string, enum: [check, mend, support, damage, table] }
+        category: { type: string, enum: [check, cast, weave, mend, support, damage, table] }
         mode: { type: string, enum: [NORMAL, HARMONY, DISCORD] }
         modifier: { type: integer, minimum: -50, maximum: 50 }
         diceSides: { type: integer, enum: [0, 4, 6, 8, 10, 12, 20] }
@@ -403,6 +478,14 @@ components:
       required: [id, playerName, characterName, title, category, mode, diceSides, d1, extraDice, modifier, multiplier, finalDie, total, isBreak, isMisfire, outcome, diceName, diceColor, createdAt]
       properties:
         id: { type: integer }
+        characterId: { type: ["integer", "null"] }
+        castId: { type: ["string", "null"] }
+        leadCharacterId: { type: ["integer", "null"] }
+        tensionContribution: { type: ["integer", "null"] }
+        contributedString: { type: ["string", "null"] }
+        contributedMode: { type: ["string", "null"] }
+        sourceRollId: { type: ["integer", "null"] }
+        parentRollId: { type: ["integer", "null"] }
         playerName: { type: string }
         characterName: { type: string }
         title: { type: string }
@@ -430,6 +513,53 @@ components:
         diceName: { type: string }
         diceColor: { type: string }
         createdAt: { type: string }
+    CollaborativeCastInput:
+      type: object
+      additionalProperties: false
+      required: [leadCharacterId, effect]
+      properties:
+        leadCharacterId: { type: integer, minimum: 1 }
+        effect: { type: string, minLength: 1, maxLength: 160 }
+    CollaborativeSupportResolutionInput:
+      type: object
+      additionalProperties: false
+      required: [supportRollId, resModifier]
+      properties:
+        supportRollId: { type: integer, minimum: 1 }
+        resModifier: { type: integer, minimum: -50, maximum: 50 }
+    CollaborativeSupportResolution:
+      type: object
+      required: [strain, snapback, damage, rupture, effect]
+      properties:
+        strain: { $ref: "#/components/schemas/GameplayRoll" }
+        snapback:
+          oneOf:
+            - { $ref: "#/components/schemas/GameplayRoll" }
+            - { type: "null" }
+        damage:
+          oneOf:
+            - { $ref: "#/components/schemas/GameplayRoll" }
+            - { type: "null" }
+        rupture:
+          oneOf:
+            - { $ref: "#/components/schemas/GameplayRoll" }
+            - { type: "null" }
+        effect: { type: ["string", "null"] }
+    CollaborativeCast:
+      type: object
+      required: [id, leadCharacterId, participantIds, effect, createdAt, rolls]
+      properties:
+        id: { type: string, format: uuid }
+        leadCharacterId: { type: integer }
+        participantIds:
+          type: array
+          items: { type: integer }
+        effect: { type: string }
+        createdAt: { type: string }
+        rolls:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameplayRoll"
     CastInput:
       type: object
       additionalProperties: false
@@ -437,6 +567,7 @@ components:
       properties:
         requestId: { type: string, format: uuid }
         characterId: { type: integer, minimum: 1 }
+        castId: { type: string, format: uuid }
         kind: { type: string, enum: [cast, weave] }
         intent: { type: string, minLength: 1, maxLength: 500 }
         components:

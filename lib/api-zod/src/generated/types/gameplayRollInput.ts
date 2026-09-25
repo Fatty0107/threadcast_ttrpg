@@ -14,6 +14,22 @@ export interface GameplayRollInput {
   requestId: string;
   /** @minimum 1 */
   characterId?: number;
+  castId?: string;
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  tensionContribution?: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contributedString?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contributedMode?: string;
   /**
      * @minLength 1
      * @maxLength 160

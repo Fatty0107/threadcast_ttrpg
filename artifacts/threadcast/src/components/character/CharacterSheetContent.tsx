@@ -29,6 +29,7 @@ import { escapePrintHtml } from "@/lib/print-escape";
 import "./character-sheet.css";
 
 // ---- Types ----
+import { useResolveCollaborativeSupport } from "@workspace/api-client-react";
 interface SubItem {
   name: string;
   charges: number;

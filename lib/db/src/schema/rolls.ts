@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -7,6 +7,13 @@ export const rollsTable = pgTable("gameplay_rolls", {
   userId: integer("user_id").notNull(),
   requestId: text("request_id").notNull(),
   characterId: integer("character_id"),
+  castId: uuid("cast_id"),
+  leadCharacterId: integer("lead_character_id"),
+  tensionContribution: integer("tension_contribution"),
+  contributedString: text("contributed_string"),
+  contributedMode: text("contributed_mode"),
+  sourceRollId: integer("source_roll_id"),
+  parentRollId: integer("parent_roll_id"),
   playerName: text("player_name").notNull(),
   characterName: text("character_name").notNull(),
   title: text("title").notNull(),
@@ -28,7 +35,19 @@ export const rollsTable = pgTable("gameplay_rolls", {
   diceColor: text("dice_color").notNull(),
   deliveryStatus: text("delivery_status").notNull().default("disabled"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, table => [uniqueIndex("gameplay_rolls_user_request_unique").on(table.userId, table.requestId)]);
+}, table => [
+  uniqueIndex("gameplay_rolls_user_request_unique").on(table.userId, table.requestId),
+  uniqueIndex("gameplay_rolls_source_unique").on(table.sourceRollId),
+]);
+
+export const collaborativeCastsTable = pgTable("collaborative_casts", {
+  id: uuid("id").primaryKey(),
+  leadCharacterId: integer("lead_character_id").notNull(),
+  leadUserId: integer("lead_user_id").notNull(),
+  participantIds: integer("participant_ids").array().notNull(),
+  effect: text("effect").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const insertRollSchema = createInsertSchema(rollsTable).omit({ id: true, createdAt: true });
 export type InsertRoll = z.infer<typeof insertRollSchema>;

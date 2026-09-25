@@ -11,6 +11,22 @@ import type { GameplayRollMode } from './gameplayRollMode';
 
 export interface GameplayRoll {
   id: number;
+  /** @nullable */
+  characterId?: number | null;
+  /** @nullable */
+  castId?: string | null;
+  /** @nullable */
+  leadCharacterId?: number | null;
+  /** @nullable */
+  tensionContribution?: number | null;
+  /** @nullable */
+  contributedString?: string | null;
+  /** @nullable */
+  contributedMode?: string | null;
+  /** @nullable */
+  sourceRollId?: number | null;
+  /** @nullable */
+  parentRollId?: number | null;
   playerName: string;
   characterName: string;
   title: string;

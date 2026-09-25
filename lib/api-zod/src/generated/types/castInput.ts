@@ -12,6 +12,7 @@ export interface CastInput {
   requestId: string;
   /** @minimum 1 */
   characterId: number;
+  castId?: string;
   kind: CastInputKind;
   /**
      * @minLength 1

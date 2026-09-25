@@ -53,6 +53,22 @@ export interface GameplayRollInput {
   requestId: string;
   /** @minimum 1 */
   characterId?: number;
+  castId?: string;
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  tensionContribution?: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contributedString?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contributedMode?: string;
   /**
      * @minLength 1
      * @maxLength 160
@@ -124,6 +140,22 @@ export type GameplayRollExtraDiceItem = {
 
 export interface GameplayRoll {
   id: number;
+  /** @nullable */
+  characterId?: number | null;
+  /** @nullable */
+  castId?: string | null;
+  /** @nullable */
+  leadCharacterId?: number | null;
+  /** @nullable */
+  tensionContribution?: number | null;
+  /** @nullable */
+  contributedString?: string | null;
+  /** @nullable */
+  contributedMode?: string | null;
+  /** @nullable */
+  sourceRollId?: number | null;
+  /** @nullable */
+  parentRollId?: number | null;
   playerName: string;
   characterName: string;
   title: string;
@@ -146,6 +178,25 @@ export interface GameplayRoll {
   createdAt: string;
 }
 
+export interface CollaborativeCastInput {
+  /** @minimum 1 */
+  leadCharacterId: number;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  effect: string;
+}
+
+export interface CollaborativeSupportResolutionInput {
+  /** @minimum 1 */
+  supportRollId: number;
+  /**
+     * @minimum -50
+     * @maximum 50
+     */
+  resModifier: number;
+}
 export type CastInputKind = typeof CastInputKind[keyof typeof CastInputKind];
 
 
@@ -252,6 +303,10 @@ export interface CastTableEffect {
   resetTension?: boolean;
   condition?: string;
 }
+
+export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
+
+export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
 export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
@@ -437,3 +492,30 @@ export interface DicePreferences {
   selectedId: string | null;
 }
 
+export interface CollaborativeCast {
+  id: string;
+  leadCharacterId: number;
+  participantIds: number[];
+  effect: string;
+  createdAt: string;
+  rolls: GameplayRoll[];
+}
+
+export interface CollaborativeSupportResolution {
+  strain: GameplayRoll;
+  snapback: GameplayRoll | null;
+  damage: GameplayRoll | null;
+  rupture: GameplayRoll | null;
+  /** @nullable */
+  effect: string | null;
+}
+
+export const CastTableOutcomeKind = {
+  Mishap: 'Mishap',
+  Snapback: 'Snapback',
+} as const;
+
+export const CastTableOutcomeKind = {
+  Mishap: 'Mishap',
+  Snapback: 'Snapback',
+} as const;

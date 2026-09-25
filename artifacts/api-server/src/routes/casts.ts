@@ -2,7 +2,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { Router } from "express";
 import {
-  db, charactersTable, rollsTable, castResponsesTable,
+  db, charactersTable, rollsTable, castResponsesTable, collaborativeCastsTable,
 } from "@workspace/db";
 import { CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, guildAttributeBonus, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
 import { CreateCastBody, CreateCastStrainCheckBody } from "@workspace/api-zod";
@@ -67,6 +67,7 @@ function rollDie(sides: number) { return randomInt(1, sides + 1); }
 
 async function saveRoll(tx: Tx, args: {
   userId: number; characterId: number; playerName: string; characterName: string;
+  castId?: string; leadCharacterId?: number; tensionContribution?: number;
   title: string; category: "cast" | "weave" | "table" | "damage" | "check";
   mode: "NORMAL" | "HARMONY" | "DISCORD"; sides: number; count: number;
   modifier?: number; dc?: number; requestId?: string; diceName?: string; diceColor?: string; fixedDice?: number[];
@@ -93,6 +94,8 @@ async function saveRoll(tx: Tx, args: {
     : args.dc ? total >= args.dc ? "Success" : "Failure" : "Rolled";
   const [row] = await tx.insert(rollsTable).values({
     userId: args.userId, requestId: args.requestId ?? randomUUID(), characterId: args.characterId,
+    castId: args.castId ?? null, leadCharacterId: args.leadCharacterId ?? null,
+    tensionContribution: args.tensionContribution ?? null,
     playerName: args.playerName, characterName: args.characterName, title: args.title,
     category: args.category, mode: args.mode, diceSides: args.sides, d1, d2, extraDice,
     modifier, multiplier: 1, finalDie, total, dc: args.dc ?? null, isBreak: Number(isBreak),
@@ -123,6 +126,15 @@ function getStringLevel(name: string, level: number) {
   const named = namedStringLevel(name, level);
   const base = CORE_POWER_LEVELS[level - 1];
   return named ?? (base ? { ...base, checkAttr: "ctr" as const } : undefined);
+}
+
+function castRequestKey(input: { characterId: number; castId?: string; kind: string; intent: string; components: Component[] }): string {
+  // Request JSON key order can differ between devices and retries. Compare
+  // values, not serialization order, before returning a confirmed result.
+  return JSON.stringify([
+    input.characterId, input.castId ?? null, input.kind, input.intent.trim(),
+    input.components.map(component => [stringKey(component.string), component.powerLevel, component.mode]),
+  ]);
 }
 
 function poolAndSafe(character: typeof charactersTable.$inferSelect) {
@@ -292,7 +304,7 @@ async function applyEffect(
 router.post("/casts", async (req, res): Promise<void> => {
   const parsed = CreateCastBody.safeParse(req.body);
   if (!parsed.success || !req.body || Object.keys(req.body).some(key =>
-    !["requestId", "characterId", "kind", "intent", "components"].includes(key)) ||
+    !["requestId", "characterId", "castId", "kind", "intent", "components"].includes(key)) ||
       !Number.isInteger(req.body?.characterId) ||
       !Array.isArray(req.body?.components) ||
       req.body.components.some((component: unknown) =>
@@ -301,7 +313,7 @@ router.post("/casts", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid cast request" });
     return;
   }
-  const input = parsed.data as { requestId: string; characterId: number; kind: "cast" | "weave"; intent: string; components: Component[] };
+  const input = parsed.data as { requestId: string; characterId: number; castId?: string; kind: "cast" | "weave"; intent: string; components: Component[] };
   const intent = input.intent.trim();
   const components = input.components;
   const count = components.length;
@@ -315,7 +327,8 @@ router.post("/casts", async (req, res): Promise<void> => {
   const user = (req as any).user;
   const style = user.dicePreferences?.sets?.find((set: { id: string }) => set.id === user.dicePreferences.selectedId);
   const saveCastRoll = (tx: Tx, args: Parameters<typeof saveRoll>[1]) =>
-    saveRoll(tx, { ...args, diceName: style?.name, diceColor: style?.edgeColor });
+    saveRoll(tx, { ...args, ...(input.castId ? { castId: input.castId, leadCharacterId: input.characterId } : {}),
+      diceName: style?.name, diceColor: style?.edgeColor });
   let newRolls: RollRecord[] = [];
   let result: any;
   try {
@@ -346,6 +359,12 @@ router.post("/casts", async (req, res): Promise<void> => {
         .for("update").limit(1);
       if (!locked) throw Object.assign(new Error("Character unavailable for this cast"), { statusCode: 403 });
       const [character] = await tx.select().from(charactersTable).where(eq(charactersTable.id, locked.id)).limit(1);
+      if (input.castId) {
+        const [group] = await tx.select().from(collaborativeCastsTable)
+          .where(eq(collaborativeCastsTable.id, input.castId)).limit(1);
+        if (!group || group.leadCharacterId !== character.id || group.leadUserId !== user.id)
+          throw Object.assign(new Error("Only the Lead can cast for this group"), { statusCode: 403 });
+      }
       if (input.kind === "weave" && count === 4 && character.level < 7) {
         throw Object.assign(new Error("Four-String Weaves require level 7"), { statusCode: 400 });
       }
@@ -406,7 +425,7 @@ router.post("/casts", async (req, res): Promise<void> => {
       const roll = await saveCastRoll(tx, {
         userId: user.id, characterId: character.id, playerName: user.displayName, characterName: character.name,
         title, category: input.kind, mode: rollMode, sides: 20, count: rollMode === "NORMAL" ? 1 : 2,
-        modifier, dc, requestId: input.requestId,
+        modifier, dc, requestId: input.requestId, ...(input.castId ? { tensionContribution: cost } : {}),
       });
       newRolls.push(roll);
 
