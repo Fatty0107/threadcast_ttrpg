@@ -52,7 +52,6 @@ interface WeavingEntry {
   powerLevels: number[];
   modes: string[];
   intent?: string;
-  dcOverride?: number;
 }
 
 interface SheetData {
@@ -2042,10 +2041,9 @@ function WeaveCastRow({
       const pl = (weave.powerLevels || [])[si] || 1;
       return sData?.levels?.[pl - 1]?.dc ?? CORE_POWER_LEVELS[pl - 1]?.dc ?? 0;
     }).filter(Boolean);
-    if (!dcs.length) return 14;
+    if (!dcs.length) return CORE_POWER_LEVELS[0].dc;
     return Math.max(...dcs) + (weave.numStrings - 2) * 2;
   })();
-  const adjudicatedDC = weave.dcOverride && weave.dcOverride >= 1 && weave.dcOverride <= 40 ? weave.dcOverride : weaveDC;
 
   const availableStrings: string[] = Array.isArray(localData.strings) ? localData.strings : [];
   const isConfigured = Number.isInteger(weave.numStrings) && weave.numStrings >= 2 && weave.numStrings <= maxStrings &&
@@ -2085,7 +2083,7 @@ function WeaveCastRow({
       result = await recordRoll({
         characterId, title: `Weave · ${intent}`.slice(0, 160),
         category: "weave", mode: rollType, modifier: mod,
-        diceSides: 20, diceCount: rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: adjudicatedDC,
+        diceSides: 20, diceCount: rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: weaveDC,
       });
     } catch (error) {
       setRollError(rollErrorMessage(error));
@@ -2107,7 +2105,7 @@ function WeaveCastRow({
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType, dc: adjudicatedDC, intent, modes });
+      setCastResult({ d1, d2, finalDie, total, rollType, dc: weaveDC, intent, modes });
     }, ROLL_DURATION_MS);
   }
 
@@ -2163,20 +2161,13 @@ function WeaveCastRow({
         placeholder="Describe how each String and Mode contributes to one effect…"
         className="w-full bg-background border border-border p-2 text-xs focus:outline-none focus:border-primary resize-y" />
       {overSafePL && <p className="text-[10px] text-amber-500">A String exceeds your safe maximum (PL {safePowerLevel}); this Weave rolls at Discord.</p>}
-      <p className="text-[10px] text-muted-foreground">The Weavekeeper confirms the combined effect, control, range, and concentration before casting. DC is a sheet estimate.</p>
-      <label className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground" htmlFor={`weave-dc-${weave.id}`}>
-        Weavekeeper DC
-        <input id={`weave-dc-${weave.id}`} type="number" min={1} max={40} value={weave.dcOverride ?? weaveDC}
-          disabled={!!animDice || !!castResult}
-          onChange={e => { const value = Number(e.target.value); const next = [...(localData.weavings || [])]; next[wi] = { ...weave, dcOverride: value >= 1 && value <= 40 ? value : undefined }; patch({ weavings: next }); }}
-          className="w-16 bg-background border border-border px-1 py-0.5" />
-      </label>
+      <p className="text-[10px] text-muted-foreground">The Weavekeeper confirms the combined effect, control, range, and concentration before casting. DC is calculated from the selected Strings and PLs (highest DC +2 per String beyond two); Modes determine the check type.</p>
       {/* Cast area */}
       {castOpen ? (
         <div className="border border-primary/30 bg-primary/5 p-3 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] text-primary uppercase tracking-widest">
-              Weave {wi + 1} · {weave.numStrings} strings · DC {adjudicatedDC} · {displayedCost}T
+              Weave {wi + 1} · {weave.numStrings} strings · DC {weaveDC} · {displayedCost}T
               <span className="text-muted-foreground/60 ml-1">({checkType} · {effectType})</span>
             </span>
             <button onClick={closeCast} disabled={!!animDice || pending} className="text-muted-foreground hover:text-foreground text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed">CLOSE ✕</button>
@@ -2238,7 +2229,7 @@ function WeaveCastRow({
             {costMultiplier > 1 && <span className="text-muted-foreground/60"> ({baseCost}×{costMultiplier})</span>}
             {precisionDiscount && <span className="text-chart-2 ml-1">(Precision Weave −1T)</span>}
             {isConfigured && castCost > availableTension && <span className="text-amber-500 block sm:inline sm:ml-2">Exceeds available Thread Pool ({Math.max(0, availableTension)}T available); Weavekeeper/manual Snapback resolution required.</span>}
-            {adjudicatedDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {adjudicatedDC}</span>}
+            {weaveDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {weaveDC}</span>}
           </span>
           <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={!isConfigured || !weave.intent?.trim()}>CAST (+{castCost}T)</button>
         </div>
@@ -2267,7 +2258,6 @@ function CastStringPanel({
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [expanded, setExpanded] = useState(true);
   const [castPL, setCastPL] = useState<CastPL | null>(null);
-  const [castDC, setCastDC] = useState(8);
   const [castIntent, setCastIntent] = useState("");
   const [rolledIntent, setRolledIntent] = useState("");
   const [selectedMode, setSelectedMode] = useState<ModeOption | null>(null);
@@ -2294,7 +2284,6 @@ function CastStringPanel({
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
     if (animDice) return;
     setCastPL({ pl, cost, dc, effect });
-    setCastDC(dc);
     setCastIntent("");
     setSelectedMode(null);
     setCastResult(null);
@@ -2312,7 +2301,7 @@ function CastStringPanel({
   }
 
   async function doRoll() {
-    if (!selectedMode || !castPL || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension || requestLock.current) return;
+    if (!selectedMode || !castPL || !castIntent.trim() || dicePreferencesLoading || castPL.cost > availableTension || requestLock.current) return;
     const mode = selectedMode;
     const pl = castPL;
     requestLock.current = true;
@@ -2323,7 +2312,7 @@ function CastStringPanel({
       result = await recordRoll({
         characterId, title: `${str.name} · PL${pl.pl} ${castIntent.trim()}`.slice(0, 160),
         category: "cast", mode: mode.rollType, modifier: mod,
-        diceSides: 20, diceCount: mode.rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: castDC,
+        diceSides: 20, diceCount: mode.rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: pl.dc,
       });
     } catch (error) {
       setRollError(rollErrorMessage(error));
@@ -2347,7 +2336,7 @@ function CastStringPanel({
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: castDC });
+      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: pl.dc });
     }, ROLL_DURATION_MS);
   }
 
@@ -2387,7 +2376,7 @@ function CastStringPanel({
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs text-primary uppercase tracking-widest">
-                  {str.name} · PL{castPL.pl} · DC {castDC} · {castPL.cost} TP
+                  {str.name} · PL{castPL.pl} · DC {castPL.dc} · {castPL.cost} TP
                 </span>
                 <button onClick={closeOverlay} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   CLOSE ✕
@@ -2403,13 +2392,7 @@ function CastStringPanel({
                 <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>
               </div>
               {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): Thread Check at Discord.</p>}
-              <p className="mb-3 text-[10px] text-muted-foreground">The Weavekeeper confirms conceptual fit, magnitude, control, range, and concentration before the roll.</p>
-              <label className="mb-3 flex items-center gap-2 font-mono text-[10px] text-muted-foreground" htmlFor={`cast-dc-${characterName}-${str.name}`}>
-                Weavekeeper DC
-                <input id={`cast-dc-${characterName}-${str.name}`} type="number" min={1} max={40} value={castDC}
-                  disabled={!!animDice || !!castResult} onChange={e => setCastDC(Number(e.target.value))}
-                  className="w-16 bg-background border border-border px-1 py-0.5" />
-              </label>
+              <p className="mb-3 text-[10px] text-muted-foreground">DC is automatic for this String and PL. Mode changes the check type (Harmony, Normal, or Discord), not the DC. The Weavekeeper confirms the effect before the roll.</p>
               {castPL.cost > availableTension && <p className="mb-3 text-[10px] font-mono text-amber-500">This cost exceeds available Thread Pool room ({Math.max(0, availableTension)}T available); automatic Snapback requires Weavekeeper/manual resolution. Automated roll disabled.</p>}
               {dicePreferenceError && <p className="mb-3 text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}
               {dicePreferencesLoading && <p className="mb-3 text-[10px] font-mono text-muted-foreground">Loading dice preferences… rolling is unavailable until your die selection loads.</p>}
@@ -2522,7 +2505,7 @@ function CastStringPanel({
                     </button>
                     <button
                       onClick={doRoll}
-                      disabled={pending || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension}
+                      disabled={pending || !castIntent.trim() || dicePreferencesLoading || castPL.cost > availableTension}
                       className={cn(
                         "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                         selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" :
