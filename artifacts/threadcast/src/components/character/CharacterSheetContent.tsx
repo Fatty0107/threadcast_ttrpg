@@ -1668,6 +1668,23 @@ ${([
         {/* ===== ACTIONS ===== */}
         <TabsContent value="actions" className="tc-panel m-0 space-y-7">
           <div><div className="tc-eyebrow">Combat / quick rolls</div><h2 className="tc-section-title mt-1">Actions <small>Ready at the table</small></h2></div>
+          <div>
+            <h3 className="tc-card-label mb-3">Start of combat</h3>
+            <div className="tc-action">
+              <div className="tc-action-main">
+                <div className="tc-action-name">Initiative</div>
+                <p className="tc-action-sub">Roll Acuity to determine who acts first.</p>
+              </div>
+              <div className="tc-action-buttons">
+                <button
+                  className="tc-roll"
+                  aria-label="Roll initiative with Acuity"
+                  data-testid="button-roll-initiative"
+                  onClick={() => openRoll("Initiative (Acuity)", calcMod(attrs.acu || 10), character.name, character.id)}
+                >ACU {fmtMod(calcMod(attrs.acu || 10))} · Roll</button>
+              </div>
+            </div>
+          </div>
           {/* Unarmed Strike — always present */}
           <div>
             <h3 className="tc-card-label mb-3">Basic attacks</h3>

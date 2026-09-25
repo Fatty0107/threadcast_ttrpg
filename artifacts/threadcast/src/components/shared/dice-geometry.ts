@@ -3,7 +3,7 @@ import type { DiceStyle } from "@workspace/api-client-react";
 
 export type DieSides = 4 | 6 | 8 | 10 | 12 | 20;
 
-type Face = { center: THREE.Vector3; normal: THREE.Vector3; labelRotation: THREE.Quaternion };
+export type Face = { center: THREE.Vector3; normal: THREE.Vector3; labelRotation: THREE.Quaternion; vertices: THREE.Vector3[] };
 type FinishProperties = {
   roughness: number;
   metalness: number;
@@ -100,11 +100,30 @@ function extractFaces(geometry: THREE.BufferGeometry): Face[] {
       face.vertices.set(`${point.x.toFixed(4)}:${point.y.toFixed(4)}:${point.z.toFixed(4)}`, point);
     }
   }
-  return faces.map(f => ({
-    center: [...f.vertices.values()].reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(f.vertices.size),
-    normal: f.normal,
-    labelRotation: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), f.normal),
-  }));
+  return faces.map(f => {
+    const vertices = [...f.vertices.values()];
+    const center = vertices.reduce((sum, v) => sum.add(v), new THREE.Vector3()).divideScalar(vertices.length);
+    const tangent = new THREE.Vector3(0, 1, 0).cross(f.normal).normalize();
+    if (tangent.lengthSq() < .001) tangent.set(1, 0, 0);
+    const bitangent = f.normal.clone().cross(tangent).normalize();
+    vertices.sort((a, b) => {
+      const relativeA = a.clone().sub(center), relativeB = b.clone().sub(center);
+      return Math.atan2(relativeA.dot(bitangent), relativeA.dot(tangent)) -
+        Math.atan2(relativeB.dot(bitangent), relativeB.dot(tangent));
+    });
+    return {
+      center, vertices, normal: f.normal,
+      labelRotation: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), f.normal),
+    };
+  });
+}
+
+/** Geometry for the canvas renderer when a browser cannot create WebGL. */
+export function getDieFaces(sides: DieSides): Face[] {
+  const geometry = polyhedron(sides);
+  const faces = extractFaces(geometry);
+  geometry.dispose();
+  return faces;
 }
 
 function drawNewMotif(ctx: CanvasRenderingContext2D, motif: DiceStyle["motif"], ink: string) {

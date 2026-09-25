@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { DiceStyle } from "@workspace/api-client-react";
 import { createDie, facingQuaternion, type DieSides } from "./dice-geometry";
+import { LANDING_START, ROLL_DURATION_MS, rollPose } from "./dice-motion";
+import { CanvasDiceStage } from "./CanvasDiceStage";
 import "./dice-stage.css";
 
-export const ROLL_DURATION_MS = 1300;
+export { ROLL_DURATION_MS } from "./dice-motion";
 
 export interface StageDie {
   sides: DieSides;
@@ -197,41 +199,18 @@ export function DiceStage({
           group.position.x = item.homeX;
         } else if (runtime.phase === "rolling" && !reducedMotion) {
           const t = Math.min(1, (now - runtime.rollStart) / ROLL_DURATION_MS);
-          if (t < .76) {
-            const phase = t / .76;
-            if (animation === "comet") {
-              group.rotation.set(
-                item.startRotation.x + t * Math.PI * (8.4 + index * .8),
-                item.startRotation.y + t * Math.PI * (5.5 + index * .8),
-                item.startRotation.z + t * Math.PI * (7.2 + index),
-              );
-              group.position.x = item.homeX + Math.sin(phase * Math.PI * 2.4 + index * 1.4) * (1 - phase * .42) * .58;
-              group.position.y = .13 + Math.sin(phase * Math.PI) * .78;
-            } else if (animation === "ritual") {
-              group.rotation.set(
-                item.startRotation.x + t * Math.PI * (3.2 + index * .35),
-                item.startRotation.y + t * Math.PI * (4.4 + index * .45),
-                item.startRotation.z + t * Math.PI * (2.2 + index * .3),
-              );
-              group.position.x = item.homeX + Math.sin(phase * Math.PI * 3 + index * 1.7) * .16;
-              group.position.y = .12 + Math.pow(Math.sin(phase * Math.PI * 2.5 + index), 2) * .32;
-            } else {
-              const tumble = animation === "tumble";
-              group.rotation.set(
-                item.startRotation.x + t * Math.PI * (tumble ? 10.4 + index : 6.4 + index * .8),
-                item.startRotation.y + t * Math.PI * (tumble ? 12 + index * 1.5 : 8 + index * 1.2),
-                item.startRotation.z + t * Math.PI * (tumble ? 7 + index * 1.2 : 3.8 + index),
-              );
-              group.position.x = item.homeX + Math.sin(t * (tumble ? 25 : 19) + index * 2.4) * (1 - t) * (tumble ? .38 : .25);
-              group.position.y = .08 + Math.abs(Math.sin(t * (tumble ? 15 : 11) + index)) * (tumble ? .74 : .57) * (1 - t * .55);
-            }
+          if (t < LANDING_START) {
+            const pose = rollPose(animation, t, index, item.startRotation);
+            group.rotation.copy(pose.rotation);
+            group.position.x = item.homeX + pose.x;
+            group.position.y = pose.y;
             item.landingFrom = undefined;
           } else {
             if (!item.landingFrom) {
               item.landingFrom = group.quaternion.clone();
               item.landingTo = pointAtResult(item, result);
             }
-            const progress = Math.min(1, (t - .76) / .24);
+            const progress = Math.min(1, (t - LANDING_START) / (1 - LANDING_START));
             const eased = 1 - Math.pow(1 - progress, 3);
             group.quaternion.copy(item.landingFrom).slerp(item.landingTo!, eased);
             group.position.x = THREE.MathUtils.lerp(group.position.x, item.homeX, eased);
@@ -245,6 +224,10 @@ export function DiceStage({
         item.updateAnimation(now, runtime.phase === "rolling", reducedMotion);
         (item.shadow.material as THREE.MeshBasicMaterial).opacity =
           .7 - Math.max(0, group.position.y) * .3;
+        const ringMaterial = item.ring.material as THREE.MeshBasicMaterial;
+        ringMaterial.opacity = runtime.phase === "rolling" && animation === "ritual" && !reducedMotion
+          ? .23 + Math.sin(now * .012) * .12 : .19;
+        item.ring.scale.setScalar(runtime.phase === "rolling" && animation === "ritual" && !reducedMotion ? 1.12 : 1);
       });
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
@@ -342,28 +325,7 @@ export function DiceStage({
       }} />
       <div ref={mountRef} className="absolute inset-0" aria-hidden="true" />
       {webglUnavailable && (
-        <div className="dice-fallback" data-testid="status-dice-fallback" aria-hidden="true">
-          {dice.map((die, i) => (
-            <div key={`${i}-${die.sides}`} className={`dice-fallback-wrap ${phase === "rolling" ? `is-rolling motion-${style.animation ?? "classic"}` : ""}`}>
-              <div
-                className={`dice-fallback-stone shape-${die.sides} finish-${style.finish} pattern-${style.pattern ?? "none"}`}
-                style={{
-                  "--die-body": style.bodyColor,
-                  "--die-edge": style.edgeColor,
-                  "--die-ink": style.inkColor,
-                } as React.CSSProperties}
-              >
-                {style.motif !== "plain" && <span className="dice-fallback-motif">{
-                  ({ weave: "≋", stars: "✧", etched: "◇", moon: "☾", thorn: "✦", eye: "◉" } as const)[style.motif]
-                }</span>}
-                {style.inclusion && style.inclusion !== "none" && <span className={`dice-fallback-inclusion inclusion-${style.inclusion}`}>✦ · ✧ ·</span>}
-                <strong className={`dice-fallback-value font-${style.font ?? "classic"}`}>{phase === "rolling" ? "✦" : die.value}</strong>
-                {style.inscription && <small className="dice-fallback-inscription">{style.inscription}</small>}
-              </div>
-              <span className="dice-fallback-shadow" />
-            </div>
-          ))}
-        </div>
+        <CanvasDiceStage dice={dice} style={style} phase={phase} rollKey={rollKey} />
       )}
       <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-mono text-[9px] uppercase tracking-[.25em] text-muted-foreground/60">
         {phase === "rolling" ? "THE DICE ARE CAST" : phase === "preview" ? "LIVE DIE PREVIEW" : "THE THREAD IS SET"}

@@ -147,6 +147,7 @@ export default function DiceAtelier() {
   const practiceBusy = useRef(false);
   const busy = useRef(false);
   const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+  const stageWrapRef = useRef<HTMLElement>(null);
   const accountRef = useRef(accountId);
   accountRef.current = accountId;
   const lastAccount = useRef(accountId);
@@ -289,6 +290,15 @@ export default function DiceAtelier() {
     }, ROLL_DURATION_MS);
   }
 
+  function previewMotion() {
+    if (practiceBusy.current) return;
+    const bounds = stageWrapRef.current?.getBoundingClientRect();
+    if (bounds && (bounds.bottom < 120 || bounds.top > window.innerHeight - 180)) {
+      stageWrapRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+    tryRoll();
+  }
+
   function colorControl(fieldName: ColorField, label: string) {
     return (
       <FormField control={form.control} name={fieldName} render={({ field }) => (
@@ -361,7 +371,7 @@ export default function DiceAtelier() {
         </header>
 
         <div className="atelier-workbench">
-          <section className="atelier-stage-wrap" aria-label="Live dice preview">
+          <section ref={stageWrapRef} className="atelier-stage-wrap" aria-label="Live dice preview">
             <div className="atelier-stage-head"><span>01 / The proving table</span><span>Live specimen · unsaved draft</span></div>
             <div className="atelier-stage" data-testid="preview-dice-stage">
               <DiceStage dice={practiceDice} style={previewStyle} phase={practicePhase} height={310} rollKey={practiceRollKey} />
@@ -523,12 +533,12 @@ export default function DiceAtelier() {
                    </FormItem>
                  )} />
                  <div className="atelier-divider" />
-                 <div className="atelier-section-intro"><div><span className="atelier-section-number">V / THE CAST</span><h3>How it moves</h3></div><p>Choose the motion for your practice cast and saved set.</p></div>
+                  <div className="atelier-section-intro"><div><span className="atelier-section-number">V / THE CAST</span><h3>How it moves</h3></div><p>Choose a motion to see it cast immediately. Practice rolls are not recorded.</p></div>
                  <FormField control={form.control} name="animation" render={({ field }) => (
                    <FormItem>
                      <div className="atelier-options atelier-animation-options" role="group" aria-label="Roll animation">
                        {animations.map(({ value, label, detail }) => (
-                         <button key={value} type="button" className="atelier-option" aria-pressed={field.value === value} onClick={() => { field.onChange(value); setPracticeResult(null); setPracticePhase("preview"); }} disabled={working || practicePhase === "rolling"} data-testid={`button-animation-${value}`}>
+                          <button key={value} type="button" className="atelier-option" aria-pressed={field.value === value} onClick={() => { field.onChange(value); previewMotion(); }} disabled={working || practicePhase === "rolling"} data-testid={`button-animation-${value}`}>
                            <WandSparkles size={15} aria-hidden="true" /><span><strong>{label}</strong><small>{detail}</small></span>
                          </button>
                        ))}

@@ -209,6 +209,7 @@
   align-self: start;
   position: sticky;
   top: 80px;
+  scroll-margin-top: 84px;
   min-height: min(730px, calc(100dvh - 96px));
   background:
     radial-gradient(ellipse 55% 47% at 49% 42%, rgba(106, 139, 143, .18), transparent 73%),
