@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, charactersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { UpdateWeavekeeperAdditionsBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -27,6 +28,12 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: "Name required" });
     return;
   }
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    res.status(400).json({ error: "Invalid character data" });
+    return;
+  }
+  // Character creation cannot write fields reserved for the Weavekeeper.
+  const { weavekeeperAdditions: _ignored, ...playerData } = data;
 
   const [character] = await db
     .insert(charactersTable)
@@ -36,7 +43,7 @@ router.post("/", async (req, res) => {
       level,
       affinity: affinity || null,
       mode: mode || null,
-      data,
+      data: playerData,
       isDraft,
     })
     .returning();
@@ -60,6 +67,51 @@ router.get("/:id", async (req, res) => {
   }
 
   res.json(character);
+});
+
+router.patch("/:id/weavekeeper-additions", async (req, res) => {
+  if (!isWeavekeeper(req)) {
+    res.status(403).json({ error: "Weavekeeper access required" });
+    return;
+  }
+  const id = Number(req.params.id);
+  const parsed = UpdateWeavekeeperAdditionsBody.strict().safeParse(req.body);
+  if (!Number.isSafeInteger(id) || id < 1 || !parsed.success ||
+      !Number.isSafeInteger(parsed.data.expectedVersion)) {
+    res.status(400).json({ error: "Invalid Weavekeeper additions" });
+    return;
+  }
+  const additions = parsed.data.additions;
+  if ([additions.feats, additions.items, additions.backgrounds, additions.notes].some(
+    entries => new Set(entries.map(entry => entry.id)).size !== entries.length ||
+      entries.some(entry => !entry.name.trim()),
+  ) || [...additions.attunements, ...additions.expertise].some(name => !name.trim()) ||
+      new Set(additions.attunements).size !== additions.attunements.length ||
+      new Set(additions.expertise).size !== additions.expertise.length ||
+      additions.items.some(item => !Number.isSafeInteger(item.quantity))) {
+    res.status(400).json({ error: "Additions need unique entries, non-empty names, and whole-number quantities" });
+    return;
+  }
+  try {
+    const result = await db.transaction(async tx => {
+      const [existing] = await tx.select().from(charactersTable)
+        .where(eq(charactersTable.id, id)).for("update").limit(1);
+      if (!existing) return { kind: "missing" as const };
+      if (existing.version !== parsed.data.expectedVersion) return { kind: "stale" as const };
+      const prior = existing.data && typeof existing.data === "object" && !Array.isArray(existing.data)
+        ? existing.data as Record<string, unknown> : {};
+      const [updated] = await tx.update(charactersTable).set({
+        data: { ...prior, weavekeeperAdditions: additions },
+        version: existing.version + 1,
+      }).where(eq(charactersTable.id, id)).returning();
+      return { kind: "updated" as const, character: updated };
+    });
+    if (result.kind === "missing") res.status(404).json({ error: "Character not found" });
+    else if (result.kind === "stale") res.status(409).json({ error: "Sheet changed; reload before saving additions." });
+    else res.json(result.character);
+  } catch {
+    res.status(500).json({ error: "Weavekeeper additions could not be saved" });
+  }
 });
 
 router.patch("/:id", async (req, res) => {
@@ -103,7 +155,18 @@ router.patch("/:id", async (req, res) => {
       if (level !== undefined) updates.level = level;
       if (affinity !== undefined) updates.affinity = affinity;
       if (mode !== undefined) updates.mode = mode;
-      if (data !== undefined) updates.data = data;
+      if (data !== undefined) {
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          return { kind: "invalid" as const };
+        }
+        const prior = existing.data && typeof existing.data === "object" && !Array.isArray(existing.data)
+          ? existing.data as Record<string, unknown> : {};
+        const playerData = { ...data };
+        // All full-sheet writes retain WK additions, including older builder saves.
+        if (prior.weavekeeperAdditions !== undefined) playerData.weavekeeperAdditions = prior.weavekeeperAdditions;
+        else delete playerData.weavekeeperAdditions;
+        updates.data = playerData;
+      }
       if (isDraft !== undefined) updates.isDraft = isDraft;
       const [updated] = await tx.update(charactersTable).set({ ...updates, version: existing.version + 1 })
         .where(eq(charactersTable.id, id)).returning();
@@ -111,6 +174,10 @@ router.patch("/:id", async (req, res) => {
     });
     if (result.kind === "missing") {
       res.status(404).json({ error: "Character not found" });
+      return;
+    }
+    if (result.kind === "invalid") {
+      res.status(400).json({ error: "Invalid character data" });
       return;
     }
     if (result.kind === "stale") {

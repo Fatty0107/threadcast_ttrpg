@@ -4,7 +4,7 @@ import { Router } from "express";
 import {
   db, charactersTable, rollsTable, castResponsesTable, collaborativeCastsTable,
 } from "@workspace/db";
-import { CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, guildAttributeBonus, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
+import { CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, getHandoutStringLevelForCharacter, guildAttributeBonus, guildBonusAlreadyInAttributes, isHandoutAffinity, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
 import { CreateCastBody, CreateCastStrainCheckBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
@@ -118,12 +118,19 @@ function getAttr(data: any, key: string): number {
       asiBonus += choice.attrs.filter((attribute: string) => attribute === key).length;
     }
   });
-  const guildBonus = guildAttributeBonus(data?.guild, data?.guildRank, key as "pot" | "ctr" | "res" | "ths");
+  // Builder characters already have their guild bonus in saved attributes.
+  // Legacy sheets without baseAttributes may still hold unmodified scores.
+  const guildBonus = guildBonusAlreadyInAttributes(data)
+    ? 0 : guildAttributeBonus(data?.guild, data?.guildRank, key as "pot" | "ctr" | "res" | "ths");
   return base + asiBonus + guildBonus;
 }
 
-function getStringLevel(name: string, level: number) {
-  const named = namedStringLevel(name, level);
+function getStringLevel(name: string, level: number, character: { affinity?: unknown }) {
+  const affinity = typeof character.affinity === "string" ? character.affinity : "";
+  const handoutAffinity = isHandoutAffinity(affinity);
+  const named = handoutAffinity
+    ? getHandoutStringLevelForCharacter(character, name, level)
+    : namedStringLevel(name, level);
   const base = CORE_POWER_LEVELS[level - 1];
   return named ?? (base ? { ...base, checkAttr: "ctr" as const } : undefined);
 }
@@ -394,7 +401,7 @@ router.post("/casts", async (req, res): Promise<void> => {
 
       const { pool, safeLimit } = poolAndSafe(character);
       const current = Number.isFinite(data?.tension?.current) ? data.tension.current : 0;
-      const computed = components.map(c => getStringLevel(c.string, c.powerLevel));
+      const computed = components.map(c => getStringLevel(c.string, c.powerLevel, character));
       if (computed.some(level => !level)) throw Object.assign(new Error("Invalid String power level"), { statusCode: 400 });
       const levels = computed as NonNullable<typeof computed[number]>[];
       const multiplier = input.kind === "weave" ? weaveMultiplier(count) : 1;

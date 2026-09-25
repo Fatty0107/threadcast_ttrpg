@@ -59,14 +59,14 @@ export function RollLog() {
           {user.role === "weavekeeper" && discord && (
             <div className="border-b border-border px-3 py-2 text-[10px] text-muted-foreground space-y-1">
               {!discord.configured ? (
-                <p>Discord off. To connect a channel: create a webhook in Discord channel settings → Integrations → Webhooks, then add its URL as <strong>DISCORD_WEBHOOK_URL</strong> in Replit Secrets. Do not paste it in chat.</p>
+                <p className="text-destructive">Discord delivery is off in this deployment. Rolls still save to the shared log. In Render, open the threadcast service → Environment, add <strong>DISCORD_WEBHOOK_URL</strong>, then redeploy. Do not paste the URL in chat.</p>
               ) : !discord.valid ? (
-                <p className="text-destructive">Discord webhook is invalid. Check DISCORD_WEBHOOK_URL in Replit Secrets.</p>
+                <p className="text-destructive">The Discord webhook URL is invalid. Check <strong>DISCORD_WEBHOOK_URL</strong> in the Render service's Environment settings. Use the complete Discord webhook URL with no trailing slash or query string. Rolls still save here.</p>
               ) : (
-                <p>Discord connected · {discord.recentSent} sent, {discord.recentFailed} failed, {discord.recentPending} pending (last 100 rolls).</p>
+                <p>Rolls saved here · Discord delivery: {discord.recentSent} sent, {discord.recentFailed} failed, {discord.recentPending} pending (last 100 rolls).</p>
               )}
               {discord.recentFailed > 0 && discord.valid && (
-                <p className="text-destructive">Some messages failed to deliver. Check the channel webhook in Discord; in-app rolls are safe.</p>
+                <p className="text-destructive">Some messages failed to deliver. Check the Discord webhook and Render service logs; in-app rolls are safe.</p>
               )}
             </div>
           )}

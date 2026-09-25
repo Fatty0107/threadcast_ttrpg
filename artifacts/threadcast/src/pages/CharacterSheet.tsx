@@ -11,7 +11,7 @@ export default function CharacterSheet() {
   const characterId = params?.id ? parseInt(params.id) : 0;
   
   const { data: character, isLoading } = useGetCharacter(characterId, {
-    query: { enabled: !!characterId } as any
+    query: { enabled: !!characterId, refetchInterval: 30_000 } as any
   });
   const updateMutation = useUpdateCharacter();
   const queryClient = useQueryClient();

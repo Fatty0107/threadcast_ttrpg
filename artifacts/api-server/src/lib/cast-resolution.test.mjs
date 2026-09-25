@@ -4,6 +4,16 @@ import {
   decideReplay,
   resolvePermanentInjury,
 } from "./cast-resolution.ts";
+import { guildBonusAlreadyInAttributes } from "../../../../lib/casting-rules/src/guild-bonus.ts";
+
+test("builder attributes do not receive guild bonuses a second time during casting", () => {
+  const built = { baseAttributes: { pot: 14, ctr: 14 }, attributes: { pot: 15, ctr: 15 } };
+  const legacy = { attributes: { pot: 14, ctr: 14 } };
+  assert.equal(guildBonusAlreadyInAttributes(built), true);
+  assert.equal(guildBonusAlreadyInAttributes(legacy), false);
+  assert.equal(built.attributes.pot + (guildBonusAlreadyInAttributes(built) ? 0 : 1), 15);
+  assert.equal(legacy.attributes.pot + (guildBonusAlreadyInAttributes(legacy) ? 0 : 1), 15);
+});
 
 const castRequest = {
   characterId: 7,

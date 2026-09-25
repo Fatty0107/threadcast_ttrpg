@@ -467,6 +467,62 @@ export interface CharacterUpdate {
   isDraft?: boolean;
 }
 
+export interface WeavekeeperEntry {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @maxLength 2000 */
+  description?: string;
+}
+
+export interface WeavekeeperItem {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 999
+     */
+  quantity: number;
+  /** @maxLength 2000 */
+  description?: string;
+}
+
+export interface WeavekeeperAdditions {
+  /** @maxItems 40 */
+  attunements: string[];
+  /** @maxItems 40 */
+  expertise: string[];
+  /** @maxItems 40 */
+  feats: WeavekeeperEntry[];
+  /** @maxItems 40 */
+  items: WeavekeeperItem[];
+  /** @maxItems 40 */
+  backgrounds: WeavekeeperEntry[];
+  /** @maxItems 40 */
+  notes: WeavekeeperEntry[];
+}
+
+export interface WeavekeeperAdditionsUpdate {
+  /** @minimum 0 */
+  expectedVersion: number;
+  additions: WeavekeeperAdditions;
+}
+
 export type DiceStyleFinish = typeof DiceStyleFinish[keyof typeof DiceStyleFinish];
 
 

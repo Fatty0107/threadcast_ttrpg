@@ -37,7 +37,8 @@ import type {
   GameplayRollInput,
   HealthStatus,
   LoginInput,
-  RollDiscordStatus
+  RollDiscordStatus,
+  WeavekeeperAdditionsUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -713,6 +714,78 @@ export const useDeleteCharacter = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteCharacterMutationOptions(options));
+    }
+
+export const getUpdateWeavekeeperAdditionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/characters/${id}/weavekeeper-additions`
+}
+
+/**
+ * @summary Replace Weavekeeper-managed additions to a player's sheet
+ */
+export const updateWeavekeeperAdditions = async (id: number,
+    weavekeeperAdditionsUpdate: WeavekeeperAdditionsUpdate, options?: RequestInit): Promise<Character> => {
+
+  return customFetch<Character>(getUpdateWeavekeeperAdditionsUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      weavekeeperAdditionsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateWeavekeeperAdditionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWeavekeeperAdditions>>, TError,{id: number;data: BodyType<WeavekeeperAdditionsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWeavekeeperAdditions>>, TError,{id: number;data: BodyType<WeavekeeperAdditionsUpdate>}, TContext> => {
+
+const mutationKey = ['updateWeavekeeperAdditions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWeavekeeperAdditions>>, {id: number;data: BodyType<WeavekeeperAdditionsUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateWeavekeeperAdditions(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWeavekeeperAdditionsMutationResult = NonNullable<Awaited<ReturnType<typeof updateWeavekeeperAdditions>>>
+    export type UpdateWeavekeeperAdditionsMutationBody = BodyType<WeavekeeperAdditionsUpdate>
+    export type UpdateWeavekeeperAdditionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace Weavekeeper-managed additions to a player's sheet
+ */
+export const useUpdateWeavekeeperAdditions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWeavekeeperAdditions>>, TError,{id: number;data: BodyType<WeavekeeperAdditionsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWeavekeeperAdditions>>,
+        TError,
+        {id: number;data: BodyType<WeavekeeperAdditionsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateWeavekeeperAdditionsMutationOptions(options));
     }
 
 export const getGetDicePreferencesUrl = () => {

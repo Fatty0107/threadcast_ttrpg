@@ -1,3 +1,5 @@
+export { getHandoutStringLevel, getHandoutStringLevelForCharacter, isHandoutAffinity } from "./handout-strings";
+
 export interface NamedStringLevel {
   cost: number;
   dc: number;
@@ -100,3 +102,5 @@ export function guildAttributeBonus(guild: unknown, rank: unknown, attribute: "p
   if (typeof guild !== "string" || typeof rank !== "string") return 0;
   return relevantGuildBonuses[guild]?.[rank]?.[attribute] ?? 0;
 }
+
+export { guildBonusAlreadyInAttributes } from "./guild-bonus";

@@ -1042,17 +1042,17 @@ export default function Weavekeeper() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/characters/${char.id}`} className="flex-1">
-                          <button className="w-full py-1.5 text-[10px] font-mono border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
-                            <Eye className="w-3 h-3" /> View
-                          </button>
+                       <div className="flex flex-wrap gap-1.5">
+                         <Link href={`/characters/${char.id}`} className="flex-1 py-1.5 text-[10px] font-mono border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
+                           <Eye className="w-3 h-3" /> View
                         </Link>
-                        <Link href={`/characters/${char.id}/build`} className="flex-1">
-                          <button className="w-full py-1.5 text-[10px] font-mono border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
-                            <Edit3 className="w-3 h-3" /> Edit
-                          </button>
+                         <Link href={`/characters/${char.id}/build`} className="flex-1 py-1.5 text-[10px] font-mono border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1">
+                           <Edit3 className="w-3 h-3" /> Edit
                         </Link>
+                         <Link href={`/weavekeeper/characters/${char.id}/additions`} data-testid={`link-sheet-additions-${char.id}`}
+                           className="w-full py-2 text-[10px] font-mono border border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary transition-colors flex items-center justify-center gap-1.5">
+                           <Plus className="w-3 h-3" /> Sheet additions
+                         </Link>
                       </div>
                     </div>
                   );

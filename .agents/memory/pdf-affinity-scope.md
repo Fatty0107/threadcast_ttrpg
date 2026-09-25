@@ -3,8 +3,8 @@ name: PDF affinity scope
 description: Scope decision for affinity handouts and character creation
 ---
 
-The seven character affinity handouts are used for affinity and String selection in character creation, with short descriptions of each String's general function. Do not treat their draft power-level tables as approved casting rules or infer costs, DCs, or effects from the summaries.
+The seven character affinity handouts are used for affinity and String selection in character creation, with short descriptions of each String's general function. Their per-String PL/TP/DC tables are now approved for the app's casting values. Do not infer additional casting effects from the short descriptions; consult the specific PDF row for effect details.
 
-**Why:** The user specifically requested creation selection and player-facing descriptions rather than tables or unrelated mechanics; the handouts include proposed numerical mechanics.
+**Why:** The earlier request covered only creation selection. A later explicit request asked for each handout's PL/TP/DC to replace generic values and for distinct String scopes to appear on character sheets, superseding that earlier limitation.
 
-**How to apply:** If extending casting support for these affinities later, request or confirm the intended rules independently instead of silently mapping the creation descriptions to engine mechanics.
+**How to apply:** Keep server-authoritative costs and DCs in sync with the sheet and weave previews. For any further effect mechanics, use the actual per-PL PDF rows instead of interpreting a scope summary as a specific effect.

@@ -55,3 +55,7 @@ export * from './healthStatus';
 export * from './loginInput';
 export * from './permanentInjuryResult';
 export * from './rollDiscordStatus';
+export * from './weavekeeperAdditions';
+export * from './weavekeeperAdditionsUpdate';
+export * from './weavekeeperEntry';
+export * from './weavekeeperItem';

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Character, getCharacter, useCreateCast, useCreateCastStrainCheck, useResolveCastConsequence,
   getListRollsQueryKey, type GameplayRoll, type CastInput, type CastStrainInput, type CastResult as ApiCastResult,
+  type WeavekeeperAdditions,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,7 +14,9 @@ import {
   calcRecoveryDice, getGuildRankData, GUILDS,
 } from "@/lib/ttrpg-data";
 import { findString } from "@/lib/affinity-data";
+import { getCreationAffinity, getHandoutString } from "@/lib/creation-affinities";
 import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, strainDC, type CastAftermath } from "@/lib/casting-rules";
+import { guildBonusAlreadyInAttributes } from "@workspace/casting-rules";
 import { CastAftermath as CastAftermathView } from "./CastAftermath";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
@@ -27,6 +30,11 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth/auth-context";
 import { escapePrintHtml } from "@/lib/print-escape";
 import "./character-sheet.css";
+
+function findSheetString(affinity: string, name: string) {
+  return getHandoutString(affinity, name) ??
+    (getCreationAffinity(affinity) ? undefined : findString(name));
+}
 
 // ---- Types ----
 import { useResolveCollaborativeSupport } from "@workspace/api-client-react";
@@ -64,6 +72,7 @@ interface WeavingEntry {
 
 interface SheetData {
   avatarDataUrl?: string;
+  baseAttributes?: Record<string, number>;
   attributes?: Record<string, number>;
   vitalityPoints?: { current: number; max: number };
   tension?: { current: number; pool: number; safeLimit: number };
@@ -106,6 +115,7 @@ interface SheetData {
   featChoices?: Record<string, any>;
   guildFeatChoice?: string;
   weavings?: WeavingEntry[];
+  weavekeeperAdditions?: WeavekeeperAdditions;
 }
 
 type CastConsequence = {
@@ -430,7 +440,9 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const guildRankData = localData.guild && localData.guildRank
     ? getGuildRankData(localData.guild, localData.guildRank)
     : undefined;
-  const guildStatBonuses = guildRankData?.statBonuses ?? {};
+  // Builder sheets persist attributes after applying guild rank bonuses.
+  // Only legacy sheets with no saved baseAttributes need the bonus added here.
+  const guildStatBonuses = guildBonusAlreadyInAttributes(localData) ? {} : guildRankData?.statBonuses ?? {};
 
   const attrs: Record<string, number> = {
     pot: (baseAttrs.pot || 10) + (asiAttrBonuses.pot || 0) + (guildStatBonuses.pot || 0),
@@ -449,6 +461,14 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const safePowerLevel = maximumSafePowerLevel(level, attrs.pot || 10);
   const rb = getRefinementBonus(level);
   const inventory = localData.inventory || [];
+  // WK additions come from the latest server character, not the player's unsaved sheet draft.
+  const wkAdditions = (character.data as SheetData)?.weavekeeperAdditions ?? localData.weavekeeperAdditions;
+  const wkAttunements = wkAdditions?.attunements ?? [];
+  const wkExpertise = wkAdditions?.expertise ?? [];
+  const wkFeats = wkAdditions?.feats ?? [];
+  const wkItems = wkAdditions?.items ?? [];
+  const wkBackgrounds = wkAdditions?.backgrounds ?? [];
+  const wkNotes = wkAdditions?.notes ?? [];
 
   // Feat passive bonuses
   const featVpBonus    = feats.includes("Iron Constitution")    ? 4 : 0;
@@ -501,7 +521,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const guildAttunements = (guildRankData?.attunements ?? []).filter(
     s => !attunedSkillsBase.includes(s) && !attunementFeatSkills.includes(s)
   );
-  const attunedSkills = [...attunedSkillsBase, ...attunementFeatSkills, ...guildAttunements];
+  const attunedSkills = [...new Set([...attunedSkillsBase, ...attunementFeatSkills, ...guildAttunements, ...wkAttunements, ...wkExpertise])];
   const expertiseSkills: string[] = [];
   feats.forEach((name, idx) => {
     if (name === "Expertise") {
@@ -509,6 +529,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
       if (choice?.skill) expertiseSkills.push(choice.skill);
     }
   });
+  for (const name of wkExpertise) if (!expertiseSkills.includes(name)) expertiseSkills.push(name);
 
   const featSlots = Math.floor(level / 2);
   const featSlotsRemaining = featSlots - feats.length;
@@ -1053,7 +1074,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
       const count = Math.max(2, Math.min(4, w.numStrings || 2));
       const cost = (w.strings || []).slice(0, count).reduce((sum, name, index) => {
         const pl = w.powerLevels?.[index] || 1;
-        return sum + (findString(name)?.levels?.[pl - 1]?.cost ?? CORE_POWER_LEVELS[pl - 1]?.cost ?? 0);
+        return sum + (findSheetString(character.affinity || "", name)?.levels?.[pl - 1]?.cost ?? CORE_POWER_LEVELS[pl - 1]?.cost ?? 0);
       }, 0) * weaveMultiplier(count);
       return `<tr><td>${wi + 1}</td><td>${(w.strings || []).slice(0, count).map(printEscape).join(", ")}</td><td>${(w.powerLevels || []).slice(0, count).map(pl => `PL${pl}`).join(", ")}</td><td>${(w.modes || []).slice(0, count).map(printEscape).join(", ")}</td><td>${count === 2 ? feats.includes("Precision Weave") ? "Harmony" : "Normal" : "Discord"}</td><td>${cost}T</td></tr>${w.intent?.trim() ? `<tr><td colspan="6" style="font-size:7.5pt;color:#555">Shared effect: ${printEscape(w.intent.trim())}</td></tr>` : ""}`;
     }).join("");
@@ -1122,6 +1143,7 @@ td{padding:2px 4px;border-bottom:1px solid #ddd;vertical-align:middle}
       ${localData.secondaryMode ? `<span class="pill">${localData.secondaryMode}${localData.secondaryMode2 ? " / "+localData.secondaryMode2:""} Secondary</span>` : ""}
       ${localData.tertiaryMode ? `<span class="pill">${localData.tertiaryMode}${localData.tertiaryMode2 ? " / "+localData.tertiaryMode2:""} Tertiary</span>` : ""}
       ${localData.background ? `<span class="pill">${localData.background}</span>` : ""}
+      ${wkBackgrounds.map(background => `<span class="pill">${printEscape(background.name)} · Weavekeeper</span>`).join("")}
       ${localData.guild ? `<span class="pill">${localData.guild}${localData.guildRank ? " · "+localData.guildRank:""}</span>` : ""}
     </div>
     ${localData.signature ? `<div style="margin-top:4px;font-family:monospace;font-size:7.5pt;color:#555">Sig: ${localData.signature}</div>` : ""}
@@ -1186,8 +1208,9 @@ ${ALL_SKILLS.map(skill => {
   const attrScore = attrs[skill.attr] || 10;
   const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
   const isAt = attunedSkills.includes(skill.name);
-  const total = mod + (isAt ? rb : 0);
-  return `<tr><td class="${isAt?"at":""}">${skill.name}</td><td style="font-family:monospace;font-size:7.5pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${isAt?"●":"○"}</td><td style="font-family:monospace">${mod>=0?"+":""}${mod}${isAt?" +"+rb:""}</td><td style="font-family:monospace;font-weight:bold">${total>=0?"+":""}${total}</td></tr>`;
+   const bonus = isAt ? rb * (expertiseSkills.includes(skill.name) ? 2 : 1) : 0;
+   const total = mod + bonus;
+   return `<tr><td class="${isAt?"at":""}">${skill.name}</td><td style="font-family:monospace;font-size:7.5pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${expertiseSkills.includes(skill.name)?"E":isAt?"●":"○"}</td><td style="font-family:monospace">${mod>=0?"+":""}${mod}${bonus?" +"+bonus:""}</td><td style="font-family:monospace;font-weight:bold">${total>=0?"+":""}${total}</td></tr>`;
 }).join("")}
 </tbody></table>
 
@@ -1199,8 +1222,9 @@ ${(localData.weavings||[]).length > 0 ? `<h2>Weaving Combinations</h2><div style
 <div class="page">
 ${feats.length > 0 ? `<h2>Feats (${feats.length}/${Math.floor(level/2)} slots)</h2>
 <div class="g2">${feats.map((featName,fi) => {const feat=FEATS.find(f=>f.name===featName);if(!feat)return`<div class="feat-block"><span class="feat-nm">${featName}</span></div>`;const fc=(localData.featChoices as Record<string,any>||{})[String(fi)];let choiceHtml="";if(featName==="Attribute Score Improvement"&&fc){if(fc.mode==="one"&&fc.attrs?.[0]){const a=ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0]);choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+2 ${a?.abbr||fc.attrs[0]} (${(baseAttrs[fc.attrs[0]]||10)} → ${(baseAttrs[fc.attrs[0]]||10)+2})</div>`;}else if(fc.mode==="two"&&fc.attrs?.length>=2){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0])?.abbr||fc.attrs[0]} · +1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[1])?.abbr||fc.attrs[1]}</div>`;}}else if(featName==="Attunement (Skilled)"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Attuned: ${fc.skill} (+${rb})</div>`;}else if(featName==="Expertise"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Expertise: ${fc.skill} (RB = +${rb*2})</div>`;}return`<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;flex-wrap:wrap;gap:3px"><span class="feat-nm">${feat.name}</span><div style="display:flex;align-items:center;gap:4px"><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span>${restBadge(feat)}${feat.passiveBonus?`<span class="passive-badge">PASSIVE</span>`:""}</div></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div>${choiceHtml}</div>`;}).join("")}</div>` : ""}
+${wkFeats.length > 0 ? `<h2>Weavekeeper-granted feats</h2>${wkFeats.map(feat => `<div class="feat-block"><strong>${printEscape(feat.name)}</strong>${feat.description ? `<div class="feat-desc">${printEscape(feat.description)}</div>` : ""}</div>`).join("")}` : ""}
 
-<h2>Inventory (${inventory.length} items)</h2>
+<h2>Inventory (${inventory.length + wkItems.length} items)</h2>
 ${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Notes</th></tr></thead><tbody>
 ${inventory.map(item => {
   const equipBonus = ITEM_BONUS[item.id];
@@ -1212,11 +1236,14 @@ ${inventory.map(item => {
   return `<tr><td><strong>${item.name}</strong>${item.category?`<span style="font-family:monospace;font-size:6.5pt;color:#888;margin-left:4px">${item.subCategory||item.category}</span>`:""}</td><td style="font-family:monospace;font-size:7.5pt">${RARITY_LABELS[item.rarity]||item.rarity}</td><td style="text-align:center;font-family:monospace">${item.quantity}</td><td style="font-family:monospace;font-size:7.5pt">${item.equipped?`<span style="color:#2a6030">EQUIP${bonusStr?" ("+bonusStr+")":""}</span>`:"—"}</td><td style="font-size:7.5pt;color:#555">${item.notes||""}</td></tr>`;
 }).join("")}
 </tbody></table>` : "<p style='font-size:8.5pt;color:#888;margin-top:4px'>No items.</p>"}
+${wkItems.length ? `<h3>Weavekeeper-granted items</h3><table><thead><tr><th>Item</th><th>Qty</th><th>Description</th></tr></thead><tbody>${wkItems.map(item => `<tr><td>${printEscape(item.name)}</td><td>${item.quantity}</td><td>${printEscape(item.description || "")}</td></tr>`).join("")}</tbody></table>` : ""}
 </div>
 
 <!-- PAGE 4: NOTES & CHARACTER DEPTH -->
 <div class="page">
 <h2>Character Notes</h2>
+${wkBackgrounds.length ? `<h3>Weavekeeper backgrounds</h3>${wkBackgrounds.map(entry => `<div class="feat-block"><strong>${printEscape(entry.name)}</strong><div>${printEscape(entry.description || "")}</div></div>`).join("")}` : ""}
+${wkNotes.length ? `<h3>Weavekeeper notes</h3>${wkNotes.map(entry => `<div class="feat-block"><strong>${printEscape(entry.name)}</strong><div>${printEscape(entry.description || "")}</div></div>`).join("")}` : ""}
 <div class="g2" style="gap:10px">
 ${([
   {key:"notesBackstory",label:"Backstory"},
@@ -1834,6 +1861,7 @@ ${([
                 const isAttuned = attunedSkills.includes(skill.name);
                 const isFeatAttuned = attunementFeatSkills.includes(skill.name);
                 const isExpert = expertiseSkills.includes(skill.name);
+                const isWeavekeeperGranted = wkAttunements.includes(skill.name) || wkExpertise.includes(skill.name);
                 const totalRb = isAttuned ? (isExpert ? rb * 2 : rb) : 0;
                 const total = mod + totalRb;
                 return (
@@ -1841,6 +1869,7 @@ ${([
                     <td className="py-2.5">
                       <GameTerm term={skill.name.toLowerCase()} className="text-foreground">{skill.name}</GameTerm>
                       {isFeatAttuned && <span className="text-[9px] font-mono text-primary/60 ml-1">feat</span>}
+                      {isWeavekeeperGranted && <span className="text-[9px] font-mono text-chart-2 ml-1">Weavekeeper</span>}
                     </td>
                     <td className="py-2.5 text-center">
                       <GameTerm term={skill.attr} className="text-muted-foreground text-xs">{skill.attr.toUpperCase()}</GameTerm>
@@ -1849,15 +1878,15 @@ ${([
                       <button
                         className={cn("tc-attune",
                           isAttuned ? "border-primary bg-primary/10 text-primary" : "border-border/60 hover:border-primary/40")}
-                        aria-label={`${isAttuned ? "Remove" : "Add"} attunement for ${skill.name}${isFeatAttuned ? " (granted by feat)" : ""}`}
+                        aria-label={`${isAttuned ? "Remove" : "Add"} attunement for ${skill.name}${isFeatAttuned ? " (granted by feat)" : isWeavekeeperGranted ? " (granted by Weavekeeper)" : ""}`}
                         aria-pressed={isAttuned}
-                        disabled={isFeatAttuned}
+                        disabled={isFeatAttuned || isWeavekeeperGranted}
                         onClick={() => {
-                          if (isFeatAttuned) return;
+                          if (isFeatAttuned || isWeavekeeperGranted) return;
                           const next = isAttuned ? attunedSkillsBase.filter(s => s !== skill.name) : [...attunedSkillsBase, skill.name];
                           patch({ attunedSkills: next });
                         }}
-                        title={isFeatAttuned ? "Attuned via feat" : undefined}
+                        title={isWeavekeeperGranted ? "Granted by the Weavekeeper" : isFeatAttuned ? "Attuned via feat" : undefined}
                       >
                         {isAttuned ? (isExpert ? "E" : "A") : "—"}
                       </button>
@@ -1905,7 +1934,8 @@ ${([
             </div>
           )}
           <div className="tc-string-list">{(localData.strings || []).map((sName, i) => {
-            const strData = findString(sName);
+             const handoutString = getHandoutString(character.affinity || "", sName);
+             const strData = findSheetString(character.affinity || "", sName);
             const str = strData ?? {
               name: sName,
               flavor: "Custom String — use your Affinity and this String's scope to describe an effect. Core PL values are the starting point.",
@@ -1917,7 +1947,7 @@ ${([
             const checkAttrKey = str.checkAttr;
             const attrScore = attrs[checkAttrKey] || 10;
             return (
-              <CastStringPanel
+               <CastStringPanel
                 key={`${character.id}-${i}`}
                 str={str}
                 attrScore={attrScore}
@@ -1936,6 +1966,7 @@ ${([
                 level={level}
                 safePowerLevel={safePowerLevel}
                 custom={!strData}
+                handout={!!handoutString}
               />
             );
           })}</div>
@@ -2000,6 +2031,7 @@ ${([
                 key={`${character.id}-${weave.id}`}
                 weave={weave}
                 characterId={character.id}
+                affinity={character.affinity || ""}
                 wi={wi}
                 maxStrings={level >= 7 ? 4 : 3}
                 localData={localData}
@@ -2054,6 +2086,17 @@ ${([
 
         {/* ===== FEATS ===== */}
         <TabsContent value="feats" className="tc-panel m-0">
+          {wkFeats.length > 0 && (
+            <div className="mb-5 space-y-2">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-chart-2">Weavekeeper-granted feats</h3>
+              {wkFeats.map(feat => (
+                <div key={feat.id} className="border border-chart-2/30 bg-chart-2/5 p-3">
+                  <div className="font-mono text-sm text-foreground">{feat.name} <span className="text-[10px] text-chart-2">WEAVEKEEPER</span></div>
+                  {feat.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{feat.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
           {/* Guild Rank Benefits */}
           {guildRankData && (
             <div className="mb-5 border border-chart-2/30 bg-chart-2/5 p-4">
@@ -2343,7 +2386,7 @@ ${([
         {/* ===== INVENTORY ===== */}
         <TabsContent value="inventory" className="tc-panel m-0">
           <div className="flex justify-between items-center mb-4">
-            <span className="font-mono text-xs text-muted-foreground">{inventory.length} items carried</span>
+            <span className="font-mono text-xs text-muted-foreground">{inventory.length + wkItems.length} items carried</span>
             <div className="flex gap-2">
               <button onClick={addCustomItem} className="px-3 py-1.5 text-xs font-mono border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">+ CUSTOM ITEM</button>
               <button onClick={() => setShowInventoryPicker(v => !v)} className="px-3 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10 transition-colors">
@@ -2351,6 +2394,21 @@ ${([
               </button>
             </div>
           </div>
+
+          {wkItems.length > 0 && (
+            <div className="space-y-2 mb-5">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-chart-2">Weavekeeper-granted items</h3>
+              {wkItems.map(item => (
+                <div key={item.id} className="border border-chart-2/30 bg-chart-2/5 p-3">
+                  <div className="flex items-center justify-between gap-2 font-mono text-sm">
+                    <span className="text-foreground">{item.name} <span className="text-[10px] text-chart-2">WEAVEKEEPER</span></span>
+                    <span className="text-muted-foreground">×{item.quantity}</span>
+                  </div>
+                  {item.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{item.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
 
           {showInventoryPicker && (
             <div className="mb-4 border border-border bg-card p-3">
@@ -2446,7 +2504,7 @@ ${([
             </div>
           )}
 
-          {inventory.length === 0 && !showInventoryPicker && (
+          {inventory.length === 0 && wkItems.length === 0 && !showInventoryPicker && (
             <div className="py-8 text-center font-mono text-muted-foreground text-sm">Inventory empty. Add items from catalog or create custom items.</div>
           )}
 
@@ -2578,6 +2636,17 @@ ${([
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
             <div className="space-y-4">
               <EditableField label="Background" value={localData.background || ""} onChange={v => patch({ background: v })} placeholder="Guild-Raised, Self-Taught..." />
+              {wkBackgrounds.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs uppercase tracking-widest text-chart-2">Weavekeeper backgrounds</h3>
+                  {wkBackgrounds.map(background => (
+                    <div key={background.id} className="border border-chart-2/30 bg-chart-2/5 p-3">
+                      <div className="text-foreground">{background.name} <span className="text-[10px] text-chart-2">WEAVEKEEPER</span></div>
+                      {background.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{background.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
               <EditableField label="Guild" value={localData.guild || ""} onChange={v => patch({ guild: v })} placeholder="The Scaled Guard..." />
               <EditableField label="Guild Rank" value={localData.guildRank || ""} onChange={v => patch({ guildRank: v })} placeholder="Thornguard, Solanarch..." />
               <div>
@@ -2635,6 +2704,17 @@ ${([
 
         {/* ===== NOTES ===== */}
         <TabsContent value="notes" className="tc-panel m-0">
+          {wkNotes.length > 0 && (
+            <div className="space-y-2 mb-5">
+              <h3 className="text-xs font-mono uppercase tracking-widest text-chart-2">Weavekeeper notes &amp; additions</h3>
+              {wkNotes.map(note => (
+                <div key={note.id} className="border border-chart-2/30 bg-chart-2/5 p-3">
+                  <div className="font-mono text-sm text-foreground">{note.name} <span className="text-[10px] text-chart-2">WEAVEKEEPER</span></div>
+                  {note.description && <p className="text-xs text-muted-foreground whitespace-pre-wrap mt-1">{note.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {([
               { key: "notesBackstory"   as const, label: "Backstory",          placeholder: "Where did you come from? What shaped you?" },
@@ -2730,11 +2810,11 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
 
 // ===== WEAVE CAST ROW =====
 function WeaveCastRow({
-  weave, wi, characterId, maxStrings, localData, patch,
+  weave, wi, characterId, affinity, maxStrings, localData, patch,
   safePowerLevel, ctrScore, ctrModifierPenalty, availableTension, castingConditions, burnout, lostStrings,
   hasPrecisionWeave, precisionWeaveChargeAvailable, onBeginCast, onCast,
 }: {
-  weave: WeavingEntry; wi: number; characterId: number; maxStrings: number;
+  weave: WeavingEntry; wi: number; characterId: number; affinity: string; maxStrings: number;
   localData: any; patch: (p: any) => void;
   safePowerLevel: number; ctrScore: number; ctrModifierPenalty: number; availableTension: number; castingConditions: string[]; burnout: number;
   lostStrings: string[];
@@ -2770,7 +2850,7 @@ function WeaveCastRow({
   const effectType = weave.numStrings === 2 ? "Enhanced" : weave.numStrings === 3 ? "Dramatic" : "Catastrophic";
   const costMultiplier = weaveMultiplier(weave.numStrings);
   const baseCost = (weave.strings || []).slice(0, weave.numStrings).reduce((sum: number, sName: string, si: number) => {
-    const sData = findString(sName);
+    const sData = findSheetString(affinity, sName);
     const pl = (weave.powerLevels || [])[si] || 1;
     return sum + (sData?.levels?.[pl - 1]?.cost ?? CORE_POWER_LEVELS[pl - 1]?.cost ?? 0);
   }, 0);
@@ -2779,7 +2859,7 @@ function WeaveCastRow({
   const castCost = Math.max(0, totalCost - (precisionDiscount ? 1 : 0));
   const weaveDC = (() => {
     const dcs = (weave.strings || []).slice(0, weave.numStrings).map((sName: string, si: number) => {
-      const sData = findString(sName);
+      const sData = findSheetString(affinity, sName);
       const pl = (weave.powerLevels || [])[si] || 1;
       return sData?.levels?.[pl - 1]?.dc ?? CORE_POWER_LEVELS[pl - 1]?.dc ?? 0;
     }).filter(Boolean);
@@ -2995,13 +3075,13 @@ interface CastResult { d1: number; d2?: number; finalDie: number; total: number;
 function CastStringPanel({
   str, attrScore, characterName, characterId, availableTension, onCast,
   onBeginCast, castingConditions, burnout, ctrModifierPenalty, lostThread,
-  primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom,
+  primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom, handout,
 }: {
   str: any; attrScore: number; characterName: string; characterId: number; availableTension: number; onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
   onBeginCast: () => (() => void) | null;
   castingConditions: string[]; burnout: number; ctrModifierPenalty: number; lostThread: boolean;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
-  safePowerLevel: number; custom: boolean;
+  safePowerLevel: number; custom: boolean; handout: boolean;
 }) {
   const mod = calcMod(attrScore) - ctrModifierPenalty - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
   const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
@@ -3135,9 +3215,9 @@ function CastStringPanel({
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-border/30">
-          <p className="text-xs font-mono text-muted-foreground my-3 leading-relaxed">{str.flavor}</p>
+          <p className="text-xs font-mono text-muted-foreground my-3 leading-relaxed">{handout && <span className="text-primary">Scope / domain: </span>}{str.flavor}</p>
           {lostThread && <p className="mb-3 border border-destructive/40 bg-destructive/5 p-2 font-mono text-[10px] text-destructive">This String was lost permanently and cannot be used for casting.</p>}
-          <p className="text-[10px] font-mono text-muted-foreground mb-3">{custom ? "Core PL cost / DC for this custom String." : "PL effects below are examples, not a spell list. Their listed cost / DC are used as the starting values for a cast."} Describe your own effect when casting.</p>
+          <p className="text-[10px] font-mono text-muted-foreground mb-3">{handout ? "TP / DC match this String's affinity handout. Refer to its PL table for the exact effect." : custom ? "Core PL cost / DC for this custom String." : "PL effects below are examples, not a spell list. Their listed cost / DC are used as the starting values for a cast."} Describe your own effect when casting.</p>
 
           {/* Cast Overlay */}
           {castPL && (
@@ -3157,8 +3237,8 @@ function CastStringPanel({
                 placeholder={`I use ${str.name} at PL ${castPL.pl} through my chosen Mode to…`}
                 className="w-full bg-background border border-border px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary mb-2 resize-y" />
               <div className="flex justify-between items-center gap-2 mb-3 text-[10px] text-muted-foreground">
-                <span>Example only: {castPL.effect}</span>
-                <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>
+                <span>{handout ? castPL.effect : `Example only: ${castPL.effect}`}</span>
+                {!handout && <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>}
               </div>
               {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): Thread Check at Discord.</p>}
                <p className="mb-3 text-[10px] text-muted-foreground">DC is automatic for this String and PL. Mode changes the check type (Harmony, Normal, or Discord), not the DC. Describe your effect and roll without an approval step.</p>
@@ -3322,7 +3402,7 @@ function CastStringPanel({
                 <th className="pb-1 font-normal w-8 text-center"><GameTerm term="pl">PL</GameTerm></th>
                 <th className="pb-1 font-normal w-10 text-center"><GameTerm term="tp">TP</GameTerm></th>
                 <th className="pb-1 font-normal w-10 text-center"><GameTerm term="dc">DC</GameTerm></th>
-                <th className="pb-1 font-normal">Example effect / scale</th>
+                <th className="pb-1 font-normal">{handout ? "Effect reference" : "Example effect / scale"}</th>
                 <th className="pb-1 font-normal w-16 text-right">Cast</th>
               </tr>
             </thead>

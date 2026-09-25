@@ -156,6 +156,107 @@ export const DeleteCharacterParams = zod.object({
 
 
 /**
+ * @summary Replace Weavekeeper-managed additions to a player's sheet
+ */
+export const UpdateWeavekeeperAdditionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateWeavekeeperAdditionsBodyExpectedVersionMin = 0;
+
+export const updateWeavekeeperAdditionsBodyAdditionsAttunementsItemMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsAttunementsMax = 40;
+
+export const updateWeavekeeperAdditionsBodyAdditionsExpertiseItemMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsExpertiseMax = 40;
+
+export const updateWeavekeeperAdditionsBodyAdditionsFeatsItemIdMax = 80;
+
+export const updateWeavekeeperAdditionsBodyAdditionsFeatsItemNameMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsFeatsItemDescriptionMax = 2000;
+
+export const updateWeavekeeperAdditionsBodyAdditionsFeatsMax = 40;
+
+export const updateWeavekeeperAdditionsBodyAdditionsItemsItemIdMax = 80;
+
+export const updateWeavekeeperAdditionsBodyAdditionsItemsItemNameMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsItemsItemQuantityMax = 999;
+
+export const updateWeavekeeperAdditionsBodyAdditionsItemsItemDescriptionMax = 2000;
+
+export const updateWeavekeeperAdditionsBodyAdditionsItemsMax = 40;
+
+export const updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemIdMax = 80;
+
+export const updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemNameMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemDescriptionMax = 2000;
+
+export const updateWeavekeeperAdditionsBodyAdditionsBackgroundsMax = 40;
+
+export const updateWeavekeeperAdditionsBodyAdditionsNotesItemIdMax = 80;
+
+export const updateWeavekeeperAdditionsBodyAdditionsNotesItemNameMax = 100;
+
+export const updateWeavekeeperAdditionsBodyAdditionsNotesItemDescriptionMax = 2000;
+
+export const updateWeavekeeperAdditionsBodyAdditionsNotesMax = 40;
+
+
+
+export const UpdateWeavekeeperAdditionsBody = zod.object({
+  "expectedVersion": zod.number().min(updateWeavekeeperAdditionsBodyExpectedVersionMin),
+  "additions": zod.object({
+  "attunements": zod.array(zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsAttunementsItemMax)).max(updateWeavekeeperAdditionsBodyAdditionsAttunementsMax),
+  "expertise": zod.array(zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsExpertiseItemMax)).max(updateWeavekeeperAdditionsBodyAdditionsExpertiseMax),
+  "feats": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsFeatsItemIdMax),
+  "name": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsFeatsItemNameMax),
+  "description": zod.string().max(updateWeavekeeperAdditionsBodyAdditionsFeatsItemDescriptionMax).optional()
+})).max(updateWeavekeeperAdditionsBodyAdditionsFeatsMax),
+  "items": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsItemsItemIdMax),
+  "name": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsItemsItemNameMax),
+  "quantity": zod.number().min(1).max(updateWeavekeeperAdditionsBodyAdditionsItemsItemQuantityMax),
+  "description": zod.string().max(updateWeavekeeperAdditionsBodyAdditionsItemsItemDescriptionMax).optional()
+})).max(updateWeavekeeperAdditionsBodyAdditionsItemsMax),
+  "backgrounds": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemIdMax),
+  "name": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemNameMax),
+  "description": zod.string().max(updateWeavekeeperAdditionsBodyAdditionsBackgroundsItemDescriptionMax).optional()
+})).max(updateWeavekeeperAdditionsBodyAdditionsBackgroundsMax),
+  "notes": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsNotesItemIdMax),
+  "name": zod.string().min(1).max(updateWeavekeeperAdditionsBodyAdditionsNotesItemNameMax),
+  "description": zod.string().max(updateWeavekeeperAdditionsBodyAdditionsNotesItemDescriptionMax).optional()
+})).max(updateWeavekeeperAdditionsBodyAdditionsNotesMax)
+})
+})
+
+export const updateWeavekeeperAdditionsResponseVersionMin = 0;
+
+
+
+export const UpdateWeavekeeperAdditionsResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "name": zod.string(),
+  "level": zod.number(),
+  "affinity": zod.string().nullish(),
+  "mode": zod.string().nullish(),
+  "data": zod.record(zod.string(), zod.unknown()).describe('Full character sheet data as JSONB'),
+  "isDraft": zod.boolean(),
+  "version": zod.number().min(updateWeavekeeperAdditionsResponseVersionMin),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
  * @summary Get saved dice preferences for the current user
  */
 export const getDicePreferencesResponseSetsItemNameMax = 40;

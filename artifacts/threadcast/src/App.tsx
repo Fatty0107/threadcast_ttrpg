@@ -15,6 +15,7 @@ import CharacterSheet from "@/pages/CharacterSheet";
 import CharacterBuilder from "@/pages/CharacterBuilder";
 import Compendium from "@/pages/Compendium";
 import Weavekeeper from "@/pages/Weavekeeper";
+import WeavekeeperAdditions from "@/pages/WeavekeeperAdditions";
 import DiceAtelier from "@/pages/DiceAtelier";
 import Navbar from "@/components/layout/Navbar";
 
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/characters/:id/build">
         {(params) => <CharacterBuilderEditPage id={params!.id} />}
       </Route>
+      <ProtectedRoute path="/weavekeeper/characters/:id/additions" component={WeavekeeperAdditions} />
       <ProtectedRoute path="/characters/:id" component={CharacterSheet} />
       <ProtectedRoute path="/compendium" component={Compendium} />
       <ProtectedRoute path="/weavekeeper" component={Weavekeeper} />

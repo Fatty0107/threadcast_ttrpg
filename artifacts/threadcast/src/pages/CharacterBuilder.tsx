@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useCreateCharacter, useUpdateCharacter, useGetCharacter } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCreateCharacter, useUpdateCharacter, useGetCharacter, getGetCharacterQueryKey, getListCharactersQueryKey } from "@workspace/api-client-react";
 import {
   BACKGROUNDS, GUILDS, ALL_MODES, ALL_SKILLS, FEATS, ATTRIBUTE_DEFS,
   GUILD_RANKS_DATA, getGuildRankData, getGuildRanksForGuild, getGuildEntryRankTitle,
@@ -184,9 +185,10 @@ function emptySlot(): RolledSlot {
 // ---- Main Component ----
 export default function CharacterBuilder({ charId }: { charId?: string }) {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const createMutation = useCreateCharacter();
   const updateMutation = useUpdateCharacter();
-  const { data: existingChar } = useGetCharacter(charId ? parseInt(charId) : 0, {
+  const { data: existingChar, isError: characterLoadError } = useGetCharacter(charId ? parseInt(charId) : 0, {
     query: { enabled: !!charId } as any,
   });
   const { getAffinityStrings, getAvailableAffinityNames, publishedAffinities, isLoading: homebrewLoading } = useHomebrew();
@@ -233,7 +235,12 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       primaryMode: data.primaryMode || existingChar.mode || "",
       secondaryModes: [data.secondaryMode || "", data.secondaryMode2 || ""],
       tertiaryModes: [data.tertiaryMode || "", data.tertiaryMode2 || ""],
-      attunedSkills: Array.isArray(data.attunedSkills) ? data.attunedSkills : [],
+      // Stored attunements include automatic background and guild grants. In the
+      // builder, only the two additional player choices are editable.
+      attunedSkills: [...new Set(((Array.isArray(data.attunedSkills) ? data.attunedSkills : []) as string[]).filter((skill: string) =>
+        ALL_SKILLS.some(known => known.name === skill) &&
+        !BACKGROUNDS.find(b => b.name === data.background)?.startingSkills.includes(skill) &&
+        !getGuildRankData(data.guild || "", data.guildRank || "")?.attunements.includes(skill)))],
       selectedStrings: Array.isArray(data.strings) ? data.strings : [],
       selectedFeats: Array.isArray(data.feats) ? data.feats.filter((f: string) => {
         const grd = getGuildRankData(data.guild || "", data.guildRank || "");
@@ -259,8 +266,9 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     ? getAffinityStrings(build.affinity)
     : getCreationAffinity(build.affinity)?.strings ?? getAffinityStrings(build.affinity);
 
-  function updateBuild(patch: Partial<BuildState>) {
-    setBuild(prev => ({ ...prev, ...patch }));
+  function updateBuild(patch: Partial<BuildState> | ((prev: BuildState) => Partial<BuildState>)) {
+    setBuild(prev => ({ ...prev, ...(typeof patch === "function" ? patch(prev) : patch) }));
+    setSubmitError(null);
   }
 
   function setManualScore(key: AttrKey, text: string) {
@@ -343,24 +351,16 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     setAppliedRolledScores(true);
   }
 
-  useEffect(() => {
-    if (!bg) return;
-    setBuild(prev => {
-      const existing = prev.attunedSkills.filter(s => !BACKGROUNDS.flatMap(b => b.startingSkills).includes(s));
-      return { ...prev, attunedSkills: [...new Set([...bg.startingSkills, ...existing])] };
-    });
-  }, [build.background]);
-
-  function canAdvance(): boolean {
-    if (step === 0) {
+  function canAdvance(checkStep = step): boolean {
+    if (checkStep === 0) {
       if (!build.name.trim() || !build.affinity || !build.guild) return false;
       if (build.guild !== "None (Independent)") {
         if (guildRanks.length > 0 && !build.guildRank) return false;
       }
       return true;
     }
-    if (step === 1) return build.background !== "" && (!bg?.flexBonus || build.flexAttrBonus !== "");
-    if (step === 2) {
+    if (checkStep === 1) return build.background !== "" && (!bg?.flexBonus || build.flexAttrBonus !== "");
+    if (checkStep === 2) {
       if (attrMethod === "point-buy") {
         return Object.values(build.baseAttrs).every(v => Number.isInteger(v) && v >= POINT_BUY_MIN && v <= POINT_BUY_MAX)
           && pointsSpent(build.baseAttrs) <= POINT_BUY_TOTAL;
@@ -369,40 +369,72 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
         && (attrMethod !== "rolled" || appliedRolledScores)
         && (attrMethod !== "manual" || Object.values(scoreDrafts).every(text => parseManualScore(text) !== null));
     }
-    if (step === 3) {
+    if (checkStep === 3) {
       if (!build.primaryMode) return false;
       if (level >= 4 && (!build.secondaryModes[0] || !build.secondaryModes[1])) return false;
       if (level >= 7 && (!build.tertiaryModes[0] || !build.tertiaryModes[1])) return false;
       return true;
     }
-    if (step === 6) {
-      if (guildRankData && !build.guildFeatChoice) return false;
-      return true;
+    if (checkStep === 4) {
+      const chosen = build.selectedStrings.map(s => s.trim());
+      return chosen.every(Boolean) && chosen.length <= stringBudget && new Set(chosen).size === chosen.length;
     }
+    if (checkStep === 5) return build.attunedSkills.length === 2 &&
+      build.attunedSkills.every(s => ALL_SKILLS.some(skill => skill.name === s) && !lockedSkills.includes(s));
+    if (checkStep === 6) return (!guildRankData || guildRankData.featChoices.includes(build.guildFeatChoice)) &&
+      build.selectedFeats.length <= featSlots &&
+      build.selectedFeats.every(f => FEATS.some(feat => feat.name === f && feat.minLevel <= level));
     return true;
   }
 
   async function handleFinish() {
+    const invalidStep = STEPS.findIndex((_, index) => index < STEPS.length - 1 && !canAdvance(index));
+    if (invalidStep !== -1) {
+      setStep(invalidStep);
+      setSubmitError(invalidStep === 5 ? "Choose exactly 2 additional Attuned skills before saving." :
+        `Review the ${STEPS[invalidStep].label.toLowerCase()} choices before saving.`);
+      return;
+    }
+    if (charId && !existingChar) {
+      setSubmitError("Character is still loading. Please try again.");
+      return;
+    }
     const total = getTotalAttrs(build);
     const grd = getGuildRankData(build.guild, build.guildRank);
     const guildAttunements = grd?.attunements ?? [];
-    const allAttunedSkills = [...new Set([...build.attunedSkills, ...guildAttunements])];
+    const allAttunedSkills = [...new Set([...(bg?.startingSkills ?? []), ...guildAttunements, ...build.attunedSkills])];
     const allFeats = [...build.selectedFeats];
     if (build.guildFeatChoice && !allFeats.includes(build.guildFeatChoice)) {
       allFeats.unshift(build.guildFeatChoice);
     }
 
+    const previousData = charId ? ((existingChar?.data as Record<string, any>) ?? {}) : {};
+    const previousFeats: string[] = Array.isArray(previousData.feats) ? previousData.feats : [];
+    const assignedPreviousFeats = new Set<number>();
+    const featChoices = Object.fromEntries(allFeats.flatMap((feat, index) => {
+      const oldIndex = previousFeats.findIndex((name, i) => name === feat && !assignedPreviousFeats.has(i));
+      if (oldIndex < 0) return [];
+      assignedPreviousFeats.add(oldIndex);
+      const choice = previousData.featChoices?.[String(oldIndex)];
+      return choice === undefined ? [] : [[String(index), choice]];
+    }));
+    const vitalityMax = calcVPMax(total.res, level);
+    const tensionPool = calcThreadPool(level, total.pot, total.ctr);
     const data = {
+      ...previousData,
       avatarDataUrl: build.avatarDataUrl,
       attributeMethod: attrMethod,
       baseAttributes: build.baseAttrs,
       flexAttrBonus: build.flexAttrBonus,
       attributes: { pot: total.pot, ctr: total.ctr, res: total.res, acu: total.acu, pre: total.pre, ths: total.ths },
-      vitalityPoints: { current: calcVPMax(total.res, level), max: calcVPMax(total.res, level) },
-      tension: { current: 0, pool: calcThreadPool(level, total.pot, total.ctr), safeLimit: calcSafeLimit(level, total.pot, total.ctr) },
-      burnout: bg?.startingBurnout ?? 0,
-      fatigue: 0,
-      corruption: 0,
+      vitalityPoints: { ...previousData.vitalityPoints, current: Math.min(vitalityMax,
+        Number.isFinite(previousData.vitalityPoints?.current) ? Math.max(0, previousData.vitalityPoints.current) : vitalityMax), max: vitalityMax },
+      tension: { ...previousData.tension, current: Math.min(tensionPool,
+        Number.isFinite(previousData.tension?.current) ? Math.max(0, previousData.tension.current) : 0),
+        pool: tensionPool, safeLimit: calcSafeLimit(level, total.pot, total.ctr) },
+      burnout: previousData.burnout ?? bg?.startingBurnout ?? 0,
+      fatigue: previousData.fatigue ?? 0,
+      corruption: previousData.corruption ?? 0,
       guardRating: calcGuardRating(total.res),
       wardRating: calcWardRating(total.ctr),
       background: build.background,
@@ -410,20 +442,21 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       guildRank: build.guildRank,
       guildFeatChoice: build.guildFeatChoice,
       primaryMode: build.primaryMode,
-      secondaryMode: build.secondaryModes[0],
-      secondaryMode2: build.secondaryModes[1],
-      tertiaryMode: build.tertiaryModes[0],
-      tertiaryMode2: build.tertiaryModes[1],
+      secondaryMode: level >= 4 ? build.secondaryModes[0] : "",
+      secondaryMode2: level >= 4 ? build.secondaryModes[1] : "",
+      tertiaryMode: level >= 7 ? build.tertiaryModes[0] : "",
+      tertiaryMode2: level >= 7 ? build.tertiaryModes[1] : "",
       refinementBonus: getRefinementBonus(level),
       attunedSkills: allAttunedSkills,
       strings: build.selectedStrings.filter(s => s.trim()),
-      techniques: [],
+      techniques: previousData.techniques ?? [],
       feats: allFeats,
-      inventory: [],
+      featChoices,
+      inventory: previousData.inventory ?? [],
       signature: build.signature,
-      woundsNotes: "",
-      notes: "",
-      recoveryDiceCurrent: Math.max(0, calcMod(total.res) + 2),
+      woundsNotes: previousData.woundsNotes ?? "",
+      notes: previousData.notes ?? "",
+      recoveryDiceCurrent: previousData.recoveryDiceCurrent ?? Math.max(0, calcMod(total.res) + 2),
     };
 
     setSubmitError(null);
@@ -431,7 +464,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       updateMutation.mutate(
         { id: parseInt(charId), data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, data, expectedVersion: existingChar?.version } },
         {
-          onSuccess: () => setLocation(`/characters/${charId}`),
+          onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: getGetCharacterQueryKey(parseInt(charId)) });
+            void queryClient.invalidateQueries({ queryKey: getListCharactersQueryKey() });
+            setLocation(`/characters/${charId}`);
+          },
           onError: (err: any) => setSubmitError(err?.message ?? "Failed to save. Please try again."),
         },
       );
@@ -439,7 +476,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       createMutation.mutate(
         { data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, isDraft: false, data } },
         {
-          onSuccess: (char) => setLocation(`/characters/${char.id}`),
+          onSuccess: (char) => {
+            void queryClient.invalidateQueries({ queryKey: getListCharactersQueryKey() });
+            setLocation(`/characters/${char.id}`);
+          },
           onError: (err: any) => setSubmitError(err?.message ?? "Failed to create character. Please try again."),
         },
       );
@@ -453,6 +493,14 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const bgStartingSkills = bg?.startingSkills ?? [];
   const guildAttunements = guildRankData?.attunements ?? [];
   const lockedSkills = [...new Set([...bgStartingSkills, ...guildAttunements])];
+
+  if (charId && !populated) {
+    return (
+      <div className="tc-page bg-background p-8 text-center font-mono text-sm text-muted-foreground">
+        {characterLoadError ? "Character could not be loaded. Return to your characters and try again." : "Loading character choices…"}
+      </div>
+    );
+  }
 
   return (
     <div className="tc-page bg-background">
@@ -585,7 +633,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
               {build.guild && build.guild !== "None (Independent)" && guildRanks.length > 0 && (
                 <Field label="Guild Rank / Title" hint="Your current standing within the guild.">
-                  <Select value={build.guildRank} onValueChange={v => updateBuild({ guildRank: v, guildFeatChoice: "" })}>
+                  <Select value={build.guildRank} onValueChange={v => updateBuild(prev => ({
+                    guildRank: v, guildFeatChoice: "",
+                    attunedSkills: prev.attunedSkills.filter(s => !getGuildRankData(prev.guild, v)?.attunements.includes(s)),
+                  }))}>
                     <SelectTrigger className="font-mono bg-background border-border/60">
                       <SelectValue placeholder="Select your rank..." />
                     </SelectTrigger>
@@ -644,7 +695,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
             <Section title="Background" subtitle="Where did you come from? This shapes your starting skills and attributes.">
               <div className="space-y-3">
                 {BACKGROUNDS.map(b => (
-                  <button key={b.name} type="button" onClick={() => updateBuild({ background: b.name, flexAttrBonus: "" })}
+                  <button key={b.name} type="button" onClick={() => updateBuild(prev => ({
+                    background: b.name, flexAttrBonus: "",
+                    attunedSkills: prev.attunedSkills.filter(s => !b.startingSkills.includes(s)),
+                  }))}
                     className={cn(
                       "w-full text-left p-4 border transition-all",
                       build.background === b.name ? "border-primary bg-primary/8 shadow-[0_0_12px_rgba(180,120,60,0.15)]" : "border-border hover:border-primary/40 hover:bg-card/50"
@@ -931,11 +985,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                   {ALL_MODES.map(mode => (
                     <button key={mode.name} type="button"
                       onClick={() => {
-                        const newSecondary: [string, string] = [
-                          build.secondaryModes[0] === mode.name ? "" : build.secondaryModes[0],
-                          build.secondaryModes[1] === mode.name ? "" : build.secondaryModes[1],
-                        ];
-                        updateBuild({ primaryMode: mode.name, secondaryModes: newSecondary });
+                        updateBuild(prev => ({
+                          primaryMode: mode.name,
+                          secondaryModes: prev.secondaryModes.map(m => m === mode.name ? "" : m) as [string, string],
+                          tertiaryModes: prev.tertiaryModes.map(m => m === mode.name ? "" : m) as [string, string],
+                        }));
                       }}
                       className={cn(
                         "w-full text-left p-4 border transition-all",
@@ -969,13 +1023,15 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                           return (
                             <button key={name} type="button" disabled={takenByOther}
                               onClick={() => {
-                                const next: [string, string] = [...build.secondaryModes] as [string, string];
-                                next[idx] = selected ? "" : name;
-                                const newTertiary: [string, string] = [
-                                  next.includes(build.tertiaryModes[0]) ? "" : build.tertiaryModes[0],
-                                  next.includes(build.tertiaryModes[1]) ? "" : build.tertiaryModes[1],
-                                ];
-                                updateBuild({ secondaryModes: next, tertiaryModes: newTertiary });
+                                updateBuild(prev => {
+                                  if (prev.primaryMode === name || prev.secondaryModes[otherIdx] === name) return {};
+                                  const next: [string, string] = [...prev.secondaryModes];
+                                  next[idx] = next[idx] === name ? "" : name;
+                                  return {
+                                    secondaryModes: next,
+                                    tertiaryModes: prev.tertiaryModes.map(m => next.includes(m) ? "" : m) as [string, string],
+                                  };
+                                });
                               }}
                               className={cn("p-2 text-xs font-mono border text-left transition-colors",
                                 selected ? "border-chart-2 bg-chart-2/10 text-chart-2" :
@@ -1007,9 +1063,12 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                           return (
                             <button key={name} type="button" disabled={takenByOther}
                               onClick={() => {
-                                const next: [string, string] = [...build.tertiaryModes] as [string, string];
-                                next[idx] = selected ? "" : name;
-                                updateBuild({ tertiaryModes: next });
+                                updateBuild(prev => {
+                                  if (prev.primaryMode === name || prev.secondaryModes.includes(name) || prev.tertiaryModes[otherIdx] === name) return {};
+                                  const next: [string, string] = [...prev.tertiaryModes];
+                                  next[idx] = next[idx] === name ? "" : name;
+                                  return { tertiaryModes: next };
+                                });
                               }}
                               className={cn("p-2 text-xs font-mono border text-left transition-colors",
                                 selected ? "border-destructive/50 bg-destructive/10 text-destructive" :
@@ -1049,8 +1108,12 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                     return (
                       <button key={s.id} type="button"
                         onClick={() => {
-                          if (selected) updateBuild({ selectedStrings: build.selectedStrings.filter(x => x !== s.shortName) });
-                          else if (canAdd) updateBuild({ selectedStrings: [...build.selectedStrings, s.shortName] });
+                          updateBuild(prev => ({
+                            selectedStrings: prev.selectedStrings.includes(s.shortName)
+                              ? prev.selectedStrings.filter(x => x !== s.shortName)
+                              : prev.selectedStrings.filter(x => x.trim()).length < getStringBudget(prev.level)
+                                ? [...prev.selectedStrings, s.shortName] : prev.selectedStrings,
+                          }));
                         }}
                         disabled={!selected && !canAdd}
                         className={cn("w-full text-left p-3 border font-mono text-sm transition-colors",
@@ -1076,18 +1139,20 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                       <input className="flex-1 bg-background border border-border px-3 py-1.5 font-mono text-sm focus:outline-none focus:border-primary"
                         value={sName}
                         onChange={e => {
-                          const next = [...build.selectedStrings];
-                          next[i] = e.target.value;
-                          updateBuild({ selectedStrings: next });
+                          const value = e.target.value;
+                          updateBuild(prev => ({ selectedStrings: prev.selectedStrings.map((s, j) => j === i ? value : s) }));
                         }}
                         placeholder="String name..."
                       />
-                      <button type="button" onClick={() => updateBuild({ selectedStrings: build.selectedStrings.filter((_, j) => j !== i) })}
+                      <button type="button" onClick={() => updateBuild(prev => ({ selectedStrings: prev.selectedStrings.filter((_, j) => j !== i) }))}
                         className="text-muted-foreground/50 hover:text-destructive font-mono text-sm px-2 transition-colors">×</button>
                     </div>
                   ))}
                   {build.selectedStrings.length < stringBudget && (
-                    <button type="button" onClick={() => updateBuild({ selectedStrings: [...build.selectedStrings, ""] })}
+                    <button type="button" onClick={() => updateBuild(prev => ({
+                      selectedStrings: prev.selectedStrings.length < getStringBudget(prev.level)
+                        ? [...prev.selectedStrings, ""] : prev.selectedStrings,
+                    }))}
                       className="w-full py-2 text-xs font-mono border border-dashed border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors">
                       + ADD STRING ({build.selectedStrings.length}/{stringBudget})
                     </button>
@@ -1099,7 +1164,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
           {/* STEP 5: SKILLS */}
           {step === 5 && (
-            <Section title="Skills" subtitle="Your background and guild rank grant starting skills. Choose 2 additional Attuned skills.">
+            <Section title="Skills" subtitle="Your background and guild rank grant starting skills automatically. Choose 2 more from the available skills below.">
               <div className="space-y-2 mb-4">
                 {bgStartingSkills.length > 0 && (
                   <div className="p-3 bg-muted/20 border border-border/50">
@@ -1124,29 +1189,38 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
               </div>
 
               <p className="text-xs font-mono text-muted-foreground mb-3">
-                Additional attuned: {Math.max(0, build.attunedSkills.filter(s => !lockedSkills.includes(s)).length)}/2 chosen
+                Additional attuned: {build.attunedSkills.length}/2 chosen
               </p>
+              {build.attunedSkills.length !== 2 && (
+                <p className="text-[10px] font-mono text-amber-500 mb-3">
+                  Choose {2 - build.attunedSkills.length} more available skill{build.attunedSkills.length === 1 ? "" : "s"} to continue. Gold skills are already granted.
+                </p>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ALL_SKILLS.map(skill => {
                   const isLocked = lockedSkills.includes(skill.name);
                   const isAttuned = build.attunedSkills.includes(skill.name);
-                  const extraCount = build.attunedSkills.filter(s => !lockedSkills.includes(s)).length;
                   return (
                     <button key={skill.name} type="button"
                       onClick={() => {
                         if (isLocked) return;
-                        if (isAttuned) updateBuild({ attunedSkills: build.attunedSkills.filter(s => s !== skill.name) });
-                        else if (extraCount < 2) updateBuild({ attunedSkills: [...build.attunedSkills, skill.name] });
+                        updateBuild(prev => ({
+                          attunedSkills: prev.attunedSkills.includes(skill.name)
+                            ? prev.attunedSkills.filter(s => s !== skill.name)
+                            : prev.attunedSkills.length < 2 ? [...prev.attunedSkills, skill.name] : prev.attunedSkills,
+                        }));
                       }}
                       disabled={isLocked}
+                      aria-pressed={isAttuned || isLocked}
+                      title={isLocked ? "Already granted by your background or guild rank" : undefined}
                       className={cn("flex items-center justify-between p-3 border text-left font-mono text-sm transition-colors",
                         isLocked ? "border-primary/40 bg-primary/5 text-primary cursor-not-allowed" :
                         isAttuned ? "border-chart-2 bg-chart-2/10 text-chart-2" :
                         "border-border text-muted-foreground hover:border-primary/40"
                       )}>
                       <span>{skill.name}</span>
-                      <span className="text-[10px] opacity-60">{skill.attr.toUpperCase()}</span>
+                      <span className="text-[10px] opacity-60">{isLocked ? "GRANTED" : skill.attr.toUpperCase()}</span>
                     </button>
                   );
                 })}
@@ -1209,7 +1283,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                               <div className="font-mono text-sm text-foreground">{featName}</div>
                               {featDef && <p className="text-xs font-mono text-muted-foreground mt-1">{featDef.desc}</p>}
                             </div>
-                            <button type="button" onClick={() => updateBuild({ selectedFeats: build.selectedFeats.filter(f => f !== featName) })}
+                            <button type="button" onClick={() => updateBuild(prev => ({ selectedFeats: prev.selectedFeats.filter(f => f !== featName) }))}
                               className="text-xs font-mono text-muted-foreground/50 hover:text-destructive transition-colors">× Remove</button>
                           </div>
                         );
@@ -1229,7 +1303,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                             <div className="space-y-2">
                               {catFeats.map(feat => (
                                 <button key={feat.name} type="button"
-                                  onClick={() => updateBuild({ selectedFeats: [...build.selectedFeats, feat.name] })}
+                                  onClick={() => updateBuild(prev => ({
+                                    selectedFeats: prev.selectedFeats.includes(feat.name) || prev.selectedFeats.length >= getFeatSlots(prev.level)
+                                      ? prev.selectedFeats : [...prev.selectedFeats, feat.name],
+                                  }))}
                                   className="w-full text-left p-3 border border-border hover:border-primary/50 bg-background transition-colors">
                                   <div className="flex justify-between items-baseline mb-1">
                                     <span className="font-mono text-sm text-foreground">{feat.name}</span>
@@ -1311,7 +1388,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                 <div className="border-t border-border/40 pt-4">
                   <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Attuned Skills</p>
                   <div className="flex flex-wrap gap-1">
-                    {[...new Set([...build.attunedSkills, ...guildAttunements])].map(s => (
+                    {[...new Set([...bgStartingSkills, ...guildAttunements, ...build.attunedSkills])].map(s => (
                       <span key={s} className="text-xs bg-muted text-muted-foreground px-2 py-0.5">{s}</span>
                     ))}
                   </div>

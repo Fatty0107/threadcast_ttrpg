@@ -1,4 +1,5 @@
 import type { AffinityString } from "./affinity-data";
+import { getHandoutStringLevel } from "@workspace/casting-rules";
 
 export type CreationString = Pick<AffinityString, "id" | "shortName" | "flavor" | "checkAttr">;
 
@@ -144,4 +145,26 @@ export const CREATION_AFFINITIES = [
 
 export function getCreationAffinity(name: string) {
   return CREATION_AFFINITIES.find(affinity => affinity.name === name);
+}
+
+// The handouts supply both a distinct scope for each String and a PL table.
+// Build the casting view from the same numerical catalog used by the API.
+export function getHandoutString(affinity: string, name: string): AffinityString | undefined {
+  const entry = getCreationAffinity(affinity)?.strings.find(string =>
+    string.shortName.toLowerCase() === name.trim().toLowerCase().replace(/^the\s+/, ""));
+  if (!entry) return undefined;
+  const levels = Array.from({ length: 5 }, (_, index) => {
+    const pl = index + 1;
+    const level = getHandoutStringLevel(affinity, entry.shortName, pl);
+    if (!level) throw new Error(`Missing handout table for ${affinity} / ${entry.shortName} / PL ${pl}`);
+    return { pl, cost: level.cost, dc: level.dc, effect: `See the ${affinity} handout for this String's PL ${pl} effect.` };
+  });
+  return {
+    ...entry,
+    name: `The ${entry.shortName}`,
+    quote: "",
+    mishap: "Roll on the core Mishap Table.",
+    snapback: "Roll on the core Snapback Table.",
+    levels,
+  };
 }
