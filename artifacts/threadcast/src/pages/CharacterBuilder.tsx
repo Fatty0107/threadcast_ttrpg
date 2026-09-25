@@ -26,6 +26,11 @@ const STEPS = [
   { id: "review",     label: "Review" },
 ];
 
+const POINT_BUY_TOTAL = 78;
+const POINT_BUY_MIN = 8;
+const POINT_BUY_MAX = 16;
+type AttributeMethod = "point-buy" | "manual" | "rolled";
+
 interface BuildState {
   name: string;
   avatarDataUrl: string;
@@ -47,6 +52,10 @@ interface BuildState {
 }
 
 const DEFAULT_BASE: Attributes = { pot: 10, ctr: 10, res: 10, acu: 10, pre: 10, ths: 10 };
+
+function pointsSpent(attrs: Attributes): number {
+  return Object.values(attrs).reduce((sum, score) => sum + score, 0);
+}
 
 const DEFAULT_BUILD: BuildState = {
   name: "",
@@ -187,7 +196,9 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [populated, setPopulated] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [attrMethod, setAttrMethod] = useState<"manual" | "rolled">("manual");
+  const [attrMethod, setAttrMethod] = useState<AttributeMethod>("manual");
+  const pointBuyScoresRef = useRef<Attributes>({ ...DEFAULT_BASE });
+  const unrestrictedScoresRef = useRef<Attributes>({ ...DEFAULT_BASE });
   const [scoreDrafts, setScoreDrafts] = useState<Partial<Record<AttrKey, string>>>({});
   const [rolledGroups, setRolledGroups] = useState<{ slots: RolledSlot[] }[]>([]);
   const [appliedRolledScores, setAppliedRolledScores] = useState(false);
@@ -195,6 +206,19 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   useEffect(() => {
     if (!existingChar || populated) return;
     const data = (existingChar.data as any) || {};
+    const savedAttrs = data.baseAttributes || data.attributes;
+    const baseAttrs: Attributes = savedAttrs ? {
+      pot: savedAttrs.pot ?? 10, ctr: savedAttrs.ctr ?? 10,
+      res: savedAttrs.res ?? 10, acu: savedAttrs.acu ?? 10,
+      pre: savedAttrs.pre ?? 10, ths: savedAttrs.ths ?? 10,
+    } : { ...DEFAULT_BASE };
+    const savedMethod: AttributeMethod = data.attributeMethod === "point-buy" || data.attributeMethod === "rolled"
+      ? data.attributeMethod : "manual";
+    pointBuyScoresRef.current = Object.values(baseAttrs).every(v => v >= POINT_BUY_MIN && v <= POINT_BUY_MAX)
+      && pointsSpent(baseAttrs) <= POINT_BUY_TOTAL ? { ...baseAttrs } : { ...DEFAULT_BASE };
+    unrestrictedScoresRef.current = { ...baseAttrs };
+    setAttrMethod(savedMethod);
+    setAppliedRolledScores(savedMethod === "rolled");
     setBuild({
       name: existingChar.name || "",
       avatarDataUrl: data.avatarDataUrl || "",
@@ -205,14 +229,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       guildFeatChoice: data.guildFeatChoice || "",
       background: data.background || "",
       flexAttrBonus: data.flexAttrBonus || "",
-      baseAttrs: (data.baseAttributes || data.attributes) ? {
-        pot: (data.baseAttributes || data.attributes).pot ?? 10,
-        ctr: (data.baseAttributes || data.attributes).ctr ?? 10,
-        res: (data.baseAttributes || data.attributes).res ?? 10,
-        acu: (data.baseAttributes || data.attributes).acu ?? 10,
-        pre: (data.baseAttributes || data.attributes).pre ?? 10,
-        ths: (data.baseAttributes || data.attributes).ths ?? 10,
-      } : DEFAULT_BASE,
+      baseAttrs,
       primaryMode: data.primaryMode || existingChar.mode || "",
       secondaryModes: [data.secondaryMode || "", data.secondaryMode2 || ""],
       tertiaryModes: [data.tertiaryMode || "", data.tertiaryMode2 || ""],
@@ -250,15 +267,28 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     setScoreDrafts(prev => ({ ...prev, [key]: text }));
     const score = parseManualScore(text);
     if (score !== null) {
-      setBuild(prev => ({ ...prev, baseAttrs: { ...prev.baseAttrs, [key]: score } }));
+      const next = { ...unrestrictedScoresRef.current, [key]: score };
+      unrestrictedScoresRef.current = next;
+      updateBuild({ baseAttrs: next });
+      setAppliedRolledScores(false);
     }
   }
 
-  function switchAttrMethod(method: "manual" | "rolled") {
+  function setPointBuyScore(key: AttrKey, value: number) {
+    if (value < POINT_BUY_MIN || value > POINT_BUY_MAX) return;
+    const next = { ...pointBuyScoresRef.current, [key]: value };
+    if (pointsSpent(next) > POINT_BUY_TOTAL) return;
+    pointBuyScoresRef.current = next;
+    updateBuild({ baseAttrs: next });
+  }
+
+  function switchAttrMethod(method: AttributeMethod) {
     if (method === attrMethod) return;
+    if (attrMethod === "point-buy") pointBuyScoresRef.current = { ...build.baseAttrs };
+    else unrestrictedScoresRef.current = { ...build.baseAttrs };
     setAttrMethod(method);
     setScoreDrafts({});
-    if (method === "rolled") setAppliedRolledScores(false);
+    updateBuild({ baseAttrs: { ...(method === "point-buy" ? pointBuyScoresRef.current : unrestrictedScoresRef.current) } });
   }
 
   function addRolledGroup() {
@@ -304,10 +334,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     const group = rolledGroups[gi];
     if (!group || !group.slots.every(s => s.dice.length === 4 && s.assignedTo)
       || new Set(group.slots.map(s => s.assignedTo)).size !== ATTRIBUTE_DEFS.length) return;
-    const next = { ...build.baseAttrs };
+    const next = { ...unrestrictedScoresRef.current };
     group.slots.forEach(s => {
       if (s.assignedTo && s.value > 0) next[s.assignedTo] = s.value;
     });
+    unrestrictedScoresRef.current = next;
     updateBuild({ baseAttrs: next });
     setAppliedRolledScores(true);
   }
@@ -330,6 +361,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     }
     if (step === 1) return build.background !== "" && (!bg?.flexBonus || build.flexAttrBonus !== "");
     if (step === 2) {
+      if (attrMethod === "point-buy") {
+        return Object.values(build.baseAttrs).every(v => Number.isInteger(v) && v >= POINT_BUY_MIN && v <= POINT_BUY_MAX)
+          && pointsSpent(build.baseAttrs) <= POINT_BUY_TOTAL;
+      }
       return Object.values(build.baseAttrs).every(v => Number.isSafeInteger(v) && v >= 1)
         && (attrMethod !== "rolled" || appliedRolledScores)
         && (attrMethod !== "manual" || Object.values(scoreDrafts).every(text => parseManualScore(text) !== null));
@@ -359,6 +394,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
     const data = {
       avatarDataUrl: build.avatarDataUrl,
+      attributeMethod: attrMethod,
       baseAttributes: build.baseAttrs,
       flexAttrBonus: build.flexAttrBonus,
       attributes: { pot: total.pot, ctr: total.ctr, res: total.res, acu: total.acu, pre: total.pre, ths: total.ths },
@@ -653,33 +689,37 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
           {step === 2 && (
             <Section
               title="Attributes"
-              subtitle={attrMethod === "manual"
-                ? "Enter your own whole-number base scores. There is no shared point total or 78-point cap; background and guild bonuses are added afterward."
-                : "Roll four six-sided dice for each score, drop the lowest die, and add the other three (3–18 per roll). Assign the six results, then apply them. There is no total cap."}
+              subtitle={attrMethod === "point-buy"
+                ? "Spend up to 78 points across six base scores (8–16 each). Background and guild bonuses are added afterward."
+                : attrMethod === "manual"
+                  ? "Enter your own whole-number base scores. There is no shared point total or 78-point cap; background and guild bonuses are added afterward."
+                  : "Roll four six-sided dice for each score, drop the lowest die, and add the other three (3–18 per roll). Assign the six results, then apply them. There is no total cap."}
             >
               {/* Method selector */}
-              <div className="flex gap-2 mb-5">
-                {(["manual", "rolled"] as const).map(m => (
+              <div className="flex flex-wrap gap-2 mb-5">
+                {(["point-buy", "manual", "rolled"] as const).map(m => (
                   <button key={m} type="button" onClick={() => switchAttrMethod(m)}
                     aria-pressed={attrMethod === m}
                     className={cn("px-3 py-1.5 text-xs font-mono border transition-colors",
                       attrMethod === m ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"
                     )}>
-                    {m === "manual" ? "ENTER SCORES" : "ROLL 4D6"}
+                    {m === "point-buy" ? "POINT-BUY (78)" : m === "manual" ? "ENTER SCORES" : "ROLL 4D6"}
                   </button>
                 ))}
               </div>
 
-              {attrMethod === "manual" ? (
+              {attrMethod !== "rolled" ? (
                 <>
                   <div className="inline-block px-3 py-1 font-mono text-xs mb-4 border border-border text-muted-foreground">
-                    Base score total: {Object.values(build.baseAttrs).reduce((sum, value) => sum + value, 0)} · No point cap
+                    {attrMethod === "point-buy"
+                      ? `${POINT_BUY_TOTAL - pointsSpent(build.baseAttrs)} points remaining of ${POINT_BUY_TOTAL}`
+                      : `Base score total: ${pointsSpent(build.baseAttrs)} · No point cap`}
                   </div>
                   <div className="space-y-2">
                     {ATTRIBUTE_DEFS.map(attr => {
                       const base = build.baseAttrs[attr.key as AttrKey];
                       const draft = scoreDrafts[attr.key as AttrKey];
-                      const invalid = draft !== undefined && parseManualScore(draft) === null;
+                      const invalid = attrMethod === "manual" && draft !== undefined && parseManualScore(draft) === null;
                       const bgBonus = bg?.attrBonuses[attr.key as AttrKey] ?? 0;
                       const flexBonus = build.flexAttrBonus === attr.key ? 1 : 0;
                       const rankBonus = guildRankData?.statBonuses[attr.key as AttrKey] ?? 0;
@@ -695,31 +735,44 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                             </div>
                             <div className="text-[10px] text-muted-foreground/60">{attr.label}</div>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <input
-                              type="number"
-                              min={1}
-                              step={1}
-                              inputMode="numeric"
-                              aria-label={`${attr.label} base score`}
-                              aria-invalid={invalid}
-                              data-testid={`input-base-${attr.key}`}
-                              value={draft ?? base}
-                              onChange={event => setManualScore(attr.key as AttrKey, event.target.value)}
-                              onBlur={() => {
-                                if (!invalid) {
-                                  setScoreDrafts(prev => {
-                                    const next = { ...prev };
-                                    delete next[attr.key as AttrKey];
-                                    return next;
-                                  });
-                                }
-                              }}
-                              className={cn("w-20 h-9 px-2 text-center font-mono text-lg bg-background border focus:outline-none focus:border-primary",
-                                invalid ? "border-destructive" : "border-border")}
-                            />
-                            {invalid && <span className="text-[10px] text-destructive font-mono">Whole number, 1 or more</span>}
-                          </div>
+                          {attrMethod === "point-buy" ? (
+                            <div className="flex items-center gap-2">
+                              <button type="button" onClick={() => setPointBuyScore(attr.key as AttrKey, base - 1)}
+                                disabled={base <= POINT_BUY_MIN} aria-label={`Decrease ${attr.label}`}
+                                className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
+                              <span className="w-8 text-center font-mono text-lg">{base}</span>
+                              <button type="button" onClick={() => setPointBuyScore(attr.key as AttrKey, base + 1)}
+                                disabled={base >= POINT_BUY_MAX || pointsSpent(build.baseAttrs) >= POINT_BUY_TOTAL}
+                                aria-label={`Increase ${attr.label}`}
+                                className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <input
+                                type="number"
+                                min={1}
+                                step={1}
+                                inputMode="numeric"
+                                aria-label={`${attr.label} base score`}
+                                aria-invalid={invalid}
+                                data-testid={`input-base-${attr.key}`}
+                                value={draft ?? base}
+                                onChange={event => setManualScore(attr.key as AttrKey, event.target.value)}
+                                onBlur={() => {
+                                  if (!invalid) {
+                                    setScoreDrafts(prev => {
+                                      const next = { ...prev };
+                                      delete next[attr.key as AttrKey];
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                className={cn("w-20 h-9 px-2 text-center font-mono text-lg bg-background border focus:outline-none focus:border-primary",
+                                  invalid ? "border-destructive" : "border-border")}
+                              />
+                              {invalid && <span className="text-[10px] text-destructive font-mono">Whole number, 1 or more</span>}
+                            </div>
+                          )}
                           {totalBonus > 0 && (
                             <div className="flex gap-1">
                               {bgBonus + flexBonus > 0 && <span className="text-[10px] font-mono text-chart-2">+{bgBonus + flexBonus} bg</span>}
