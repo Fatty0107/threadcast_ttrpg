@@ -1,0 +1,62 @@
+2026-09-25T15:11:24.644801599Z ✓ 1878 modules transformed.
+2026-09-25T15:11:25.325004159Z rendering chunks...
+2026-09-25T15:11:25.341818555Z computing gzip size...
+2026-09-25T15:11:25.382675268Z dist/public/index.html                     1.61 kB │ gzip:   0.62 kB
+2026-09-25T15:11:25.382723331Z dist/public/assets/index-DVnSzY5U.css    170.83 kB │ gzip:  27.91 kB
+2026-09-25T15:11:25.382740897Z dist/public/assets/index-BPwxNrud.js   1,448.10 kB │ gzip: 405.37 kB
+2026-09-25T15:11:25.382780511Z 
+2026-09-25T15:11:25.382783035Z (!) Some chunks are larger than 500 kB after minification. Consider:
+2026-09-25T15:11:25.382784887Z - Using dynamic import() to code-split the application
+2026-09-25T15:11:25.382787226Z - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+2026-09-25T15:11:25.382788976Z - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+2026-09-25T15:11:25.38305849Z ✓ built in 4.34s
+2026-09-25T15:11:25.871129746Z 
+2026-09-25T15:11:25.871151247Z > @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+2026-09-25T15:11:25.871154021Z > node ./build.mjs
+2026-09-25T15:11:25.871155273Z 
+2026-09-25T15:11:26.450487435Z 
+2026-09-25T15:11:26.450505643Z   dist/index.mjs                       2.3mb ⚠️
+2026-09-25T15:11:26.450508034Z   dist/pino-worker.mjs               153.4kb
+2026-09-25T15:11:26.450509401Z   dist/pino-file.mjs                 142.1kb
+2026-09-25T15:11:26.450510837Z   dist/pino-pretty.mjs               114.6kb
+2026-09-25T15:11:26.450512246Z   dist/thread-stream-worker.mjs        7.3kb
+2026-09-25T15:11:26.450521942Z   dist/index.mjs.map                   3.9mb
+2026-09-25T15:11:26.450523443Z   dist/pino-worker.mjs.map           256.9kb
+2026-09-25T15:11:26.450524759Z   dist/pino-file.mjs.map             229.0kb
+2026-09-25T15:11:26.450526137Z   dist/pino-pretty.mjs.map           204.0kb
+2026-09-25T15:11:26.450527487Z   dist/thread-stream-worker.mjs.map   12.0kb
+2026-09-25T15:11:26.450528637Z 
+2026-09-25T15:11:26.450530328Z ⚡ Done in 528ms
+2026-09-25T15:11:27.017150955Z ==> Uploading build...
+2026-09-25T15:11:39.903733704Z ==> Uploaded in 9.1s. Compression took 3.8s
+2026-09-25T15:11:39.90886698Z ==> Build successful 🎉
+2026-09-25T15:11:41.247454662Z ==> Deploying...
+2026-09-25T15:11:41.427510614Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-09-25T15:12:26.748003411Z ==> Running 'pnpm --filter @workspace/db run push && node --enable-source-maps artifacts/api-server/dist/index.mjs'
+2026-09-25T15:12:31.63979253Z 
+2026-09-25T15:12:31.63982551Z > @workspace/db@0.0.0 push /opt/render/project/src/lib/db
+2026-09-25T15:12:31.63983106Z > drizzle-kit push --verbose --config ./drizzle.config.ts
+2026-09-25T15:12:31.639834031Z 
+2026-09-25T15:12:33.040874533Z Reading config file '/opt/render/project/src/lib/db/drizzle.config.ts'
+2026-09-25T15:12:40.445458391Z Using 'pg' driver for database querying
+2026-09-25T15:12:46.038065847Z [⣷] Pulling schema from database...
+2026-09-25T15:12:46.064189639Z [⣷] Pulling schema from database...
+2026-09-25T15:12:46.337942517Z /opt/render/project/src/lib/db:
+2026-09-25T15:12:46.337973438Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/db@0.0.0 push: `drizzle-kit push --verbose --config ./drizzle.config.ts`
+2026-09-25T15:12:46.337980538Z Exit status 1
+2026-09-25T15:12:46.570497873Z ==> No open ports detected, continuing to scan...
+2026-09-25T15:12:46.70393334Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2026-09-25T15:12:48.305680787Z ==> Exited with status 1
+2026-09-25T15:12:48.309655736Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2026-09-25T15:12:53.281448957Z ==> Running 'pnpm --filter @workspace/db run push && node --enable-source-maps artifacts/api-server/dist/index.mjs'
+2026-09-25T15:12:56.982870729Z 
+2026-09-25T15:12:56.98291154Z > @workspace/db@0.0.0 push /opt/render/project/src/lib/db
+2026-09-25T15:12:56.98291834Z > drizzle-kit push --verbose --config ./drizzle.config.ts
+2026-09-25T15:12:56.98292172Z 
+2026-09-25T15:12:58.470772149Z Reading config file '/opt/render/project/src/lib/db/drizzle.config.ts'
+2026-09-25T15:13:05.367914111Z Using 'pg' driver for database querying
+2026-09-25T15:13:10.373943578Z [⣷] Pulling schema from database...
+2026-09-25T15:13:10.377073924Z [⣷] Pulling schema from database...
+2026-09-25T15:13:10.868328571Z /opt/render/project/src/lib/db:
+2026-09-25T15:13:10.868361942Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/db@0.0.0 push: `drizzle-kit push --verbose --config ./drizzle.config.ts`
+2026-09-25T15:13:10.868411033Z Exit status 1

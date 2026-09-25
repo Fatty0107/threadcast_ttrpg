@@ -14,3 +14,4 @@
 - [PDF affinity scope](pdf-affinity-scope.md) — the seven uploaded affinity handouts supply creation choices and general String purposes, not approved casting mechanics.
 - [Manual Vite build environment](manual-vite-build-environment.md) — a shell build does not inherit the web workflow's injected routing variables; supply them explicitly.
 - [WebGL browser previews](webgl-browser-previews.md) — automated previews may lack a WebGL context; keep a styled, useful fallback rather than treating this as an app crash.
+- [Render start-command precedence](render-start-command.md) — an existing Render service may keep its dashboard command despite render.yaml changes; verify the command in deploy logs.
