@@ -105,6 +105,7 @@ export function DiceStage({
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     renderer.domElement.style.display = "block";
+    renderer.domElement.dataset.diceRenderer = "webgl";
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -229,6 +230,15 @@ export function DiceStage({
           ? .23 + Math.sin(now * .012) * .12 : .19;
         item.ring.scale.setScalar(runtime.phase === "rolling" && animation === "ritual" && !reducedMotion ? 1.12 : 1);
       });
+      if (import.meta.env.DEV) {
+        // Browser regressions can verify actual Three.js poses, not a canvas fallback.
+        renderer.domElement.dataset.dicePose = JSON.stringify(items.map((item, index) => ({
+          position: item.group.position.toArray(),
+          quaternion: item.group.quaternion.toArray(),
+          facing: item.faces[Math.max(0, Math.min(item.faces.length - 1, (valuesRef.current[index] ?? 1) - 1))]
+            .normal.clone().applyQuaternion(item.group.quaternion).dot(camera.position.clone().normalize()),
+        })));
+      }
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
