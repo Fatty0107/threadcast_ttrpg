@@ -96,7 +96,9 @@ router.post("/rolls", async (req, res): Promise<void> => {
   if (input.characterId !== undefined) {
     const [character] = await db.select({ name: charactersTable.name })
       .from(charactersTable)
-      .where(and(eq(charactersTable.id, input.characterId), eq(charactersTable.userId, user.id)))
+      .where(user.role === "weavekeeper"
+        ? eq(charactersTable.id, input.characterId)
+        : and(eq(charactersTable.id, input.characterId), eq(charactersTable.userId, user.id)))
       .limit(1);
     if (!character) {
       res.status(403).json({ error: "Character unavailable for this roll" });
