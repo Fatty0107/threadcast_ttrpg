@@ -10,6 +10,7 @@ import {
 } from "@/lib/ttrpg-data";
 import { useHomebrew } from "@/contexts/HomebrewContext";
 import { CREATION_AFFINITIES, getCreationAffinity } from "@/lib/creation-affinities";
+import { rollDie } from "@/lib/dice-style";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap, Shield, BookOpen, Star, Sparkles, ChevronDown, Check, AlertCircle } from "lucide-react";
@@ -24,10 +25,6 @@ const STEPS = [
   { id: "feats",      label: "Feats" },
   { id: "review",     label: "Review" },
 ];
-
-const POINT_BUY_TOTAL = 78;
-const ATTR_MIN = 8;
-const ATTR_MAX = 16;
 
 interface BuildState {
   name: string;
@@ -70,10 +67,6 @@ const DEFAULT_BUILD: BuildState = {
   selectedFeats: [],
   signature: "",
 };
-
-function pointsSpent(attrs: Attributes): number {
-  return (Object.values(attrs) as number[]).reduce((a, b) => a + b, 0);
-}
 
 function getTotalAttrs(state: BuildState): Attributes {
   const bg = BACKGROUNDS.find(b => b.name === state.background);
@@ -164,9 +157,15 @@ interface RolledSlot {
 }
 
 function rollOneSlot(): RolledSlot {
-  const dice = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+  const dice = Array.from({ length: 4 }, () => rollDie(6));
   const sorted = [...dice].sort((a, b) => a - b);
   return { dice, value: sorted[1] + sorted[2] + sorted[3], assignedTo: "" };
+}
+
+function parseManualScore(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null;
+  const score = Number(value);
+  return Number.isSafeInteger(score) && score >= 1 ? score : null;
 }
 
 function emptySlot(): RolledSlot {
@@ -188,8 +187,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [populated, setPopulated] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [attrMethod, setAttrMethod] = useState<"point-buy" | "rolled">("point-buy");
+  const [attrMethod, setAttrMethod] = useState<"manual" | "rolled">("manual");
+  const [scoreDrafts, setScoreDrafts] = useState<Partial<Record<AttrKey, string>>>({});
   const [rolledGroups, setRolledGroups] = useState<{ slots: RolledSlot[] }[]>([]);
+  const [appliedRolledScores, setAppliedRolledScores] = useState(false);
 
   useEffect(() => {
     if (!existingChar || populated) return;
@@ -203,11 +204,14 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       guildRank: data.guildRank || "",
       guildFeatChoice: data.guildFeatChoice || "",
       background: data.background || "",
-      flexAttrBonus: "",
-      baseAttrs: data.attributes ? {
-        pot: data.attributes.pot || 10, ctr: data.attributes.ctr || 10,
-        res: data.attributes.res || 10, acu: data.attributes.acu || 10,
-        pre: data.attributes.pre || 10, ths: data.attributes.ths || 10,
+      flexAttrBonus: data.flexAttrBonus || "",
+      baseAttrs: (data.baseAttributes || data.attributes) ? {
+        pot: (data.baseAttributes || data.attributes).pot ?? 10,
+        ctr: (data.baseAttributes || data.attributes).ctr ?? 10,
+        res: (data.baseAttributes || data.attributes).res ?? 10,
+        acu: (data.baseAttributes || data.attributes).acu ?? 10,
+        pre: (data.baseAttributes || data.attributes).pre ?? 10,
+        ths: (data.baseAttributes || data.attributes).ths ?? 10,
       } : DEFAULT_BASE,
       primaryMode: data.primaryMode || existingChar.mode || "",
       secondaryModes: [data.secondaryMode || "", data.secondaryMode2 || ""],
@@ -227,7 +231,6 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const guildRankData = getGuildRankData(build.guild, build.guildRank);
   const guildRanks = getGuildRanksForGuild(build.guild);
   const totalAttrs = getTotalAttrs(build);
-  const pointsLeft = POINT_BUY_TOTAL - pointsSpent(build.baseAttrs);
   const level = build.level;
   const stringBudget = getStringBudget(level);
   const featSlots = getFeatSlots(level);
@@ -243,22 +246,19 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     setBuild(prev => ({ ...prev, ...patch }));
   }
 
-  function setAttr(key: AttrKey, value: number) {
-    if (attrMethod === "rolled") {
-      if (value < 3 || value > 18) return;
-      updateBuild({ baseAttrs: { ...build.baseAttrs, [key]: value } });
-    } else {
-      if (value < ATTR_MIN) return;
-      const next = { ...build.baseAttrs, [key]: value };
-      if ((Object.values(next) as number[]).reduce((a, b) => a + b, 0) > POINT_BUY_TOTAL) return;
-      updateBuild({ baseAttrs: next });
+  function setManualScore(key: AttrKey, text: string) {
+    setScoreDrafts(prev => ({ ...prev, [key]: text }));
+    const score = parseManualScore(text);
+    if (score !== null) {
+      setBuild(prev => ({ ...prev, baseAttrs: { ...prev.baseAttrs, [key]: score } }));
     }
   }
 
-  function switchAttrMethod(method: "point-buy" | "rolled") {
+  function switchAttrMethod(method: "manual" | "rolled") {
+    if (method === attrMethod) return;
     setAttrMethod(method);
-    updateBuild({ baseAttrs: DEFAULT_BASE });
-    if (method === "point-buy") setRolledGroups([]);
+    setScoreDrafts({});
+    if (method === "rolled") setAppliedRolledScores(false);
   }
 
   function addRolledGroup() {
@@ -267,22 +267,33 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
   function deleteGroup(gi: number) {
     setRolledGroups(prev => prev.filter((_, i) => i !== gi));
+    setAppliedRolledScores(false);
   }
 
   function rollSlot(gi: number, si: number) {
+    setAppliedRolledScores(false);
     setRolledGroups(prev => prev.map((g, i) => {
       if (i !== gi) return g;
       return { slots: g.slots.map((s, j) => j === si ? rollOneSlot() : s) };
     }));
   }
 
+  function rollGroup(gi: number) {
+    setAppliedRolledScores(false);
+    setRolledGroups(prev => prev.map((g, i) =>
+      i === gi ? { slots: Array.from({ length: 6 }, rollOneSlot) } : g
+    ));
+  }
+
   function resetGroup(gi: number) {
+    setAppliedRolledScores(false);
     setRolledGroups(prev => prev.map((g, i) =>
       i === gi ? { slots: Array.from({ length: 6 }, emptySlot) } : g
     ));
   }
 
   function assignSlot(gi: number, si: number, key: AttrKey | "") {
+    setAppliedRolledScores(false);
     setRolledGroups(prev => prev.map((g, i) => {
       if (i !== gi) return g;
       return { slots: g.slots.map((s, j) => j === si ? { ...s, assignedTo: key } : s) };
@@ -291,12 +302,14 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
   function applyGroup(gi: number) {
     const group = rolledGroups[gi];
-    if (!group) return;
+    if (!group || !group.slots.every(s => s.dice.length === 4 && s.assignedTo)
+      || new Set(group.slots.map(s => s.assignedTo)).size !== ATTRIBUTE_DEFS.length) return;
     const next = { ...build.baseAttrs };
     group.slots.forEach(s => {
       if (s.assignedTo && s.value > 0) next[s.assignedTo] = s.value;
     });
     updateBuild({ baseAttrs: next });
+    setAppliedRolledScores(true);
   }
 
   useEffect(() => {
@@ -317,8 +330,9 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     }
     if (step === 1) return build.background !== "" && (!bg?.flexBonus || build.flexAttrBonus !== "");
     if (step === 2) {
-      if (attrMethod === "rolled") return Object.values(build.baseAttrs).every(v => v >= 3 && v <= 18);
-      return pointsLeft >= 0;
+      return Object.values(build.baseAttrs).every(v => Number.isSafeInteger(v) && v >= 1)
+        && (attrMethod !== "rolled" || appliedRolledScores)
+        && (attrMethod !== "manual" || Object.values(scoreDrafts).every(text => parseManualScore(text) !== null));
     }
     if (step === 3) {
       if (!build.primaryMode) return false;
@@ -345,6 +359,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
     const data = {
       avatarDataUrl: build.avatarDataUrl,
+      baseAttributes: build.baseAttrs,
+      flexAttrBonus: build.flexAttrBonus,
       attributes: { pot: total.pot, ctr: total.ctr, res: total.res, acu: total.acu, pre: total.pre, ths: total.ths },
       vitalityPoints: { current: calcVPMax(total.res, level), max: calcVPMax(total.res, level) },
       tension: { current: 0, pool: calcThreadPool(level, total.pot, total.ctr), safeLimit: calcSafeLimit(level, total.pot, total.ctr) },
@@ -637,34 +653,33 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
           {step === 2 && (
             <Section
               title="Attributes"
-              subtitle={attrMethod === "point-buy"
-                ? `Distribute ${POINT_BUY_TOTAL} points across 6 attributes. Min: 8, Max: ${ATTR_MAX} before background & guild bonuses.`
-                : "Roll 4d6 drop lowest for each slot (range 3–18). Assign each result to an attribute, then hit Apply Scores."}
+              subtitle={attrMethod === "manual"
+                ? "Enter your own whole-number base scores. There is no shared point total or 78-point cap; background and guild bonuses are added afterward."
+                : "Roll four six-sided dice for each score, drop the lowest die, and add the other three (3–18 per roll). Assign the six results, then apply them. There is no total cap."}
             >
               {/* Method selector */}
               <div className="flex gap-2 mb-5">
-                {(["point-buy", "rolled"] as const).map(m => (
+                {(["manual", "rolled"] as const).map(m => (
                   <button key={m} type="button" onClick={() => switchAttrMethod(m)}
+                    aria-pressed={attrMethod === m}
                     className={cn("px-3 py-1.5 text-xs font-mono border transition-colors",
                       attrMethod === m ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"
                     )}>
-                    {m === "point-buy" ? "POINT-BUY" : "MANUAL / ROLLED"}
+                    {m === "manual" ? "ENTER SCORES" : "ROLL 4D6"}
                   </button>
                 ))}
               </div>
 
-              {attrMethod === "point-buy" ? (
+              {attrMethod === "manual" ? (
                 <>
-                  <div className={cn("inline-block px-3 py-1 font-mono text-sm mb-4 border transition-colors",
-                    pointsLeft < 0 ? "border-destructive text-destructive bg-destructive/10" :
-                    pointsLeft === 0 ? "border-chart-2 text-chart-2 bg-chart-2/10" :
-                    "border-border text-muted-foreground"
-                  )}>
-                    {pointsLeft} points remaining
+                  <div className="inline-block px-3 py-1 font-mono text-xs mb-4 border border-border text-muted-foreground">
+                    Base score total: {Object.values(build.baseAttrs).reduce((sum, value) => sum + value, 0)} · No point cap
                   </div>
                   <div className="space-y-2">
                     {ATTRIBUTE_DEFS.map(attr => {
                       const base = build.baseAttrs[attr.key as AttrKey];
+                      const draft = scoreDrafts[attr.key as AttrKey];
+                      const invalid = draft !== undefined && parseManualScore(draft) === null;
                       const bgBonus = bg?.attrBonuses[attr.key as AttrKey] ?? 0;
                       const flexBonus = build.flexAttrBonus === attr.key ? 1 : 0;
                       const rankBonus = guildRankData?.statBonuses[attr.key as AttrKey] ?? 0;
@@ -680,10 +695,30 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                             </div>
                             <div className="text-[10px] text-muted-foreground/60">{attr.label}</div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button type="button" onClick={() => setAttr(attr.key as AttrKey, base - 1)} disabled={base <= ATTR_MIN} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">−</button>
-                            <span className="w-8 text-center font-mono text-lg">{base}</span>
-                            <button type="button" onClick={() => setAttr(attr.key as AttrKey, base + 1)} disabled={base >= ATTR_MAX || pointsLeft <= 0} className="w-8 h-8 flex items-center justify-center border border-border hover:bg-muted disabled:opacity-30 font-mono transition-colors">+</button>
+                          <div className="flex flex-col gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              inputMode="numeric"
+                              aria-label={`${attr.label} base score`}
+                              aria-invalid={invalid}
+                              data-testid={`input-base-${attr.key}`}
+                              value={draft ?? base}
+                              onChange={event => setManualScore(attr.key as AttrKey, event.target.value)}
+                              onBlur={() => {
+                                if (!invalid) {
+                                  setScoreDrafts(prev => {
+                                    const next = { ...prev };
+                                    delete next[attr.key as AttrKey];
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={cn("w-20 h-9 px-2 text-center font-mono text-lg bg-background border focus:outline-none focus:border-primary",
+                                invalid ? "border-destructive" : "border-border")}
+                            />
+                            {invalid && <span className="text-[10px] text-destructive font-mono">Whole number, 1 or more</span>}
                           </div>
                           {totalBonus > 0 && (
                             <div className="flex gap-1">
@@ -767,7 +802,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                                 );
                               })}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              <button type="button" onClick={() => rollGroup(gi)}
+                                className="text-xs font-mono border border-primary/40 text-primary hover:bg-primary/10 px-3 py-1.5 transition-colors">
+                                ROLL ALL SIX
+                              </button>
                               <button type="button" onClick={() => resetGroup(gi)}
                                 className="text-xs font-mono border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 px-3 py-1.5 transition-colors">
                                 RESET GROUP
