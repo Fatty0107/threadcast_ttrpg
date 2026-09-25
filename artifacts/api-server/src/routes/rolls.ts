@@ -76,6 +76,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
   const input = parsed.data;
   const isMend = input.category === "mend";
   const isDamage = input.category === "damage";
+  const isTable = input.category === "table";
   if (!input.title.trim() ||
       ![input.characterId, input.modifier, input.diceSides, input.diceCount, input.bonusDiceSides, input.bonusDiceCount, input.multiplier, input.dc]
         .every(value => value === undefined || Number.isInteger(value)) || (isDamage
@@ -86,6 +87,10 @@ router.post("/rolls", async (req, res): Promise<void> => {
     : isMend
     ? input.diceSides !== 6 || input.diceCount !== 2 || input.mode !== "NORMAL" || input.modifier !== 0 || input.dc !== undefined
       || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
+    : isTable
+    ? ![6, 12].includes(input.diceSides) || input.diceCount !== 1 || input.mode !== "NORMAL" ||
+      input.modifier !== 0 || input.multiplier !== 1 || input.dc !== undefined ||
+      input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
     : input.diceSides !== 20 || input.multiplier !== 1 || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined ||
       input.diceCount !== (input.mode === "NORMAL" ? 1 : 2))) {
     res.status(400).json({ error: "Invalid dice configuration" });
@@ -125,9 +130,9 @@ router.post("/rolls", async (req, res): Promise<void> => {
     : isMend ? d1 + d2! : d2 === null ? d1
     : input.mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
   const total = isDamage ? Math.max(1, finalDie + input.modifier) : finalDie * input.multiplier + input.modifier;
-  const isBreak = !isMend && !isDamage && finalDie === 20;
-  const isMisfire = !isMend && !isDamage && finalDie === 1;
-  const outcome = isDamage ? "Damage" : isMend ? "Mend" : isBreak ? "Thread Break" : isMisfire ? "Misfire"
+  const isBreak = !isTable && !isMend && !isDamage && finalDie === 20;
+  const isMisfire = !isTable && !isMend && !isDamage && finalDie === 1;
+  const outcome = isDamage ? "Damage" : isMend ? "Mend" : isTable ? "Rolled" : isBreak ? "Thread Break" : isMisfire ? "Misfire"
     : input.dc ? (total >= input.dc ? "Success" : "Failure") : "Rolled";
   const preferences = user.dicePreferences;
   const style = preferences?.sets?.find((set: { id: string }) => set.id === preferences.selectedId);

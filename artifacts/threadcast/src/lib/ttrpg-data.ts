@@ -18,12 +18,12 @@ export function calcVPMax(resScore: number, level: number): number {
   return resScore + 8 + (level - 1) * 2;
 }
 
-export function calcThreadPool(level: number, thsScore: number): number {
-  return level + calcMod(thsScore);
+export function calcThreadPool(level: number, potScore: number, ctrScore: number): number {
+  return Math.max(6, (calcMod(potScore) + calcMod(ctrScore) + level) * 2);
 }
 
-export function calcSafeLimit(level: number, ctrScore: number): number {
-  return level + calcMod(ctrScore);
+export function calcSafeLimit(level: number, potScore: number, ctrScore: number): number {
+  return Math.max(0, calcMod(potScore) + calcMod(ctrScore) + level);
 }
 
 export function calcGuardRating(resScore: number): number {

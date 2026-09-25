@@ -15,6 +15,7 @@ export const GameplayRollInputCategory = {
   mend: 'mend',
   support: 'support',
   damage: 'damage',
+  table: 'table',
 } as const;
 
 export type GameplayRollInputMode = typeof GameplayRollInputMode[keyof typeof GameplayRollInputMode];
@@ -100,6 +101,7 @@ export const GameplayRollCategory = {
   mend: 'mend',
   support: 'support',
   damage: 'damage',
+  table: 'table',
 } as const;
 
 export type GameplayRollMode = typeof GameplayRollMode[keyof typeof GameplayRollMode];

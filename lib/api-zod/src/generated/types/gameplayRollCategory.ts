@@ -16,4 +16,5 @@ export const GameplayRollCategory = {
   mend: 'mend',
   support: 'support',
   damage: 'damage',
+  table: 'table',
 } as const;

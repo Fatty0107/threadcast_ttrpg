@@ -341,7 +341,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       avatarDataUrl: build.avatarDataUrl,
       attributes: { pot: total.pot, ctr: total.ctr, res: total.res, acu: total.acu, pre: total.pre, ths: total.ths },
       vitalityPoints: { current: calcVPMax(total.res, level), max: calcVPMax(total.res, level) },
-      tension: { current: 0, pool: calcThreadPool(level, total.ths), safeLimit: calcSafeLimit(level, total.ctr) },
+      tension: { current: 0, pool: calcThreadPool(level, total.pot, total.ctr), safeLimit: calcSafeLimit(level, total.pot, total.ctr) },
       burnout: bg?.startingBurnout ?? 0,
       fatigue: 0,
       corruption: 0,
@@ -813,8 +813,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
               {bg && (
                 <div className="mt-4 p-3 border border-border/50 bg-muted/20 grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs text-muted-foreground">
                   <StatPreview label="Max VP" value={calcVPMax(totalAttrs.res, level)} />
-                  <StatPreview label="Thread Pool" value={calcThreadPool(level, totalAttrs.ths)} />
-                  <StatPreview label="Safe Limit" value={calcSafeLimit(level, totalAttrs.ctr)} />
+                  <StatPreview label="Thread Pool" value={calcThreadPool(level, totalAttrs.pot, totalAttrs.ctr)} />
+                  <StatPreview label="Safe Limit" value={calcSafeLimit(level, totalAttrs.pot, totalAttrs.ctr)} />
                   <StatPreview label="Guard Rating" value={calcGuardRating(totalAttrs.res)} />
                   <StatPreview label="Ward Rating" value={calcWardRating(totalAttrs.ctr)} />
                   <StatPreview label="Recovery Dice" value={Math.max(0, calcMod(totalAttrs.res) + 2)} />
