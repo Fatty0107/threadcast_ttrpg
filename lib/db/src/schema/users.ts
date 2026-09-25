@@ -9,8 +9,13 @@ type DicePreferencesData = {
     bodyColor: string;
     inkColor: string;
     edgeColor: string;
-    finish: "matte" | "polished" | "glass";
-    motif: "plain" | "weave" | "stars" | "etched";
+    finish: "matte" | "polished" | "glass" | "frosted" | "metallic" | "iridescent" | "liquid-core";
+    motif: "plain" | "weave" | "stars" | "etched" | "moon" | "thorn" | "eye";
+    font?: "classic" | "arcane" | "modern" | "mono";
+    pattern?: "none" | "marble" | "nebula" | "fractures" | "constellation" | "gilded";
+    inclusion?: "none" | "stardust" | "gold-flake" | "ember";
+    animation?: "classic" | "tumble" | "comet" | "ritual";
+    inscription?: string;
   }[];
   selectedId: string | null;
 };

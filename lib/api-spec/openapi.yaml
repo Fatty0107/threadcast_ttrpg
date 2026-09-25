@@ -811,10 +811,26 @@ components:
           pattern: "^#[0-9A-Fa-f]{6}$"
         finish:
           type: string
-          enum: [matte, polished, glass]
+          enum: [matte, polished, glass, frosted, metallic, iridescent, liquid-core]
         motif:
           type: string
-          enum: [plain, weave, stars, etched]
+          enum: [plain, weave, stars, etched, moon, thorn, eye]
+        font:
+          type: string
+          enum: [classic, arcane, modern, mono]
+        pattern:
+          type: string
+          enum: [none, marble, nebula, fractures, constellation, gilded]
+        inclusion:
+          type: string
+          enum: [none, stardust, gold-flake, ember]
+        animation:
+          type: string
+          enum: [classic, tumble, comet, ritual]
+        inscription:
+          type: string
+          maxLength: 12
+          pattern: '^[^\x00-\x1F\x7F-\x9F]*$'
 
     DicePreferences:
       type: object

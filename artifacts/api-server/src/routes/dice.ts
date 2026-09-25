@@ -7,47 +7,14 @@ import {
   PutDicePreferencesResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import {
+  hasStrictPreferencesShape,
+  satisfiesPreferencesInvariants,
+} from "../lib/dice-preferences-validation";
 
 const router = Router();
 
 router.use("/dice/preferences", requireAuth);
-
-function hasExactKeys(value: unknown, expected: string[]): boolean {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-  const keys = Object.keys(value);
-  return keys.length === expected.length && expected.every((key) => keys.includes(key));
-}
-
-function hasStrictPreferencesShape(value: unknown): boolean {
-  if (!hasExactKeys(value, ["sets", "selectedId"])) {
-    return false;
-  }
-  const preferences = value as { sets: unknown };
-  if (!Array.isArray(preferences.sets)) {
-    return false;
-  }
-  return preferences.sets.every((style) =>
-    hasExactKeys(style, [
-      "id",
-      "name",
-      "bodyColor",
-      "inkColor",
-      "edgeColor",
-      "finish",
-      "motif",
-    ]),
-  );
-}
-
-function satisfiesPreferencesInvariants(
-  preferences: { sets: { id: string }[]; selectedId: string | null },
-): boolean {
-  const ids = preferences.sets.map((style) => style.id);
-  return new Set(ids).size === ids.length &&
-    (preferences.selectedId === null || ids.includes(preferences.selectedId));
-}
 
 router.get("/dice/preferences", async (req, res): Promise<void> => {
   const userId = (req as any).user.id as number;

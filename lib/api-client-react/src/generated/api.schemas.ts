@@ -474,6 +474,10 @@ export const DiceStyleFinish = {
   matte: 'matte',
   polished: 'polished',
   glass: 'glass',
+  frosted: 'frosted',
+  metallic: 'metallic',
+  iridescent: 'iridescent',
+  'liquid-core': 'liquid-core',
 } as const;
 
 export type DiceStyleMotif = typeof DiceStyleMotif[keyof typeof DiceStyleMotif];
@@ -484,6 +488,51 @@ export const DiceStyleMotif = {
   weave: 'weave',
   stars: 'stars',
   etched: 'etched',
+  moon: 'moon',
+  thorn: 'thorn',
+  eye: 'eye',
+} as const;
+
+export type DiceStyleFont = typeof DiceStyleFont[keyof typeof DiceStyleFont];
+
+
+export const DiceStyleFont = {
+  classic: 'classic',
+  arcane: 'arcane',
+  modern: 'modern',
+  mono: 'mono',
+} as const;
+
+export type DiceStylePattern = typeof DiceStylePattern[keyof typeof DiceStylePattern];
+
+
+export const DiceStylePattern = {
+  none: 'none',
+  marble: 'marble',
+  nebula: 'nebula',
+  fractures: 'fractures',
+  constellation: 'constellation',
+  gilded: 'gilded',
+} as const;
+
+export type DiceStyleInclusion = typeof DiceStyleInclusion[keyof typeof DiceStyleInclusion];
+
+
+export const DiceStyleInclusion = {
+  none: 'none',
+  stardust: 'stardust',
+  'gold-flake': 'gold-flake',
+  ember: 'ember',
+} as const;
+
+export type DiceStyleAnimation = typeof DiceStyleAnimation[keyof typeof DiceStyleAnimation];
+
+
+export const DiceStyleAnimation = {
+  classic: 'classic',
+  tumble: 'tumble',
+  comet: 'comet',
+  ritual: 'ritual',
 } as const;
 
 export interface DiceStyle {
@@ -501,6 +550,15 @@ export interface DiceStyle {
   edgeColor: string;
   finish: DiceStyleFinish;
   motif: DiceStyleMotif;
+  font?: DiceStyleFont;
+  pattern?: DiceStylePattern;
+  inclusion?: DiceStyleInclusion;
+  animation?: DiceStyleAnimation;
+  /**
+     * @maxLength 12
+     * @pattern ^[^\x00-\x1F\x7F-\x9F]*$
+     */
+  inscription?: string;
 }
 
 export interface DicePreferences {

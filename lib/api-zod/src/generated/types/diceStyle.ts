@@ -5,8 +5,12 @@
  * THREADCAST TTRPG API
  * OpenAPI spec version: 0.1.0
  */
+import type { DiceStyleAnimation } from './diceStyleAnimation';
 import type { DiceStyleFinish } from './diceStyleFinish';
+import type { DiceStyleFont } from './diceStyleFont';
+import type { DiceStyleInclusion } from './diceStyleInclusion';
 import type { DiceStyleMotif } from './diceStyleMotif';
+import type { DiceStylePattern } from './diceStylePattern';
 
 export interface DiceStyle {
   id: string;
@@ -23,4 +27,13 @@ export interface DiceStyle {
   edgeColor: string;
   finish: DiceStyleFinish;
   motif: DiceStyleMotif;
+  font?: DiceStyleFont;
+  pattern?: DiceStylePattern;
+  inclusion?: DiceStyleInclusion;
+  animation?: DiceStyleAnimation;
+  /**
+     * @maxLength 12
+     * @pattern ^[^\x00-\x1F\x7F-\x9F]*$
+     */
+  inscription?: string;
 }

@@ -1,0 +1,117 @@
+.dice-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 4%, 32px);
+  pointer-events: none;
+  perspective: 500px;
+}
+
+.dice-fallback-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(70px, 24%, 112px);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, .42));
+  animation: fallback-float 3.8s ease-in-out infinite;
+}
+.dice-fallback-wrap:nth-child(2) { animation-delay: -.7s; }
+.dice-fallback-wrap:nth-child(3) { animation-delay: -1.3s; }
+.dice-fallback-wrap.is-rolling.motion-classic { animation: fallback-classic .7s ease-in-out infinite; }
+.dice-fallback-wrap.is-rolling.motion-tumble { animation: fallback-tumble .5s linear infinite; }
+.dice-fallback-wrap.is-rolling.motion-comet { animation: fallback-comet .8s ease-in-out infinite; }
+.dice-fallback-wrap.is-rolling.motion-ritual { animation: fallback-ritual 1.3s ease-in-out infinite; }
+
+.dice-fallback-stone {
+  --die-shape: polygon(50% 0, 91% 24%, 91% 76%, 50% 100%, 9% 76%, 9% 24%);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  clip-path: var(--die-shape);
+  color: var(--die-ink);
+  background: var(--die-edge);
+}
+.dice-fallback-stone.shape-4 { --die-shape: polygon(50% 2%, 98% 90%, 2% 90%); }
+.dice-fallback-stone.shape-6 { --die-shape: polygon(12% 0, 88% 0, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0 88%, 0 12%); }
+.dice-fallback-stone.shape-8 { --die-shape: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.dice-fallback-stone.shape-10 { --die-shape: polygon(50% 0, 90% 27%, 100% 64%, 50% 100%, 0 64%, 10% 27%); }
+.dice-fallback-stone.shape-12 { --die-shape: polygon(35% 0, 65% 0, 91% 19%, 100% 50%, 91% 81%, 65% 100%, 35% 100%, 9% 81%, 0 50%, 9% 19%); }
+.dice-fallback-stone:before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  clip-path: var(--die-shape);
+  background: radial-gradient(circle at 26% 18%, color-mix(in srgb, var(--die-body), white 52%), transparent 48%),
+    linear-gradient(128deg, color-mix(in srgb, var(--die-body), white 17%), var(--die-body) 54%, color-mix(in srgb, var(--die-body), black 45%));
+}
+.dice-fallback-stone:after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  clip-path: var(--die-shape);
+  opacity: .58;
+}
+.dice-fallback-stone.pattern-marble:after { background: repeating-radial-gradient(ellipse at 8% 12%, transparent 0 10px, var(--die-edge) 11px 12px, transparent 14px 25px); }
+.dice-fallback-stone.pattern-nebula:after { background: radial-gradient(circle at 18% 71%, #a77fe2a6, transparent 33%), radial-gradient(circle at 78% 21%, var(--die-edge), transparent 37%); }
+.dice-fallback-stone.pattern-fractures:after { background: repeating-linear-gradient(123deg, transparent 0 21px, var(--die-edge) 22px, transparent 24px 43px); }
+.dice-fallback-stone.pattern-constellation:after { background: radial-gradient(circle at 21% 19%, white 0 1px, transparent 2px), radial-gradient(circle at 68% 32%, white 0 1px, transparent 2px), radial-gradient(circle at 31% 68%, white 0 1px, transparent 2px), linear-gradient(28deg, transparent 48%, var(--die-edge) 49%, transparent 50%); }
+.dice-fallback-stone.pattern-gilded:after { border: 2px double #f5d17d; inset: 12px; }
+.dice-fallback-stone.finish-frosted:before { filter: saturate(.65); }
+.dice-fallback-stone.finish-metallic:before { background: linear-gradient(133deg, white, var(--die-edge) 20%, var(--die-body) 43%, #161719 68%, var(--die-edge)); }
+.dice-fallback-stone.finish-glass:before,
+.dice-fallback-stone.finish-iridescent:before { background: radial-gradient(circle at 20% 17%, #ffffffbb, transparent 35%), linear-gradient(135deg, var(--die-edge), var(--die-body) 42%, #704d9d9e 80%, var(--die-edge)); }
+.dice-fallback-stone.finish-liquid-core:before {
+  background: radial-gradient(circle at 53% 50%, var(--die-edge) 0 8%, color-mix(in srgb, var(--die-body), white 50%) 9% 24%, transparent 32%),
+    radial-gradient(circle at 25% 19%, #ffffffa8, transparent 36%),
+    linear-gradient(135deg, var(--die-edge), var(--die-body) 42%, color-mix(in srgb, var(--die-body), black 48%));
+}
+.dice-fallback-motif { position: absolute; left: 13%; top: 15%; font-size: clamp(10px, 1.4vw, 17px); opacity: .7; }
+.dice-fallback-inclusion { position: absolute; right: 9%; bottom: 23%; font-size: 8px; letter-spacing: 3px; opacity: .8; }
+.dice-fallback-inclusion.inclusion-ember { color: #ff8c54; }
+.dice-fallback-inclusion.inclusion-gold-flake { color: #ffdf78; }
+.dice-fallback-value {
+  position: relative;
+  z-index: 1;
+  font: 700 clamp(28px, 5vw, 48px)/1 Georgia, serif;
+  text-shadow: 0 1px 2px #0006, 0 0 12px var(--die-edge);
+}
+.dice-fallback-value.font-arcane { font-family: Cinzel, Georgia, serif; font-style: italic; }
+.dice-fallback-value.font-modern { font-family: "DM Sans", Arial, sans-serif; }
+.dice-fallback-value.font-mono { font-family: "JetBrains Mono", monospace; }
+.dice-fallback-inscription {
+  position: absolute;
+  bottom: 13%;
+  max-width: 82%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--die-edge);
+  font: 600 8px/1 "DM Sans", sans-serif;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 2px black;
+}
+.dice-fallback-shadow {
+  position: absolute;
+  bottom: -23%;
+  width: 80%;
+  height: 10%;
+  border-radius: 50%;
+  background: #0008;
+  filter: blur(7px);
+}
+@keyframes fallback-float { 50% { transform: translateY(-8px) rotate(4deg); } }
+@keyframes fallback-classic { 50% { transform: translateY(-18px) rotate(120deg); } }
+@keyframes fallback-tumble { to { transform: rotateX(360deg) rotateY(360deg); } }
+@keyframes fallback-comet { 50% { transform: translate(25px, -26px) rotate(170deg); } }
+@keyframes fallback-ritual { 50% { transform: translateY(-14px) rotate(180deg) scale(1.07); } }
+@media (prefers-reduced-motion: reduce) {
+  .dice-fallback-wrap,
+  .dice-fallback-wrap.is-rolling { animation: none !important; }
+}

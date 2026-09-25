@@ -163,6 +163,10 @@ export const getDicePreferencesResponseSetsItemNameMax = 40;
 export const getDicePreferencesResponseSetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const getDicePreferencesResponseSetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const getDicePreferencesResponseSetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const getDicePreferencesResponseSetsItemInscriptionMax = 12;
+
+
+export const getDicePreferencesResponseSetsItemInscriptionRegExp = new RegExp('^[^\\x00-\\x1F\\x7F-\\x9F]\*$');
 export const getDicePreferencesResponseSetsMax = 12;
 
 
@@ -174,8 +178,13 @@ export const GetDicePreferencesResponse = zod.object({
   "bodyColor": zod.string().regex(getDicePreferencesResponseSetsItemBodyColorRegExp),
   "inkColor": zod.string().regex(getDicePreferencesResponseSetsItemInkColorRegExp),
   "edgeColor": zod.string().regex(getDicePreferencesResponseSetsItemEdgeColorRegExp),
-  "finish": zod.enum(['matte', 'polished', 'glass']),
-  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+  "finish": zod.enum(['matte', 'polished', 'glass', 'frosted', 'metallic', 'iridescent', 'liquid-core']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched', 'moon', 'thorn', 'eye']),
+  "font": zod.enum(['classic', 'arcane', 'modern', 'mono']).optional(),
+  "pattern": zod.enum(['none', 'marble', 'nebula', 'fractures', 'constellation', 'gilded']).optional(),
+  "inclusion": zod.enum(['none', 'stardust', 'gold-flake', 'ember']).optional(),
+  "animation": zod.enum(['classic', 'tumble', 'comet', 'ritual']).optional(),
+  "inscription": zod.string().max(getDicePreferencesResponseSetsItemInscriptionMax).regex(getDicePreferencesResponseSetsItemInscriptionRegExp).optional()
 })).max(getDicePreferencesResponseSetsMax),
   "selectedId": zod.string().uuid().nullable()
 })
@@ -189,6 +198,10 @@ export const putDicePreferencesBodySetsItemNameMax = 40;
 export const putDicePreferencesBodySetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const putDicePreferencesBodySetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const putDicePreferencesBodySetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesBodySetsItemInscriptionMax = 12;
+
+
+export const putDicePreferencesBodySetsItemInscriptionRegExp = new RegExp('^[^\\x00-\\x1F\\x7F-\\x9F]\*$');
 export const putDicePreferencesBodySetsMax = 12;
 
 
@@ -200,8 +213,13 @@ export const PutDicePreferencesBody = zod.object({
   "bodyColor": zod.string().regex(putDicePreferencesBodySetsItemBodyColorRegExp),
   "inkColor": zod.string().regex(putDicePreferencesBodySetsItemInkColorRegExp),
   "edgeColor": zod.string().regex(putDicePreferencesBodySetsItemEdgeColorRegExp),
-  "finish": zod.enum(['matte', 'polished', 'glass']),
-  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+  "finish": zod.enum(['matte', 'polished', 'glass', 'frosted', 'metallic', 'iridescent', 'liquid-core']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched', 'moon', 'thorn', 'eye']),
+  "font": zod.enum(['classic', 'arcane', 'modern', 'mono']).optional(),
+  "pattern": zod.enum(['none', 'marble', 'nebula', 'fractures', 'constellation', 'gilded']).optional(),
+  "inclusion": zod.enum(['none', 'stardust', 'gold-flake', 'ember']).optional(),
+  "animation": zod.enum(['classic', 'tumble', 'comet', 'ritual']).optional(),
+  "inscription": zod.string().max(putDicePreferencesBodySetsItemInscriptionMax).regex(putDicePreferencesBodySetsItemInscriptionRegExp).optional()
 })).max(putDicePreferencesBodySetsMax),
   "selectedId": zod.string().uuid().nullable()
 })
@@ -211,6 +229,10 @@ export const putDicePreferencesResponseSetsItemNameMax = 40;
 export const putDicePreferencesResponseSetsItemBodyColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const putDicePreferencesResponseSetsItemInkColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
 export const putDicePreferencesResponseSetsItemEdgeColorRegExp = new RegExp('^#[0-9A-Fa-f]{6}$');
+export const putDicePreferencesResponseSetsItemInscriptionMax = 12;
+
+
+export const putDicePreferencesResponseSetsItemInscriptionRegExp = new RegExp('^[^\\x00-\\x1F\\x7F-\\x9F]\*$');
 export const putDicePreferencesResponseSetsMax = 12;
 
 
@@ -222,8 +244,13 @@ export const PutDicePreferencesResponse = zod.object({
   "bodyColor": zod.string().regex(putDicePreferencesResponseSetsItemBodyColorRegExp),
   "inkColor": zod.string().regex(putDicePreferencesResponseSetsItemInkColorRegExp),
   "edgeColor": zod.string().regex(putDicePreferencesResponseSetsItemEdgeColorRegExp),
-  "finish": zod.enum(['matte', 'polished', 'glass']),
-  "motif": zod.enum(['plain', 'weave', 'stars', 'etched'])
+  "finish": zod.enum(['matte', 'polished', 'glass', 'frosted', 'metallic', 'iridescent', 'liquid-core']),
+  "motif": zod.enum(['plain', 'weave', 'stars', 'etched', 'moon', 'thorn', 'eye']),
+  "font": zod.enum(['classic', 'arcane', 'modern', 'mono']).optional(),
+  "pattern": zod.enum(['none', 'marble', 'nebula', 'fractures', 'constellation', 'gilded']).optional(),
+  "inclusion": zod.enum(['none', 'stardust', 'gold-flake', 'ember']).optional(),
+  "animation": zod.enum(['classic', 'tumble', 'comet', 'ritual']).optional(),
+  "inscription": zod.string().max(putDicePreferencesResponseSetsItemInscriptionMax).regex(putDicePreferencesResponseSetsItemInscriptionRegExp).optional()
 })).max(putDicePreferencesResponseSetsMax),
   "selectedId": zod.string().uuid().nullable()
 })

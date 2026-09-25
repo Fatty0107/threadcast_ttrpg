@@ -14,4 +14,7 @@ export const DiceStyleMotif = {
   weave: 'weave',
   stars: 'stars',
   etched: 'etched',
+  moon: 'moon',
+  thorn: 'thorn',
+  eye: 'eye',
 } as const;

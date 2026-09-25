@@ -13,4 +13,8 @@ export const DiceStyleFinish = {
   matte: 'matte',
   polished: 'polished',
   glass: 'glass',
+  frosted: 'frosted',
+  metallic: 'metallic',
+  iridescent: 'iridescent',
+  'liquid-core': 'liquid-core',
 } as const;
