@@ -9,6 +9,7 @@ import {
   getRefinementBonus,
 } from "@/lib/ttrpg-data";
 import { useHomebrew } from "@/contexts/HomebrewContext";
+import { CREATION_AFFINITIES, getCreationAffinity } from "@/lib/creation-affinities";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap, Shield, BookOpen, Star, Sparkles, ChevronDown, Check, AlertCircle } from "lucide-react";
@@ -180,7 +181,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const { data: existingChar } = useGetCharacter(charId ? parseInt(charId) : 0, {
     query: { enabled: !!charId } as any,
   });
-  const { getAffinityStrings, getAvailableAffinityNames, isLoading: homebrewLoading } = useHomebrew();
+  const { getAffinityStrings, getAvailableAffinityNames, publishedAffinities, isLoading: homebrewLoading } = useHomebrew();
 
   const [step, setStep] = useState(0);
   const [build, setBuild] = useState<BuildState>(DEFAULT_BUILD);
@@ -230,8 +231,13 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const level = build.level;
   const stringBudget = getStringBudget(level);
   const featSlots = getFeatSlots(level);
-  const availableAffinities = getAvailableAffinityNames();
-  const affinityStrings = getAffinityStrings(build.affinity);
+  const affinityNames = ["Water", ...CREATION_AFFINITIES.map(a => a.name), ...getAvailableAffinityNames()];
+  const availableAffinities = affinityNames.filter((name, index) =>
+    affinityNames.findIndex(other => other.toLowerCase() === name.toLowerCase()) === index
+  );
+  const affinityStrings = publishedAffinities.some(a => a.name === build.affinity)
+    ? getAffinityStrings(build.affinity)
+    : getCreationAffinity(build.affinity)?.strings ?? getAffinityStrings(build.affinity);
 
   function updateBuild(patch: Partial<BuildState>) {
     setBuild(prev => ({ ...prev, ...patch }));
@@ -499,8 +505,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                     </SelectContent>
                   </Select>
                 )}
-                {availableAffinities.length === 1 && !homebrewLoading && (
-                  <p className="text-[10px] font-mono text-muted-foreground/50 mt-1">Only Water is available. The Weavekeeper can add more affinities via Homebrew.</p>
+                {getCreationAffinity(build.affinity) && (
+                  <p className="text-[10px] font-mono text-muted-foreground/70 mt-2 leading-relaxed">
+                    {getCreationAffinity(build.affinity)?.description}
+                  </p>
                 )}
               </Field>
 

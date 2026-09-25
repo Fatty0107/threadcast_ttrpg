@@ -11,3 +11,4 @@
 - [Collaborative consequence idempotence](collaborative-consequence-idempotence.md) — a unique Strain roll is not enough; resolve its entire automatic consequence atomically.
 - [Post-merge workflow port conflicts](post-merge-port-conflicts.md) — a failed restart may be competing with an orphaned prior managed server; inspect the listener before changing ports.
 - [React context and Fast Refresh](react-context-fast-refresh.md) — a provider module that also exports a hook can split context identity during hot updates; keep the context in a stable non-component module.
+- [PDF affinity scope](pdf-affinity-scope.md) — the seven uploaded affinity handouts supply creation choices and general String purposes, not approved casting mechanics.
