@@ -9,7 +9,7 @@ const router = Router();
 router.use("/rolls", requireAuth);
 
 function webhookUrl(): string | null {
-  const raw = process.env.DISCORD_ROLL_WEBHOOK_URL;
+  const raw = process.env.DISCORD_WEBHOOK_URL;
   if (!raw) return null;
   try {
     const url = new URL(raw);
@@ -137,7 +137,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
     d1, d2, extraDice, modifier: input.modifier, multiplier: input.multiplier, finalDie, total,
     dc: input.dc ?? null, isBreak: Number(isBreak), isMisfire: Number(isMisfire),
     outcome, diceName: style?.name ?? "Standard Issue", diceColor: style?.edgeColor ?? "#C48650",
-    deliveryStatus: !process.env.DISCORD_ROLL_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
+    deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
   }).onConflictDoNothing().returning();
   const roll = created ?? (await db.select().from(rollsTable)
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1))[0];
@@ -153,7 +153,7 @@ router.get("/rolls/discord/status", async (req, res): Promise<void> => {
   const recent = await db.select({ deliveryStatus: rollsTable.deliveryStatus, createdAt: rollsTable.createdAt })
     .from(rollsTable).orderBy(desc(rollsTable.id)).limit(100);
   res.json(GetRollDiscordStatusResponse.parse({
-    configured: !!process.env.DISCORD_ROLL_WEBHOOK_URL,
+    configured: !!process.env.DISCORD_WEBHOOK_URL,
     valid: !!webhookUrl(),
     recentSent: recent.filter(r => r.deliveryStatus === "sent").length,
     recentFailed: recent.filter(r => r.deliveryStatus === "failed").length,

@@ -59,9 +59,9 @@ export function RollLog() {
           {user.role === "weavekeeper" && discord && (
             <div className="border-b border-border px-3 py-2 text-[10px] text-muted-foreground space-y-1">
               {!discord.configured ? (
-                <p>Discord off. To connect a channel: create a webhook in Discord channel settings → Integrations → Webhooks, then add its URL as <strong>DISCORD_ROLL_WEBHOOK_URL</strong> in Replit Secrets. Do not paste it in chat.</p>
+                <p>Discord off. To connect a channel: create a webhook in Discord channel settings → Integrations → Webhooks, then add its URL as <strong>DISCORD_WEBHOOK_URL</strong> in Replit Secrets. Do not paste it in chat.</p>
               ) : !discord.valid ? (
-                <p className="text-destructive">Discord webhook is invalid. Check DISCORD_ROLL_WEBHOOK_URL in Replit Secrets.</p>
+                <p className="text-destructive">Discord webhook is invalid. Check DISCORD_WEBHOOK_URL in Replit Secrets.</p>
               ) : (
                 <p>Discord connected · {discord.recentSent} sent, {discord.recentFailed} failed, {discord.recentPending} pending (last 100 rolls).</p>
               )}
