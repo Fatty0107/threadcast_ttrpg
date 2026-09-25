@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from "react";
+import { useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { formatModifier } from "@/lib/game-rules";
 import { useActiveDiceStyle } from "@/lib/dice-style";
@@ -6,18 +6,13 @@ import { useGameplayRoll, rollErrorMessage } from "@/lib/gameplay-roll";
 import { DiceStage, ROLL_DURATION_MS, type StageDie } from "./DiceStage";
 import { Link } from "wouter";
 import { Dices, Sparkles } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
+import { DiceRollerContext } from "./dice-roller-context";
 import type { DiceStyle, GameplayRoll } from "@workspace/api-client-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 type RollMode = "NORMAL" | "HARMONY" | "DISCORD";
 type DamageDice = { diceSides: 0 | 4 | 6 | 8 | 10 | 12; diceCount: 0 | 1 | 2; bonusDiceSides?: 4 | 6 | 8 | 10 | 12; bonusDiceCount?: 1 | 2 };
-
-interface DiceRollerContextType {
-  openRoll: (title: string, modifier: number, characterName?: string, characterId?: number, damage?: DamageDice) => void;
-}
-
-const DiceRollerContext = createContext<DiceRollerContextType | undefined>(undefined);
 
 export function DiceRollerProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -277,10 +272,4 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
       </DialogPrimitive.Root>
     </DiceRollerContext.Provider>
   );
-}
-
-export function useDiceRoller() {
-  const context = useContext(DiceRollerContext);
-  if (!context) throw new Error("useDiceRoller must be used within DiceRollerProvider");
-  return context;
 }

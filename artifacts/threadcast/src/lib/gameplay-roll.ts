@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   getListRollsQueryKey, useCreateRoll, type GameplayRollInput,
 } from "@workspace/api-client-react";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 
 export function useGameplayRoll() {
   const client = useQueryClient();

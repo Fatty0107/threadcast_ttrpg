@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getListRollsQueryKey, getGetRollDiscordStatusQueryKey, useListRolls, useGetRollDiscordStatus } from "@workspace/api-client-react";
 import { formatModifier } from "@/lib/game-rules";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 
 function formatTime(date: string) {
   return new Date(date).toLocaleString([], { dateStyle: "short", timeStyle: "short" });

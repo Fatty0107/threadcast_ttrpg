@@ -1,5 +1,5 @@
 import { useGetDicePreferences, getGetDicePreferencesQueryKey, type DiceStyle } from "@workspace/api-client-react";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 
 /** The house die is available to everyone; only explicitly saved sets belong to an account. */
 export const DEFAULT_DICE_STYLE: DiceStyle = {

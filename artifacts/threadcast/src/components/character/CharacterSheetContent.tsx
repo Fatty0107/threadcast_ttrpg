@@ -18,13 +18,13 @@ import { CastAftermath as CastAftermathView } from "./CastAftermath";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
 import { DiceStage, ROLL_DURATION_MS } from "@/components/shared/DiceStage";
-import { useDiceRoller } from "@/components/shared/DiceRoller";
+import { useDiceRoller } from "@/components/shared/dice-roller-context";
 import { useGameplayRoll, rollErrorMessage } from "@/lib/gameplay-roll";
 import { GameTerm } from "@/components/shared/GameTerm";
 import { DEFAULT_DICE_STYLE, useActiveDiceStyle } from "@/lib/dice-style";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 import { escapePrintHtml } from "@/lib/print-escape";
 import "./character-sheet.css";
 

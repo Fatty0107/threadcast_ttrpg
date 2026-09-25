@@ -11,7 +11,7 @@ import {
   type DiceStyle,
 } from "@workspace/api-client-react";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 import { DiceStage, ROLL_DURATION_MS } from "@/components/shared/DiceStage";
 import { DEFAULT_DICE_STYLE, rollDie } from "@/lib/dice-style";
 import { CircleDot, Diamond, Droplets, Layers2, Plus, RotateCcw, Sparkles, Trash2, TriangleAlert } from "lucide-react";

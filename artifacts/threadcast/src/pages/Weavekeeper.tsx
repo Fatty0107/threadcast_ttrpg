@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthContext";
+import { useAuth } from "@/components/auth/auth-context";
 import { useListCharacters, type Character } from "@workspace/api-client-react";
 import { useHomebrew } from "@/contexts/HomebrewContext";
 import { Link } from "wouter";
