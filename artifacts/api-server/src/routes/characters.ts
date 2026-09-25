@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, charactersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { UpdateWeavekeeperAdditionsBody } from "@workspace/api-zod";
+import { canonicalAffinity } from "@workspace/casting-rules";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -12,12 +13,18 @@ function isWeavekeeper(req: any): boolean {
   return req.user?.role === "weavekeeper";
 }
 
+function presentCharacter<T extends { affinity: string | null }>(character: T): T {
+  return character.affinity === "Cosmic"
+    ? { ...character, affinity: canonicalAffinity(character.affinity) }
+    : character;
+}
+
 router.get("/", async (req, res) => {
   const user = (req as any).user;
   const characters = isWeavekeeper(req)
     ? await db.select().from(charactersTable)
     : await db.select().from(charactersTable).where(eq(charactersTable.userId, user.id));
-  res.json(characters);
+  res.json(characters.map(presentCharacter));
 });
 
 router.post("/", async (req, res) => {
@@ -41,14 +48,14 @@ router.post("/", async (req, res) => {
       userId: user.id,
       name,
       level,
-      affinity: affinity || null,
+      affinity: typeof affinity === "string" ? canonicalAffinity(affinity) : affinity || null,
       mode: mode || null,
       data: playerData,
       isDraft,
     })
     .returning();
 
-  res.status(201).json(character);
+  res.status(201).json(presentCharacter(character));
 });
 
 router.get("/:id", async (req, res) => {
@@ -66,7 +73,7 @@ router.get("/:id", async (req, res) => {
     return;
   }
 
-  res.json(character);
+  res.json(presentCharacter(character));
 });
 
 router.patch("/:id/weavekeeper-additions", async (req, res) => {
@@ -108,7 +115,7 @@ router.patch("/:id/weavekeeper-additions", async (req, res) => {
     });
     if (result.kind === "missing") res.status(404).json({ error: "Character not found" });
     else if (result.kind === "stale") res.status(409).json({ error: "Sheet changed; reload before saving additions." });
-    else res.json(result.character);
+    else res.json(presentCharacter(result.character));
   } catch {
     res.status(500).json({ error: "Weavekeeper additions could not be saved" });
   }
@@ -153,7 +160,7 @@ router.patch("/:id", async (req, res) => {
       const updates: Partial<typeof existing> = {};
       if (name !== undefined) updates.name = name;
       if (level !== undefined) updates.level = level;
-      if (affinity !== undefined) updates.affinity = affinity;
+      if (affinity !== undefined) updates.affinity = typeof affinity === "string" ? canonicalAffinity(affinity) : affinity;
       if (mode !== undefined) updates.mode = mode;
       if (data !== undefined) {
         if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -184,7 +191,7 @@ router.patch("/:id", async (req, res) => {
       res.status(409).json({ error: "Character sheet is stale; reload the latest character before saving." });
       return;
     }
-    res.json(result.character);
+    res.json(presentCharacter(result.character));
   } catch {
     res.status(500).json({ error: "Character update could not be completed" });
   }

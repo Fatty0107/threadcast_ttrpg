@@ -49,9 +49,13 @@ interface SubItem {
 
 interface InventoryEntry {
   id: string;
+  instanceId?: string;
   name: string;
   quantity: number;
   rarity: ItemRarity;
+  source?: string;
+  bound?: boolean;
+  replaceable?: boolean;
   notes?: string;
   desc?: string;
   mechanical?: string;
@@ -1028,35 +1032,35 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     patch({ inventory: [...inventory, newItem] });
   }
   function updateItem(id: string, changes: Partial<InventoryEntry>) {
-    patch({ inventory: inventory.map(i => i.id === id ? { ...i, ...changes } : i) });
+    patch({ inventory: inventory.map(i => (i.instanceId ?? i.id) === id ? { ...i, ...changes } : i) });
   }
   function removeItem(id: string) {
-    patch({ inventory: inventory.filter(i => i.id !== id) });
+    patch({ inventory: inventory.filter(i => (i.instanceId ?? i.id) !== id) });
   }
   function toggleEquip(id: string) {
-    patch({ inventory: inventory.map(i => i.id === id ? { ...i, equipped: !i.equipped } : i) });
+    patch({ inventory: inventory.map(i => (i.instanceId ?? i.id) === id ? { ...i, equipped: !i.equipped } : i) });
   }
   function useConsumable(id: string) {
-    const item = inventory.find(i => i.id === id);
+    const item = inventory.find(i => (i.instanceId ?? i.id) === id);
     if (!item) return;
     if (item.quantity > 1) updateItem(id, { quantity: item.quantity - 1 });
     else removeItem(id);
   }
   function useSubItem(itemId: string, subIdx: number) {
-    const item = inventory.find(i => i.id === itemId);
+    const item = inventory.find(i => (i.instanceId ?? i.id) === itemId);
     if (!item?.subItems?.[subIdx] || item.subItems[subIdx].charges <= 0) return;
     patch({
-      inventory: inventory.map(i => i.id === itemId ? {
+      inventory: inventory.map(i => (i.instanceId ?? i.id) === itemId ? {
         ...i,
         subItems: i.subItems!.map((s, idx) => idx === subIdx ? { ...s, charges: s.charges - 1 } : s),
       } : i),
     });
   }
   function toggleSubItemEquip(itemId: string, subIdx: number) {
-    const item = inventory.find(i => i.id === itemId);
+    const item = inventory.find(i => (i.instanceId ?? i.id) === itemId);
     if (!item?.subItems?.[subIdx]) return;
     patch({
-      inventory: inventory.map(i => i.id === itemId ? {
+      inventory: inventory.map(i => (i.instanceId ?? i.id) === itemId ? {
         ...i,
         subItems: i.subItems!.map((s, idx) => idx === subIdx ? { ...s, equipped: !s.equipped } : s),
       } : i),
@@ -1225,7 +1229,7 @@ ${feats.length > 0 ? `<h2>Feats (${feats.length}/${Math.floor(level/2)} slots)</
 ${wkFeats.length > 0 ? `<h2>Weavekeeper-granted feats</h2>${wkFeats.map(feat => `<div class="feat-block"><strong>${printEscape(feat.name)}</strong>${feat.description ? `<div class="feat-desc">${printEscape(feat.description)}</div>` : ""}</div>`).join("")}` : ""}
 
 <h2>Inventory (${inventory.length + wkItems.length} items)</h2>
-${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+ ${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Source / Notes</th></tr></thead><tbody>
 ${inventory.map(item => {
   const equipBonus = ITEM_BONUS[item.id];
   const bonusStr = item.equipped && equipBonus ? [
@@ -1233,7 +1237,7 @@ ${inventory.map(item => {
     equipBonus.wardRating  ? `+${equipBonus.wardRating}WR`  : "",
     equipBonus.attackAttr  ? `${equipBonus.damageDice}` : "",
   ].filter(Boolean).join(" ") : "";
-  return `<tr><td><strong>${item.name}</strong>${item.category?`<span style="font-family:monospace;font-size:6.5pt;color:#888;margin-left:4px">${item.subCategory||item.category}</span>`:""}</td><td style="font-family:monospace;font-size:7.5pt">${RARITY_LABELS[item.rarity]||item.rarity}</td><td style="text-align:center;font-family:monospace">${item.quantity}</td><td style="font-family:monospace;font-size:7.5pt">${item.equipped?`<span style="color:#2a6030">EQUIP${bonusStr?" ("+bonusStr+")":""}</span>`:"—"}</td><td style="font-size:7.5pt;color:#555">${item.notes||""}</td></tr>`;
+   return `<tr><td><strong>${printEscape(item.name)}</strong>${item.category?`<span style="font-family:monospace;font-size:6.5pt;color:#888;margin-left:4px">${printEscape(item.subCategory||item.category)}</span>`:""}</td><td style="font-family:monospace;font-size:7.5pt">${printEscape(RARITY_LABELS[item.rarity]||item.rarity)}</td><td style="text-align:center;font-family:monospace">${item.quantity}</td><td style="font-family:monospace;font-size:7.5pt">${item.equipped?`<span style="color:#2a6030">EQUIP${bonusStr?" ("+bonusStr+")":""}</span>`:"—"}</td><td style="font-size:7.5pt;color:#555">${printEscape([item.source, item.notes].filter(Boolean).join(" · "))}</td></tr>`;
 }).join("")}
 </tbody></table>` : "<p style='font-size:8.5pt;color:#888;margin-top:4px'>No items.</p>"}
 ${wkItems.length ? `<h3>Weavekeeper-granted items</h3><table><thead><tr><th>Item</th><th>Qty</th><th>Description</th></tr></thead><tbody>${wkItems.map(item => `<tr><td>${printEscape(item.name)}</td><td>${item.quantity}</td><td>${printEscape(item.description || "")}</td></tr>`).join("")}</tbody></table>` : ""}
@@ -2510,14 +2514,15 @@ ${([
 
           <div className="space-y-2">
             {inventory.map(item => {
+              const itemKey = item.instanceId ?? item.id;
               const canEquip = ["weapon", "armor", "casting", "magical"].includes(item.category || "");
               const isConsumable = ["potion", "consumable"].includes(item.category || "");
               const isKit = item.category === "kit";
               const hasSubItems = (item.subItems || []).length > 0;
               const equipBonus = ITEM_BONUS[item.id];
-              const isExpanded = expandedKitItem === item.id;
+              const isExpanded = expandedKitItem === itemKey;
               return (
-                <div key={item.id} className={cn("border bg-card group transition-colors", item.equipped ? "border-chart-2/40" : "border-border")}>
+                <div key={itemKey} className={cn("border bg-card group transition-colors", item.equipped ? "border-chart-2/40" : "border-border")}>
                   <div className="p-3 flex gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -2525,12 +2530,12 @@ ${([
                         <input
                           className="bg-transparent font-mono text-sm text-foreground focus:outline-none border-b border-transparent focus:border-border"
                           value={item.name}
-                          onChange={e => updateItem(item.id, { name: e.target.value })}
+                          onChange={e => updateItem(itemKey, { name: e.target.value })}
                         />
                         <select
                           className="bg-transparent font-mono text-[10px] border-none focus:outline-none cursor-pointer"
                           value={item.rarity}
-                          onChange={e => updateItem(item.id, { rarity: e.target.value as ItemRarity })}
+                          onChange={e => updateItem(itemKey, { rarity: e.target.value as ItemRarity })}
                         >
                           {(Object.keys(RARITY_LABELS) as ItemRarity[]).map(r => (
                             <option key={r} value={r}>{RARITY_LABELS[r]}</option>
@@ -2538,6 +2543,7 @@ ${([
                         </select>
                       </div>
                       {item.desc && <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">{item.desc}</p>}
+                      {item.source && <p className="text-[10px] font-mono text-primary/70 mt-0.5">{item.source} · {item.bound ? "Bound" : "Unbound"} · {item.replaceable === false ? "Not replaceable" : "Replaceable"}</p>}
                       {item.mechanical && <p className="text-[11px] font-mono text-primary/60 mt-0.5">{item.mechanical}</p>}
                       {equipBonus && item.equipped && (
                         <div className="flex gap-3 mt-1 text-[10px] font-mono text-chart-2/80">
@@ -2552,7 +2558,7 @@ ${([
                         className="mt-1 w-full bg-transparent font-mono text-xs text-muted-foreground placeholder:text-muted-foreground/30 focus:outline-none border-b border-transparent focus:border-border/30"
                         placeholder="Notes..."
                         value={item.notes || ""}
-                        onChange={e => updateItem(item.id, { notes: e.target.value })}
+                        onChange={e => updateItem(itemKey, { notes: e.target.value })}
                       />
                     </div>
                     <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
@@ -2563,29 +2569,29 @@ ${([
                               ? "border-chart-2/50 text-chart-2 bg-chart-2/10 hover:bg-chart-2/20"
                               : "border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary"
                           )}
-                          onClick={() => toggleEquip(item.id)}
+                           onClick={() => toggleEquip(itemKey)}
                         >{item.equipped ? "UNEQUIP" : "EQUIP"}</button>
                       )}
                       {isConsumable && (
                         <button
                           className="px-2 py-1 text-[10px] font-mono border border-destructive/40 text-destructive/70 hover:bg-destructive/10 transition-colors"
-                          onClick={() => useConsumable(item.id)}
+                           onClick={() => useConsumable(itemKey)}
                         >USE ×{item.quantity}</button>
                       )}
                       {isKit && hasSubItems && (
                         <button
                           className="px-2 py-1 text-[10px] font-mono border border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                          onClick={() => setExpandedKitItem(isExpanded ? null : item.id)}
+                           onClick={() => setExpandedKitItem(isExpanded ? null : itemKey)}
                         >{isExpanded ? "CLOSE" : "CONTENTS"}</button>
                       )}
                       {!isConsumable && (
                         <div className="flex items-center gap-1">
-                          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: Math.max(1, item.quantity - 1) })}>−</button>
+                           <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(itemKey, { quantity: Math.max(1, item.quantity - 1) })}>−</button>
                           <span className="w-5 text-center font-mono text-xs">{item.quantity}</span>
-                          <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(item.id, { quantity: item.quantity + 1 })}>+</button>
+                           <button className="w-5 h-5 border border-border hover:bg-muted font-mono text-xs" onClick={() => updateItem(itemKey, { quantity: item.quantity + 1 })}>+</button>
                         </div>
                       )}
-                      <button onClick={() => removeItem(item.id)} className="text-muted-foreground/30 hover:text-destructive text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity">× DEL</button>
+                       <button onClick={() => removeItem(itemKey)} className="text-muted-foreground/30 hover:text-destructive text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity">× DEL</button>
                     </div>
                   </div>
                   {isExpanded && hasSubItems && (
@@ -2611,12 +2617,12 @@ ${([
                                   className={cn("px-1.5 py-0.5 text-[9px] border transition-colors",
                                     sub.equipped ? "border-chart-2/50 text-chart-2" : "border-border/40 text-muted-foreground hover:border-primary/40 hover:text-primary"
                                   )}
-                                  onClick={() => toggleSubItemEquip(item.id, subIdx)}
+                                   onClick={() => toggleSubItemEquip(itemKey, subIdx)}
                                 >{sub.equipped ? "EQP" : "EQ?"}</button>
                               )}
                               <button
                                 className="px-1.5 py-0.5 text-[9px] border border-destructive/30 text-destructive/60 hover:bg-destructive/10 disabled:opacity-30 transition-colors"
-                                onClick={() => useSubItem(item.id, subIdx)}
+                                 onClick={() => useSubItem(itemKey, subIdx)}
                                 disabled={sub.charges === 0}
                               >USE</button>
                             </div>

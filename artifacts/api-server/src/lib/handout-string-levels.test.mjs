@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getHandoutStringLevel, getHandoutStringLevelForCharacter, isHandoutAffinity } from "../../../../lib/casting-rules/src/handout-strings.ts";
+import { canonicalAffinity, getHandoutStringLevel, getHandoutStringLevelForCharacter, isHandoutAffinity } from "../../../../lib/casting-rules/src/handout-strings.ts";
 
 const asRows = (affinity, stringName) =>
   [1, 2, 3, 4, 5].map(pl => {
@@ -17,7 +17,7 @@ test("uploaded handout tables keep their per-affinity PL, TP and DC values", () 
     ["Emotion", "Concord String", "ctr", [[2, 12], [3, 14], [5, 16], [7, 18], [10, 20]]],
     ["Illusions", "Chime String", "ths", [[1, 10], [2, 12], [4, 14], [6, 17], [8, 19]]],
     ["Illusions", "Misdirection String", "pot", [[1, 12], [2, 14], [4, 16], [6, 18], [9, 20]]],
-    ["Cosmic", "Meteor String", "pot", [[1, 12], [3, 14], [4, 16], [6, 18], [9, 20]]],
+    ["Fire", "Meteor String", "pot", [[1, 12], [3, 14], [4, 16], [6, 18], [9, 20]]],
     ["Mirror", "Mirrorwalk String", "ctr", [[2, 13], [4, 15], [6, 17], [8, 19], [11, 21]]],
     ["Healing", "Pulse String", "pot", [[1, 11], [2, 13], [4, 15], [6, 17], [9, 20]]],
     ["Healing", "Burden String", "ths", [[2, 12], [4, 15], [6, 17], [8, 19], [11, 21]]],
@@ -28,6 +28,13 @@ test("uploaded handout tables keep their per-affinity PL, TP and DC values", () 
     assert.deepEqual(asRows(affinity, name), expected);
     assert.equal(getHandoutStringLevel(affinity, name, 1).checkAttr, attribute);
   }
+});
+
+test("legacy Cosmic characters keep Fire handout costs and display the new name", () => {
+  assert.equal(canonicalAffinity("Cosmic"), "Fire");
+  assert.equal(canonicalAffinity("Fire"), "Fire");
+  assert.equal(isHandoutAffinity("Cosmic"), true);
+  assert.deepEqual(asRows("Cosmic", "Meteor String"), asRows("Fire", "Meteor String"));
 });
 
 test("same-named Strings resolve in their owning handout, not another affinity", () => {

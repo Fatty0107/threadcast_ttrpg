@@ -47,7 +47,7 @@ const handoutStrings: Record<string, readonly HandoutEntry[]> = {
     ["Curtain", "ctr", "a"], ["Stage", "ths", "b"], ["Misdirection", "pot", "i"],
     ["Labyrinth", "ctr", "b"], ["Seam", "ths", "a"], ["Horizon", "ths", "c"],
   ],
-  cosmic: [
+  fire: [
     ["Corona", "pot", "a"], ["Starheart", "ctr", "a"], ["Spectrum", "ctr", "a"],
     ["Orbit", "ctr", "a"], ["Constellation", "ths", "b"], ["Vacuum", "ctr", "b"],
     ["Meteor", "pot", "j"], ["Stellar Wind", "pot", "a"], ["Gravity", "pot", "c"],
@@ -71,8 +71,13 @@ function normalized(value: string): string {
   return value.toLowerCase().replace(/\bthe\b/g, "").replace(/\bstring\b/g, "").replace(/[^a-z]/g, "");
 }
 
+/** The old name remains accepted for saved characters and older clients. */
+export function canonicalAffinity(affinity: string): string {
+  return affinity === "Cosmic" ? "Fire" : affinity;
+}
+
 function affinityKey(affinity: string): string | undefined {
-  const key = normalized(affinity);
+  const key = normalized(canonicalAffinity(affinity));
   return Object.keys(handoutStrings).find(name => normalized(name) === key);
 }
 

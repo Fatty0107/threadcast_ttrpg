@@ -1,4 +1,4 @@
-export { getHandoutStringLevel, getHandoutStringLevelForCharacter, isHandoutAffinity } from "./handout-strings";
+export { canonicalAffinity, getHandoutStringLevel, getHandoutStringLevelForCharacter, isHandoutAffinity } from "./handout-strings";
 
 export interface NamedStringLevel {
   cost: number;

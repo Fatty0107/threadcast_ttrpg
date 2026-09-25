@@ -1,5 +1,5 @@
 import type { AffinityString } from "./affinity-data";
-import { getHandoutStringLevel } from "@workspace/casting-rules";
+import { canonicalAffinity, getHandoutStringLevel } from "@workspace/casting-rules";
 
 export type CreationString = Pick<AffinityString, "id" | "shortName" | "flavor" | "checkAttr">;
 
@@ -88,9 +88,9 @@ export const CREATION_AFFINITIES = [
     ]),
   },
   {
-    name: "Cosmic",
+    name: "Fire",
     description: "Begin with heat and fire-like light, then shape radiance, orbits, weight, and luminous matter. It does not create actual stars or black holes.",
-    strings: stringsFor("cosmic", [
+    strings: stringsFor("fire", [
       ["Corona", "pot", "Draw a ring of heat and light whose boundary can burn while its center shelters."],
       ["Starheart", "ctr", "Hold a stable point of energy and meter out its heat and light for constructive use."],
       ["Spectrum", "ctr", "Separate radiance into controlled colors and intensities for light and visual perception."],
@@ -144,7 +144,7 @@ export const CREATION_AFFINITIES = [
 ] as const;
 
 export function getCreationAffinity(name: string) {
-  return CREATION_AFFINITIES.find(affinity => affinity.name === name);
+  return CREATION_AFFINITIES.find(affinity => affinity.name === canonicalAffinity(name));
 }
 
 // The handouts supply both a distinct scope for each String and a PL table.
@@ -157,7 +157,7 @@ export function getHandoutString(affinity: string, name: string): AffinityString
     const pl = index + 1;
     const level = getHandoutStringLevel(affinity, entry.shortName, pl);
     if (!level) throw new Error(`Missing handout table for ${affinity} / ${entry.shortName} / PL ${pl}`);
-    return { pl, cost: level.cost, dc: level.dc, effect: `See the ${affinity} handout for this String's PL ${pl} effect.` };
+    return { pl, cost: level.cost, dc: level.dc, effect: `See the ${canonicalAffinity(affinity)} handout for this String's PL ${pl} effect.` };
   });
   return {
     ...entry,

@@ -4,7 +4,7 @@ import { Router } from "express";
 import {
   db, charactersTable, rollsTable, castResponsesTable, collaborativeCastsTable,
 } from "@workspace/db";
-import { CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, getHandoutStringLevelForCharacter, guildAttributeBonus, guildBonusAlreadyInAttributes, isHandoutAffinity, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
+import { canonicalAffinity, CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, getHandoutStringLevelForCharacter, guildAttributeBonus, guildBonusAlreadyInAttributes, isHandoutAffinity, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
 import { CreateCastBody, CreateCastStrainCheckBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
@@ -129,7 +129,8 @@ function getStringLevel(name: string, level: number, character: { affinity?: unk
   const affinity = typeof character.affinity === "string" ? character.affinity : "";
   const handoutAffinity = isHandoutAffinity(affinity);
   const named = handoutAffinity
-    ? getHandoutStringLevelForCharacter(character, name, level)
+    ? getHandoutStringLevelForCharacter(character, name, level) ??
+      (affinity === "Fire" ? namedStringLevel(name, level) : undefined)
     : namedStringLevel(name, level);
   const base = CORE_POWER_LEVELS[level - 1];
   return named ?? (base ? { ...base, checkAttr: "ctr" as const } : undefined);
@@ -507,7 +508,9 @@ router.post("/casts", async (req, res): Promise<void> => {
     return;
   }
 
-  res.status(201).json(result);
+  res.status(201).json(result.character?.affinity === "Cosmic"
+    ? { ...result, character: { ...result.character, affinity: canonicalAffinity(result.character.affinity) } }
+    : result);
   for (const roll of newRolls) {
     if (roll.deliveryStatus === "pending") void deliverDiscord(roll, req.log);
   }

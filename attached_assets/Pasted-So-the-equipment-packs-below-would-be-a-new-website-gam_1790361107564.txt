@@ -1,0 +1,664 @@
+So the equipment packs below would be a new website/game-system layer built around the existing material, rather than pretending those items are already specified in the rules.
+
+Character Creation: Background & Guild Packs
+
+I'd make character creation work like this:
+
+Background → gives your upbringing, attribute bonuses, skills, and a Background Equipment Pack
+
+Guild / Path → gives your professional affiliation, rank, guild benefits, and a Guild Equipment Pack
+
+That means a player could end up with something like:
+
+Background: Military Family
+Guild: Scaled Guard
+
+→ Military Family Pack
+→ Scaled Guard Pack
+→ Starting personal equipment
+→ Starting weapons/armor selection
+
+And the website automatically adds everything to their inventory.
+
+1. BACKGROUND PACKS
+🏛️ Guild-Raised
+
+You grew up inside or adjacent to one of the major guilds.
+
+Existing mechanical benefits:
+
++1 Control
++1 Acuity
++1 Presence
+Attuned: Guild Protocol, Lore, Discernment
+Starting Guild Rank: One rank above the minimum in your chosen guild
+📦 Guild-Raised Equipment Pack
+
+Included:
+
+Basic Warded Leather Gloves
+Mage's Journal
+Tension Counter
+Mage Light Stone
+Familiar Beacon
+Guild identification badge
+Formal guild attire
+Writing supplies
+
+The first five are actual items in your inventory document: Basic Warded Leather Gloves, Mage's Journal, Tension Counter, Mage Light Stone, and Familiar Beacon.
+
+Website description
+
+Guild-Raised Pack
+You grew up around guild halls, formal training, and people who knew exactly what a mage was supposed to be. Your equipment reflects that upbringing: practical magical tools, proper identification, and the basic supplies expected of someone familiar with guild life.
+
+2. Civilian Mage
+
+Your magic was always practical. You used it to work, trade, and provide.
+
+Existing benefits:
+
++1 Control
++1 Resilience
++1 any
+Attuned: Trade Craft, Survival, Street Sense
+No Guild Rank
+Civilian license
+📦 Civilian Mage Equipment Pack
+
+Included:
+
+Basic Warded Leather Gloves
+Grounding Talisman
+Mage Light Stone
+Tension Counter
+Practical tool kit
+Work clothing
+Profession-specific tools
+Minor Healing Draught ×2
+
+The Grounding Talisman, for example, is a Common item that reduces minor feedback damage by 2 and recharges after Full Recovery.
+
+Optional Profession Choice
+
+This is where your website can become REALLY good.
+
+After selecting Civilian Mage:
+
+What kind of civilian work did you do?
+
+Craftsperson
+
+Trade Craft emphasis
+Crafting tools
+
+Guide
+
+Survival emphasis
+Navigation equipment
+
+Merchant
+
+Trade Craft
+Ledger / merchant supplies
+
+Laborer
+
+Practical tools
+Work equipment
+
+Independent Mage
+
+Magical tools
+Additional Tension Counter
+
+These don't need to change the actual mechanics unless you want them to. They're primarily an equipment/roleplay choice.
+
+3. Self-Taught
+
+No academy. No master. No safety net.
+
+Existing benefits:
+
++2 Thread Sense
++1 Potency
+Attuned: Weave Reading, Survival, one skill of choice
+Start with 1 Burnout
+May choose an Unorthodox Technique with the Weavekeeper
+📦 Self-Taught Equipment Pack
+
+Included:
+
+Basic Warded Leather Gloves
+Grounding Talisman
+Tension Counter
+Mage's Journal
+Mage Light Stone
+Improvised tool kit
+Personal notes / casting journal
+Minor Healing Draught
+
+And I'd make this pack visibly different:
+
+⚠️ Your equipment isn't standardized.
+
+The player gets a little customization option:
+
+Choose ONE:
+
+Improvised Focus
+
+An object you've learned to use as a personal magical focus.
+
+Old Casting Tool
+
+Something inherited from a former mentor.
+
+Handmade Talisman
+
+A crude but functional magical stabilizer.
+
+Experimental Equipment
+
+A strange tool you've developed yourself.
+
+This fits the Unorthodox Technique flavor without inventing a mechanical bonus.
+
+4. Noble-Born
+
+The Highblood Circles shaped your childhood — etiquette, bloodline politics, and inherited expectation.
+
+Existing benefits:
+
++2 Presence
++1 Acuity
++1 any
+Attuned: Discernment, Lore, Guild Protocol
+Starting rank: Gildthane
+Can hold this concurrently with another guild
+📦 Noble-Born Equipment Pack
+
+Included:
+
+Runed Silk Gloves
+Mage's Journal
+Mage Light Stone
+Formal clothing
+Signet / family identification
+Writing set
+Fine travel case
+Minor Healing Draught ×2
+
+Runed Silk Gloves are an actual Uncommon inventory item and reduce Snapback damage by 1d6 without the Thread Sense penalty of basic gloves.
+
+Choose ONE
+
+Family Signet
+
+or
+
+Ceremonial Weapon
+
+or
+
+Inherited Talisman
+
+I'd keep these as narrative equipment unless you specifically want Noble-Born to start with a mechanically valuable Uncommon item.
+
+5. Military Family
+
+You were trained in violence before magic — or at the same time.
+
+Existing benefits:
+
++2 Resilience
++1 Acuity
++1 Potency
+Attuned: Combat Forms, Grit, Survival
+Starting rank: Ashborn, Scaled Guard
+📦 Military Family Equipment Pack
+
+Included:
+
+Basic Warded Leather Gloves
+Standard weapon — choose one
+Leather Armor
+Grounding Talisman
+Emergency Whistle
+Medical Kit
+Mage Light Stone
+Tension Counter
+
+The inventory specifically identifies Leather Armor as Common, granting +1 Guard Rating without a Thread Sense penalty.
+
+Choose ONE Weapon
+Dagger
+Short Sword
+Spear
+Arming Sword
+War Axe
+Staff
+Shortbow
+Hand Crossbow
+
+Those are all existing Common weapons in your inventory.
+
+6. Scholar's Lineage
+
+The Lorehall's culture runs through your family. Precision matters.
+
+Existing benefits:
+
++2 Acuity
++2 Thread Sense
+Attuned: Lore, Weave Reading, Inscription
+Starting rank: Loreling, Lorehall
+📦 Scholar's Lineage Equipment Pack
+
+Included:
+
+Basic Warded Leather Gloves
+Mage's Journal
+Tension Counter
+Mage Light Stone
+Writing kit
+Research notes
+Reference texts
+Weave Tracer Ink
+Portable research supplies
+
+Weave Tracer Ink is an actual Uncommon consumable that reveals recent leyline activity in a marked area for an hour, including approximate Power Level and caster direction.
+
+That one is PERFECT for Scholar's Lineage.
+
+7. Temple-Raised
+
+The Solar Temple taught you that magic is sacred, costly, and never to be treated casually.
+
+Existing benefits:
+
++1 Presence
++1 Control
++1 Thread Sense
++1 any
+Attuned: Anatomy of Magic, Discernment, Ward Craft
+Starting rank: Ashpetal, Solar Temple
+📦 Temple-Raised Equipment Pack
+
+Included:
+
+Runed Silk Gloves
+Grounding Talisman
+Mage Light Stone
+Medical Kit
+Minor Healing Draught ×2
+Temple insignia
+Prayer/meditation materials
+Tension Counter
+
+The Grounding Talisman and healing draughts are existing Common inventory items.
+
+2. GUILD PACKS
+
+This is where I'd make the website really feel like a D&D Beyond-style character builder.
+
+The six guilds are:
+
+Scaled Guard
+Thaumatarch
+Highblood Circles
+Solar Temple
+Lorehall
+Forgecrown
+
+These are the six major guilds in the current rules.
+
+The Guild itself should not give another set of attribute bonuses, because those are already handled by Background.
+
+Instead, Guild gives:
+
+Guild → Rank → Benefits → Obligations → Equipment Pack
+
+⚔️ SCALED GUARD PACK
+
+Role: Military & law enforcement
+
+Starting rank for Military Family:
+
+Ashborn
+
+Guild benefits include military gear, combat training access, legal authority, combat magic licensing, and a pension.
+
+📦 Scaled Guard Equipment Pack
+
+Always included:
+
+Leather Armor
+Basic Warded Leather Gloves
+Arming Sword
+Emergency Whistle
+Medical Kit
+Mage Light Stone
+Tension Counter
+Choose ONE:
+Spear
+Shortbow
+Shield
+Dagger
+Short Sword
+🧙 THAUMATARCH PACK
+
+Role: Mage specialists and researchers
+
+Ranks run from:
+
+Spark → Gleamer → Sigilist → Runecaller → Magister → Archon
+
+with the exact rank titles established in the guild rules.
+
+📦 Thaumatarch Equipment Pack
+Runed Silk Gloves
+Mage's Journal
+Tension Counter
+Grounding Talisman
+Mage Light Stone
+Weave Tracer Ink
+Familiar Beacon
+Research supplies
+Choose ONE:
+
+Resonance Compass
+
+or
+
+Signature Suppressor Pin
+
+Both are existing Uncommon focus items.
+
+👑 HIGHBLOOD CIRCLES PACK
+
+Role: Nobility and governance
+
+Starting Noble-Born rank:
+
+Gildthane
+
+The Highblood hierarchy goes from Scion/Vellum/Gildthane upward through Stonewarden, Highborne, Glassduke/Glassdame and Thronelord/Thronelady.
+
+📦 Highblood Equipment Pack
+Runed Silk Gloves
+Mage's Journal
+Mage Light Stone
+Formal attire
+Family signet
+Fine writing set
+Guild identification
+Grounding Talisman
+Choose ONE:
+
+Ceremonial Weapon
+
+or
+
+Family Talisman
+
+or
+
+Fine Staff
+
+☀️ SOLAR TEMPLE PACK
+
+Role: Healing and spiritual guidance
+
+Ranks include:
+
+Ashpetal → Whisperkin → Gracehand → Lightbearer → Flameward → Dawnseer → Luminary → Solanarch.
+
+📦 Solar Temple Equipment Pack
+Runed Silk Gloves
+Grounding Talisman
+Medical Kit
+Minor Healing Draught ×2
+Mage Light Stone
+Temple insignia
+Tension Counter
+Healing supplies
+Choose ONE:
+
+Hollowing Ward Medallion would be WAY too powerful for starting characters because it's a Rare item.
+
+So instead:
+
+Temple Focus
+
+A narrative religious focus with no mechanical effect.
+
+This is one place where I would deliberately avoid giving players a Rare item at Level 1.
+
+📚 LOREHALL PACK
+
+Role: Knowledge preservation and research
+
+Ranks:
+
+Loreling → Quillborn → Glyphscribe → Pagewarden → Inkwright → Scriptor → Archivarch.
+
+📦 Lorehall Equipment Pack
+Basic Warded Leather Gloves
+Mage's Journal
+Tension Counter
+Mage Light Stone
+Weave Tracer Ink
+Research supplies
+Writing kit
+Reference texts
+Choose ONE:
+
+Resonance Compass
+
+or
+
+Additional Weave Tracer Ink
+
+The Resonance Compass detects major magic and Nexuses within 1 mile and indicates Hollowing direction, so it fits Lorehall extremely well.
+
+🔨 FORGECROWN PACK
+
+Role: Magical crafting and enchantment
+
+Ranks:
+
+Sparkwright → Cindertouch → Shapebinder → Metalmind → Glyphmason → Artifex → Forgeheart.
+
+Optional specializations already include:
+
+Runebreaker
+Glassforge
+Chainwright
+📦 Forgecrown Equipment Pack
+Basic Warded Leather Gloves
+Mage's Journal
+Tension Counter
+Mage Light Stone
+Grounding Talisman
+Crafting tools
+Enchanting supplies
+Repair tools
+Choose ONE:
+
+Portable Inscription Desk
+
+or
+
+Specialist Crafting Kit
+
+The Portable Inscription Desk is an actual Uncommon item that reduces the DC for Inscription/Binder work performed on it by 2.
+
+I'd actually make that a Forgecrown-specific starting choice rather than giving it automatically.
+
+3. HOW THIS SHOULD LOOK IN YOUR WEBSITE
+
+This is the important part.
+
+When the player reaches:
+
+BACKGROUND
+
+You show cards:
+
+🏛️ Guild-Raised
+
++1 CTR · +1 ACU · +1 PRE
+
+Skills: Guild Protocol, Lore, Discernment
+
+Starting Rank: +1 above minimum
+
+Equipment: Guild-Raised Pack
+
+[ SELECT ]
+
+Then:
+
+STARTING EQUIPMENT
+
+After selecting it:
+
+Guild-Raised Pack
+
+This package contains:
+
+✓ Basic Warded Leather Gloves
+✓ Mage's Journal
+✓ Tension Counter
+✓ Mage Light Stone
+✓ Familiar Beacon
+✓ Formal Guild Attire
+✓ Writing Supplies
+
+[ ACCEPT PACKAGE ]
+
+Or:
+
+Customize Instead
+
+[ CHOOSE ITEMS INDIVIDUALLY ]
+
+This is the part that makes it feel like D&D Beyond.
+
+4. THEN GUILD
+
+After Background:
+
+CHOOSE YOUR PATH
+
+Guild Path
+
+Choose the guild your character serves.
+
+Civilian Path
+
+Remain independent and receive a Novice License.
+
+That distinction already exists in your rules.
+
+If they choose Guild Path:
+
+SELECT YOUR GUILD
+
+⚔️ Scaled Guard
+🧙 Thaumatarch
+👑 Highblood Circles
+☀️ Solar Temple
+📚 Lorehall
+🔨 Forgecrown
+
+Then the selected guild automatically adds:
+
+Guild affiliation
+Starting rank
+Guild benefits
+Guild obligations
+Guild equipment pack
+Guild inventory tag
+5. IMPORTANT: DON'T JUST GIVE THEM THE ITEMS
+
+I'd make every item added to the character have metadata:
+
+Item:
+Basic Warded Leather Gloves
+
+Source:
+Background — Military Family
+
+Rarity:
+Common
+
+Quantity:
+1
+
+Bound:
+No
+
+Replaceable:
+Yes
+
+And:
+
+Item:
+Arming Sword
+
+Source:
+Guild — Scaled Guard
+
+Rarity:
+Common
+
+Quantity:
+1
+
+Then later, if the player leaves the guild, the system can distinguish:
+
+Personal equipment
+
+from
+
+Guild-issued equipment
+
+That's going to matter a LOT once you start using guild ranks and obligations.
+
+For example, a Scaled Guard character shouldn't necessarily get to leave the guild and casually keep every piece of guild-issued equipment forever.
+
+6. I'd ALSO Add "Starting Gold / Funds"
+
+Your inventory system already has rarity, availability, cost, and restrictions as part of its structure.
+
+So instead of giving every character an arbitrary giant pile of money, I would eventually have:
+
+Starting Funds
+
+Background determines your personal starting funds.
+
+Guild determines whether you have access to guild resources.
+
+Then the player can spend their starting funds during character creation.
+
+That gives you the D&D Beyond experience:
+
+Starting Equipment
+
+OR
+
+Starting Funds
+
+and then:
+
+SHOP
+
+Search Inventory
+Filter by rarity
+Filter by guild
+Filter by category
+Buy
+Sell
+Equip

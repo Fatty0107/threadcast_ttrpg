@@ -9,8 +9,11 @@ import {
   calcMod, calcVPMax, calcThreadPool, calcSafeLimit, calcGuardRating, calcWardRating,
   getRefinementBonus,
 } from "@/lib/ttrpg-data";
+import { getStartingPacks, makeGearEntry, resolveStartingPack, type StartingInventoryEntry } from "@/lib/starting-equipment";
+import { StartingEquipmentStep } from "@/components/character/StartingEquipmentStep";
 import { useHomebrew } from "@/contexts/HomebrewContext";
 import { CREATION_AFFINITIES, getCreationAffinity } from "@/lib/creation-affinities";
+import { canonicalAffinity } from "@workspace/casting-rules";
 import { rollDie } from "@/lib/dice-style";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +27,7 @@ const STEPS = [
   { id: "strings",    label: "Strings" },
   { id: "skills",     label: "Skills" },
   { id: "feats",      label: "Feats" },
+  { id: "equipment",  label: "Equipment" },
   { id: "review",     label: "Review" },
 ];
 
@@ -49,6 +53,11 @@ interface BuildState {
   attunedSkills: string[];
   selectedStrings: string[];
   selectedFeats: string[];
+  includePacks: boolean;
+  equipmentChoices: Record<string, string>;
+  customizedPacks: string[];
+  excludedStartingItems: string[];
+  personalItems: StartingInventoryEntry[];
   signature: string;
 }
 
@@ -75,6 +84,11 @@ const DEFAULT_BUILD: BuildState = {
   attunedSkills: [],
   selectedStrings: [],
   selectedFeats: [],
+  includePacks: true,
+  equipmentChoices: {},
+  customizedPacks: [],
+  excludedStartingItems: [],
+  personalItems: [],
   signature: "",
 };
 
@@ -191,7 +205,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const { data: existingChar, isError: characterLoadError } = useGetCharacter(charId ? parseInt(charId) : 0, {
     query: { enabled: !!charId } as any,
   });
-  const { getAffinityStrings, getAvailableAffinityNames, publishedAffinities, isLoading: homebrewLoading } = useHomebrew();
+  const { getAffinityStrings, getAvailableAffinityNames, isLoading: homebrewLoading } = useHomebrew();
 
   const [step, setStep] = useState(0);
   const [build, setBuild] = useState<BuildState>(DEFAULT_BUILD);
@@ -225,7 +239,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       name: existingChar.name || "",
       avatarDataUrl: data.avatarDataUrl || "",
       level: existingChar.level || 1,
-      affinity: existingChar.affinity || "",
+      affinity: canonicalAffinity(existingChar.affinity || ""),
       guild: data.guild || "",
       guildRank: data.guildRank || "",
       guildFeatChoice: data.guildFeatChoice || "",
@@ -246,25 +260,40 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
         const grd = getGuildRankData(data.guild || "", data.guildRank || "");
         return !grd?.featChoices.includes(f);
       }) : [],
+      includePacks: false,
+      equipmentChoices: data.startingEquipmentChoices ?? {},
+      customizedPacks: [],
+      excludedStartingItems: [],
+      personalItems: [],
       signature: data.signature || "",
     });
     setPopulated(true);
   }, [existingChar?.id]);
 
   const bg = BACKGROUNDS.find(b => b.name === build.background);
+  const startingPacks = getStartingPacks(build.background, build.guild);
+  const existingInventory: StartingInventoryEntry[] = Array.isArray((existingChar?.data as any)?.inventory)
+    ? (existingChar!.data as any).inventory : [];
+  const packInventory = build.includePacks ? startingPacks.flatMap(pack =>
+    pack.choices && !build.equipmentChoices[pack.key] ? [] :
+      resolveStartingPack(pack, build.equipmentChoices[pack.key], build.excludedStartingItems)) : [];
+  const newPackInventory = packInventory.filter(item =>
+    !existingInventory.some(previous =>
+      previous.instanceId === item.instanceId ||
+      (previous.source === item.source && previous.id === item.id && previous.name === item.name)));
+  const startingInventory = [...existingInventory, ...newPackInventory, ...build.personalItems];
   const guildRankData = getGuildRankData(build.guild, build.guildRank);
   const guildRanks = getGuildRanksForGuild(build.guild);
   const totalAttrs = getTotalAttrs(build);
   const level = build.level;
   const stringBudget = getStringBudget(level);
   const featSlots = getFeatSlots(level);
-  const affinityNames = ["Water", ...CREATION_AFFINITIES.map(a => a.name), ...getAvailableAffinityNames()];
+  const affinityNames = ["Water", ...CREATION_AFFINITIES.map(a => a.name), ...getAvailableAffinityNames().map(canonicalAffinity)];
   const availableAffinities = affinityNames.filter((name, index) =>
     affinityNames.findIndex(other => other.toLowerCase() === name.toLowerCase()) === index
   );
-  const affinityStrings = publishedAffinities.some(a => a.name === build.affinity)
-    ? getAffinityStrings(build.affinity)
-    : getCreationAffinity(build.affinity)?.strings ?? getAffinityStrings(build.affinity);
+  const affinityStrings = getCreationAffinity(build.affinity)?.strings ??
+    getAffinityStrings(build.affinity);
 
   function updateBuild(patch: Partial<BuildState> | ((prev: BuildState) => Partial<BuildState>)) {
     setBuild(prev => ({ ...prev, ...(typeof patch === "function" ? patch(prev) : patch) }));
@@ -384,6 +413,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     if (checkStep === 6) return (!guildRankData || guildRankData.featChoices.includes(build.guildFeatChoice)) &&
       build.selectedFeats.length <= featSlots &&
       build.selectedFeats.every(f => FEATS.some(feat => feat.name === f && feat.minLevel <= level));
+    if (checkStep === 7) return !build.includePacks || startingPacks.every(pack =>
+      !pack.choices || pack.choices.some(choice => choice.label === build.equipmentChoices[pack.key]));
     return true;
   }
 
@@ -452,7 +483,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       techniques: previousData.techniques ?? [],
       feats: allFeats,
       featChoices,
-      inventory: previousData.inventory ?? [],
+      inventory: startingInventory,
+      startingEquipmentChoices: build.equipmentChoices,
       signature: build.signature,
       woundsNotes: previousData.woundsNotes ?? "",
       notes: previousData.notes ?? "",
@@ -717,6 +749,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                       ))}
                     </div>
                     {b.startingBurnout && <div className="mt-2 text-[10px] font-mono text-destructive">⚠ Starts with Burnout 1</div>}
+                    <div className="mt-2 text-[10px] font-mono text-primary">Equipment · {getStartingPacks(b.name, "")[0]?.title}</div>
                   </button>
                 ))}
               </div>
@@ -1326,8 +1359,48 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
             </Section>
           )}
 
-          {/* STEP 7: REVIEW */}
+          {/* STEP 7: STARTING EQUIPMENT */}
           {step === 7 && (
+            <StartingEquipmentStep
+              background={build.background} guild={build.guild} editing={!!charId}
+              includePacks={build.includePacks} onIncludePacks={value => updateBuild({ includePacks: value })}
+              choices={build.equipmentChoices}
+              onChoose={(key, label) => updateBuild(prev => ({
+                equipmentChoices: { ...prev.equipmentChoices, [key]: label },
+                excludedStartingItems: prev.excludedStartingItems.filter(itemKey => itemKey !== `${key}:choice`),
+              }))}
+              customized={build.customizedPacks}
+              onCustomize={key => updateBuild(prev => {
+                const wasCustomized = prev.customizedPacks.includes(key);
+                return {
+                  customizedPacks: wasCustomized ? prev.customizedPacks.filter(item => item !== key) : [...prev.customizedPacks, key],
+                  excludedStartingItems: wasCustomized
+                    ? prev.excludedStartingItems.filter(itemKey => !itemKey.startsWith(`${key}:`))
+                    : prev.excludedStartingItems,
+                };
+              })}
+              excluded={build.excludedStartingItems}
+              onToggleItem={key => updateBuild(prev => ({
+                excludedStartingItems: prev.excludedStartingItems.includes(key)
+                  ? prev.excludedStartingItems.filter(item => item !== key)
+                  : [...prev.excludedStartingItems, key],
+              }))}
+              personalItems={build.personalItems}
+              onAddCatalog={id => updateBuild(prev => ({
+                personalItems: [...prev.personalItems, makeGearEntry(id, "Personal — Starting equipment", `personal:${crypto.randomUUID()}`)],
+              }))}
+              onAddCustom={name => updateBuild(prev => ({
+                personalItems: [...prev.personalItems, makeGearEntry({ name }, "Personal — Starting equipment", `personal:${crypto.randomUUID()}`)],
+              }))}
+              onRemovePersonal={instanceId => updateBuild(prev => ({
+                personalItems: prev.personalItems.filter(item => item.instanceId !== instanceId),
+              }))}
+              existingItems={existingInventory}
+            />
+          )}
+
+          {/* STEP 8: REVIEW */}
+          {step === 8 && (
             <Section title="Review" subtitle="Confirm your weaver before entering the Weave.">
               <div className="space-y-4 font-mono text-sm">
                 {build.avatarDataUrl && (
@@ -1342,6 +1415,16 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                 {build.guildRank && <ReviewRow label="Guild Rank" value={build.guildRank} />}
                 {build.guildFeatChoice && <ReviewRow label="Guild Feat" value={build.guildFeatChoice} />}
                 <ReviewRow label="Background" value={build.background} />
+                <ReviewRow label="Inventory" value={`${startingInventory.length} entries from packs and personal equipment`} />
+                {startingInventory.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border border-border/40 p-2 space-y-1">
+                    {startingInventory.map((item, index) => (
+                      <p key={item.instanceId ?? `${item.id}-${index}`} className="text-[11px] font-mono text-muted-foreground">
+                        {item.name} ×{item.quantity} <span className="text-primary/70">· {item.source ?? "Existing equipment"}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <ReviewRow label="Primary Mode" value={build.primaryMode ? `${build.primaryMode} (Harmony)` : "—"} />
                 {level >= 4 && build.secondaryModes.some(m => m) && (
                   <ReviewRow label="Secondary Modes" value={build.secondaryModes.filter(m => m).join(", ") + " (Normal)"} />
