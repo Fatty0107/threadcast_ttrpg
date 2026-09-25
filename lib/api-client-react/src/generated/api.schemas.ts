@@ -567,3 +567,4 @@ export interface DicePreferences {
   /** @nullable */
   selectedId: string | null;
 }
+
