@@ -1,0 +1,49 @@
+[plugin:vite:esbuild] Transform failed with 4 errors:
+/home/runner/workspace/lib/api-client-react/src/generated/api.schemas.ts:513:13: ERROR: Multiple exports with the same name "CastTableOutcomeKind"
+/home/runner/workspace/lib/api-client-react/src/generated/api.schemas.ts:513:13: ERROR: The symbol "CastTableOutcomeKind" has already been declared
+/home/runner/workspace/lib/api-client-react/src/generated/api.schemas.ts:518:13: ERROR: Multiple exports with the same name "CastTableOutcomeKind"
+/home/runner/workspace/lib/api-client-react/src/generated/api.schemas.ts:518:13: ERROR: The symbol "CastTableOutcomeKind" has already been declared
+/home/runner/workspace/lib/api-client-react/src/generated/api.schemas.ts:513:13
+Multiple exports with the same name "CastTableOutcomeKind"
+511 |  }
+512 |  
+513 |  export const CastTableOutcomeKind = {
+    |               ^
+514 |    Mishap: 'Mishap',
+515 |    Snapback: 'Snapback',
+
+The symbol "CastTableOutcomeKind" has already been declared
+511 |  }
+512 |  
+513 |  export const CastTableOutcomeKind = {
+    |               ^
+514 |    Mishap: 'Mishap',
+515 |    Snapback: 'Snapback',
+
+Multiple exports with the same name "CastTableOutcomeKind"
+516 |  } as const;
+517 |  
+518 |  export const CastTableOutcomeKind = {
+    |               ^
+519 |    Mishap: 'Mishap',
+520 |    Snapback: 'Snapback',
+
+The symbol "CastTableOutcomeKind" has already been declared
+516 |  } as const;
+517 |  
+518 |  export const CastTableOutcomeKind = {
+    |               ^
+519 |    Mishap: 'Mishap',
+520 |    Snapback: 'Snapback',
+    at failureErrorWithLog (/home/runner/workspace/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1467:15)
+    at /home/runner/workspace/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:736:50
+    at responseCallbacks.<computed> (/home/runner/workspace/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/home/runner/workspace/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/home/runner/workspace/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+Click outside, press Esc key, or fix the code to dismiss.
+You can also disable this overlay by setting

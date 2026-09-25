@@ -51,7 +51,10 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+
 export const getHealthCheckUrl = () => {
+
+
 
 
   return `/api/healthz`
@@ -73,6 +76,9 @@ export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus>
 );}
 
 
+
+
+
 export const getHealthCheckQueryKey = () => {
     return [
     `/api/healthz`
@@ -88,7 +94,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
@@ -113,9 +123,9 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-
 export const getLoginUrl = () => {
+
+
 
 
   return `/api/auth/login`
@@ -137,6 +147,8 @@ export const login = async (loginInput: LoginInput, options?: RequestInit): Prom
 );}
 
 
+
+
 export const getLoginMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext> => {
@@ -149,11 +161,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, {data: BodyType<LoginInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  login(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -179,6 +197,8 @@ export const useLogin = <TError = ErrorType<void>,
 export const getLogoutUrl = () => {
 
 
+
+
   return `/api/auth/logout`
 }
 
@@ -197,6 +217,8 @@ export const logout = async ( options?: RequestInit): Promise<void> => {
 );}
 
 
+
+
 export const getLogoutMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
@@ -209,11 +231,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
 
 
           return  logout(requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -239,6 +267,8 @@ export const useLogout = <TError = ErrorType<unknown>,
 export const getGetMeUrl = () => {
 
 
+
+
   return `/api/auth/me`
 }
 
@@ -257,6 +287,9 @@ export const getMe = async ( options?: RequestInit): Promise<AuthUser> => {
 );}
 
 
+
+
+
 export const getGetMeQueryKey = () => {
     return [
     `/api/auth/me`
@@ -272,7 +305,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetMeQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({ signal }) => getMe({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData> & { queryKey: QueryKey }
@@ -299,7 +336,14 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 }
 
 
+
+
+
+
+
 export const getListCharactersUrl = () => {
+
+
 
 
   return `/api/characters`
@@ -320,6 +364,9 @@ export const listCharacters = async ( options?: RequestInit): Promise<Character[
 );}
 
 
+
+
+
 export const getListCharactersQueryKey = () => {
     return [
     `/api/characters`
@@ -335,7 +382,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCharactersQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCharacters>>> = ({ signal }) => listCharacters({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCharacters>>, TError, TData> & { queryKey: QueryKey }
@@ -362,7 +413,14 @@ export function useListCharacters<TData = Awaited<ReturnType<typeof listCharacte
 }
 
 
+
+
+
+
+
 export const getCreateCharacterUrl = () => {
+
+
 
 
   return `/api/characters`
@@ -384,6 +442,8 @@ export const createCharacter = async (characterInput: CharacterInput, options?: 
 );}
 
 
+
+
 export const getCreateCharacterMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCharacter>>, TError,{data: BodyType<CharacterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCharacter>>, TError,{data: BodyType<CharacterInput>}, TContext> => {
@@ -396,11 +456,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCharacter>>, {data: BodyType<CharacterInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createCharacter(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -426,6 +492,8 @@ export const useCreateCharacter = <TError = ErrorType<unknown>,
 export const getGetCharacterUrl = (id: number,) => {
 
 
+
+
   return `/api/characters/${id}`
 }
 
@@ -444,6 +512,9 @@ export const getCharacter = async (id: number, options?: RequestInit): Promise<C
 );}
 
 
+
+
+
 export const getGetCharacterQueryKey = (id: number,) => {
     return [
     `/api/characters/${id}`
@@ -459,7 +530,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetCharacterQueryKey(id);
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getCharacter>>> = ({ signal }) => getCharacter(id, { signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCharacter>>, TError, TData> & { queryKey: QueryKey }
@@ -486,7 +561,14 @@ export function useGetCharacter<TData = Awaited<ReturnType<typeof getCharacter>>
 }
 
 
+
+
+
+
+
 export const getUpdateCharacterUrl = (id: number,) => {
+
+
 
 
   return `/api/characters/${id}`
@@ -509,6 +591,8 @@ export const updateCharacter = async (id: number,
 );}
 
 
+
+
 export const getUpdateCharacterMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCharacter>>, TError,{id: number;data: BodyType<CharacterUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateCharacter>>, TError,{id: number;data: BodyType<CharacterUpdate>}, TContext> => {
@@ -521,11 +605,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCharacter>>, {id: number;data: BodyType<CharacterUpdate>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  updateCharacter(id,data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -551,6 +641,8 @@ export const useUpdateCharacter = <TError = ErrorType<void>,
 export const getDeleteCharacterUrl = (id: number,) => {
 
 
+
+
   return `/api/characters/${id}`
 }
 
@@ -569,6 +661,8 @@ export const deleteCharacter = async (id: number, options?: RequestInit): Promis
 );}
 
 
+
+
 export const getDeleteCharacterMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCharacter>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteCharacter>>, TError,{id: number}, TContext> => {
@@ -581,11 +675,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCharacter>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
           return  deleteCharacter(id,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -611,6 +711,8 @@ export const useDeleteCharacter = <TError = ErrorType<unknown>,
 export const getGetDicePreferencesUrl = () => {
 
 
+
+
   return `/api/dice/preferences`
 }
 
@@ -629,6 +731,9 @@ export const getDicePreferences = async ( options?: RequestInit): Promise<DicePr
 );}
 
 
+
+
+
 export const getGetDicePreferencesQueryKey = () => {
     return [
     `/api/dice/preferences`
@@ -644,7 +749,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetDicePreferencesQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getDicePreferences>>> = ({ signal }) => getDicePreferences({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDicePreferences>>, TError, TData> & { queryKey: QueryKey }
@@ -671,7 +780,14 @@ export function useGetDicePreferences<TData = Awaited<ReturnType<typeof getDiceP
 }
 
 
+
+
+
+
+
 export const getPutDicePreferencesUrl = () => {
+
+
 
 
   return `/api/dice/preferences`
@@ -693,6 +809,8 @@ export const putDicePreferences = async (dicePreferences: DicePreferences, optio
 );}
 
 
+
+
 export const getPutDicePreferencesMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDicePreferences>>, TError,{data: BodyType<DicePreferences>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof putDicePreferences>>, TError,{data: BodyType<DicePreferences>}, TContext> => {
@@ -705,11 +823,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof putDicePreferences>>, {data: BodyType<DicePreferences>}> = (props) => {
           const {data} = props ?? {};
 
           return  putDicePreferences(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -735,6 +859,8 @@ export const usePutDicePreferences = <TError = ErrorType<void>,
 export const getListRollsUrl = () => {
 
 
+
+
   return `/api/rolls`
 }
 
@@ -753,6 +879,9 @@ export const listRolls = async ( options?: RequestInit): Promise<GameplayRoll[]>
 );}
 
 
+
+
+
 export const getListRollsQueryKey = () => {
     return [
     `/api/rolls`
@@ -768,7 +897,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListRollsQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listRolls>>> = ({ signal }) => listRolls({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRolls>>, TError, TData> & { queryKey: QueryKey }
@@ -795,7 +928,14 @@ export function useListRolls<TData = Awaited<ReturnType<typeof listRolls>>, TErr
 }
 
 
+
+
+
+
+
 export const getCreateRollUrl = () => {
+
+
 
 
   return `/api/rolls`
@@ -818,6 +958,8 @@ export const createRoll = async (gameplayRollInput: GameplayRollInput, options?:
 );}
 
 
+
+
 export const getCreateRollMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoll>>, TError,{data: BodyType<GameplayRollInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createRoll>>, TError,{data: BodyType<GameplayRollInput>}, TContext> => {
@@ -830,11 +972,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoll>>, {data: BodyType<GameplayRollInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createRoll(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -857,12 +1005,9 @@ export const useCreateRoll = <TError = ErrorType<void>,
       return useMutation(getCreateRollMutationOptions(options));
     }
 
-export const getStartCollaborativeCastUrl = () => {
-
-
-  return `/api/collaborative-casts`
-}
 export const getCreateCastUrl = () => {
+
+
 
 
   return `/api/casts`
@@ -885,6 +1030,8 @@ export const createCast = async (castInput: CastInput, options?: RequestInit): P
 );}
 
 
+
+
 export const getCreateCastMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCast>>, TError,{data: BodyType<CastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCast>>, TError,{data: BodyType<CastInput>}, TContext> => {
@@ -897,11 +1044,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCast>>, {data: BodyType<CastInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createCast(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -927,6 +1080,8 @@ export const useCreateCast = <TError = ErrorType<void>,
 export const getCreateCastStrainCheckUrl = () => {
 
 
+
+
   return `/api/casts/strain`
 }
 
@@ -947,6 +1102,8 @@ export const createCastStrainCheck = async (castStrainInput: CastStrainInput, op
 );}
 
 
+
+
 export const getCreateCastStrainCheckMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCastStrainCheck>>, TError,{data: BodyType<CastStrainInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createCastStrainCheck>>, TError,{data: BodyType<CastStrainInput>}, TContext> => {
@@ -959,11 +1116,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCastStrainCheck>>, {data: BodyType<CastStrainInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createCastStrainCheck(data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -989,6 +1152,8 @@ export const useCreateCastStrainCheck = <TError = ErrorType<void>,
 export const getResolveCastConsequenceUrl = (id: string,) => {
 
 
+
+
   return `/api/casts/consequences/${id}`
 }
 
@@ -1010,6 +1175,8 @@ export const resolveCastConsequence = async (id: string,
 );}
 
 
+
+
 export const getResolveCastConsequenceMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCastConsequence>>, TError,{id: string;data: BodyType<CastConsequenceChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof resolveCastConsequence>>, TError,{id: string;data: BodyType<CastConsequenceChoice>}, TContext> => {
@@ -1022,11 +1189,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveCastConsequence>>, {id: string;data: BodyType<CastConsequenceChoice>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  resolveCastConsequence(id,data,requestOptions)
         }
+
+
+
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1049,7 +1222,229 @@ export const useResolveCastConsequence = <TError = ErrorType<void>,
       return useMutation(getResolveCastConsequenceMutationOptions(options));
     }
 
+export const getStartCollaborativeCastUrl = () => {
+
+
+
+
+  return `/api/collaborative-casts`
+}
+
+/**
+ * @summary Start a shared cast as the Lead
+ */
+export const startCollaborativeCast = async (collaborativeCastInput: CollaborativeCastInput, options?: RequestInit): Promise<CollaborativeCast> => {
+
+  return customFetch<CollaborativeCast>(getStartCollaborativeCastUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      collaborativeCastInput,)
+  }
+);}
+
+
+
+
+export const getStartCollaborativeCastMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext> => {
+
+const mutationKey = ['startCollaborativeCast'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCollaborativeCast>>, {data: BodyType<CollaborativeCastInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startCollaborativeCast(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCollaborativeCastMutationResult = NonNullable<Awaited<ReturnType<typeof startCollaborativeCast>>>
+    export type StartCollaborativeCastMutationBody = BodyType<CollaborativeCastInput>
+    export type StartCollaborativeCastMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a shared cast as the Lead
+ */
+export const useStartCollaborativeCast = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCollaborativeCast>>,
+        TError,
+        {data: BodyType<CollaborativeCastInput>},
+        TContext
+      > => {
+      return useMutation(getStartCollaborativeCastMutationOptions(options));
+    }
+
+export const getGetCollaborativeCastUrl = (id: string,) => {
+
+
+
+
+  return `/api/collaborative-casts/${id}`
+}
+
+/**
+ * @summary Get a cast and all linked rolls
+ */
+export const getCollaborativeCast = async (id: string, options?: RequestInit): Promise<CollaborativeCast> => {
+
+  return customFetch<CollaborativeCast>(getGetCollaborativeCastUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCollaborativeCastQueryKey = (id: string,) => {
+    return [
+    `/api/collaborative-casts/${id}`
+    ] as const;
+    }
+
+
+export const getGetCollaborativeCastQueryOptions = <TData = Awaited<ReturnType<typeof getCollaborativeCast>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCollaborativeCastQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollaborativeCast>>> = ({ signal }) => getCollaborativeCast(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCollaborativeCastQueryResult = NonNullable<Awaited<ReturnType<typeof getCollaborativeCast>>>
+export type GetCollaborativeCastQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a cast and all linked rolls
+ */
+
+export function useGetCollaborativeCast<TData = Awaited<ReturnType<typeof getCollaborativeCast>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCollaborativeCastQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getResolveCollaborativeSupportUrl = (id: string,) => {
+
+
+
+
+  return `/api/collaborative-casts/${id}/resolve-support`
+}
+
+/**
+ * @summary Resolve a failed support check and its Lead consequences exactly once
+ */
+export const resolveCollaborativeSupport = async (id: string,
+    collaborativeSupportResolutionInput: CollaborativeSupportResolutionInput, options?: RequestInit): Promise<CollaborativeSupportResolution> => {
+
+  return customFetch<CollaborativeSupportResolution>(getResolveCollaborativeSupportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      collaborativeSupportResolutionInput,)
+  }
+);}
+
+
+
+
+export const getResolveCollaborativeSupportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext> => {
+
+const mutationKey = ['resolveCollaborativeSupport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, {id: string;data: BodyType<CollaborativeSupportResolutionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resolveCollaborativeSupport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveCollaborativeSupportMutationResult = NonNullable<Awaited<ReturnType<typeof resolveCollaborativeSupport>>>
+    export type ResolveCollaborativeSupportMutationBody = BodyType<CollaborativeSupportResolutionInput>
+    export type ResolveCollaborativeSupportMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve a failed support check and its Lead consequences exactly once
+ */
+export const useResolveCollaborativeSupport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveCollaborativeSupport>>,
+        TError,
+        {id: string;data: BodyType<CollaborativeSupportResolutionInput>},
+        TContext
+      > => {
+      return useMutation(getResolveCollaborativeSupportMutationOptions(options));
+    }
+
 export const getGetRollDiscordStatusUrl = () => {
+
+
 
 
   return `/api/rolls/discord/status`
@@ -1070,6 +1465,9 @@ export const getRollDiscordStatus = async ( options?: RequestInit): Promise<Roll
 );}
 
 
+
+
+
 export const getGetRollDiscordStatusQueryKey = () => {
     return [
     `/api/rolls/discord/status`
@@ -1085,7 +1483,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetRollDiscordStatusQueryKey();
 
 
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getRollDiscordStatus>>> = ({ signal }) => getRollDiscordStatus({ signal, ...requestOptions });
+
+
+
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRollDiscordStatus>>, TError, TData> & { queryKey: QueryKey }
@@ -1110,181 +1512,3 @@ export function useGetRollDiscordStatus<TData = Awaited<ReturnType<typeof getRol
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-export const getGetCollaborativeCastQueryKey = (id: string,) => {
-    return [
-    `/api/collaborative-casts/${id}`
-    ] as const;
-    }
-
-    export type StartCollaborativeCastMutationResult = NonNullable<Awaited<ReturnType<typeof startCollaborativeCast>>>
-
-export const getGetCollaborativeCastUrl = (id: string,) => {
-
-
-  return `/api/collaborative-casts/${id}`
-}
-
-/**
- * @summary Start a shared cast as the Lead
- */
-export const startCollaborativeCast = async (collaborativeCastInput: CollaborativeCastInput, options?: RequestInit): Promise<CollaborativeCast> => {
-
-  return customFetch<CollaborativeCast>(getStartCollaborativeCastUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      collaborativeCastInput,)
-  }
-);}
-
-export type GetCollaborativeCastQueryResult = NonNullable<Awaited<ReturnType<typeof getCollaborativeCast>>>
-
-    export type StartCollaborativeCastMutationError = ErrorType<unknown>
-
-/**
- * @summary Get a cast and all linked rolls
- */
-
-export function useGetCollaborativeCast<TData = Awaited<ReturnType<typeof getCollaborativeCast>>, TError = ErrorType<void>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getGetCollaborativeCastQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-export const getResolveCollaborativeSupportUrl = (id: string,) => {
-
-
-  return `/api/collaborative-casts/${id}/resolve-support`
-}
-export type GetCollaborativeCastQueryError = ErrorType<void>
-
-export const getGetCollaborativeCastQueryOptions = <TData = Awaited<ReturnType<typeof getCollaborativeCast>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetCollaborativeCastQueryKey(id);
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCollaborativeCast>>> = ({ signal }) => getCollaborativeCast(id, { signal, ...requestOptions });
-
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCollaborativeCast>>, TError, TData> & { queryKey: QueryKey }
-}
-
-    /**
- * @summary Start a shared cast as the Lead
- */
-export const useStartCollaborativeCast = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof startCollaborativeCast>>,
-        TError,
-        {data: BodyType<CollaborativeCastInput>},
-        TContext
-      > => {
-      return useMutation(getStartCollaborativeCastMutationOptions(options));
-    }
-
-export const getStartCollaborativeCastMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startCollaborativeCast>>, TError,{data: BodyType<CollaborativeCastInput>}, TContext> => {
-
-const mutationKey = ['startCollaborativeCast'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCollaborativeCast>>, {data: BodyType<CollaborativeCastInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  startCollaborativeCast(data,requestOptions)
-        }
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-/**
- * @summary Get a cast and all linked rolls
- */
-export const getCollaborativeCast = async (id: string, options?: RequestInit): Promise<CollaborativeCast> => {
-
-  return customFetch<CollaborativeCast>(getGetCollaborativeCastUrl(id),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-    export type StartCollaborativeCastMutationBody = BodyType<CollaborativeCastInput>
-
-export const getResolveCollaborativeSupportMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext> => {
-
-const mutationKey = ['resolveCollaborativeSupport'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, {id: string;data: BodyType<CollaborativeSupportResolutionInput>}> = (props) => {
-          const {id,data} = props ?? {};
-
-          return  resolveCollaborativeSupport(id,data,requestOptions)
-        }
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ResolveCollaborativeSupportMutationError = ErrorType<void>
-
-    export type ResolveCollaborativeSupportMutationResult = NonNullable<Awaited<ReturnType<typeof resolveCollaborativeSupport>>>
-
-/**
- * @summary Resolve a failed support check and its Lead consequences exactly once
- */
-export const resolveCollaborativeSupport = async (id: string,
-    collaborativeSupportResolutionInput: CollaborativeSupportResolutionInput, options?: RequestInit): Promise<CollaborativeSupportResolution> => {
-
-  return customFetch<CollaborativeSupportResolution>(getResolveCollaborativeSupportUrl(id),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      collaborativeSupportResolutionInput,)
-  }
-);}
-
-    export type ResolveCollaborativeSupportMutationBody = BodyType<CollaborativeSupportResolutionInput>
-
-    /**
- * @summary Resolve a failed support check and its Lead consequences exactly once
- */
-export const useResolveCollaborativeSupport = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCollaborativeSupport>>, TError,{id: string;data: BodyType<CollaborativeSupportResolutionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof resolveCollaborativeSupport>>,
-        TError,
-        {id: string;data: BodyType<CollaborativeSupportResolutionInput>},
-        TContext
-      > => {
-      return useMutation(getResolveCollaborativeSupportMutationOptions(options));
-    }

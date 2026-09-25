@@ -10,6 +10,8 @@ export type GameplayRollInputCategory = typeof GameplayRollInputCategory[keyof t
 
 export const GameplayRollInputCategory = {
   check: 'check',
+  cast: 'cast',
+  weave: 'weave',
   mend: 'mend',
   support: 'support',
   damage: 'damage',
@@ -197,6 +199,25 @@ export interface CollaborativeSupportResolutionInput {
      */
   resModifier: number;
 }
+
+export interface CollaborativeSupportResolution {
+  strain: GameplayRoll;
+  snapback: GameplayRoll | null;
+  damage: GameplayRoll | null;
+  rupture: GameplayRoll | null;
+  /** @nullable */
+  effect: string | null;
+}
+
+export interface CollaborativeCast {
+  id: string;
+  leadCharacterId: number;
+  participantIds: number[];
+  effect: string;
+  createdAt: string;
+  rolls: GameplayRoll[];
+}
+
 export type CastInputKind = typeof CastInputKind[keyof typeof CastInputKind];
 
 
@@ -227,6 +248,7 @@ export interface CastInput {
   requestId: string;
   /** @minimum 1 */
   characterId: number;
+  castId?: string;
   kind: CastInputKind;
   /**
      * @minLength 1
@@ -303,10 +325,6 @@ export interface CastTableEffect {
   resetTension?: boolean;
   condition?: string;
 }
-
-export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
-
-export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
 export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
@@ -491,31 +509,3 @@ export interface DicePreferences {
   /** @nullable */
   selectedId: string | null;
 }
-
-export interface CollaborativeCast {
-  id: string;
-  leadCharacterId: number;
-  participantIds: number[];
-  effect: string;
-  createdAt: string;
-  rolls: GameplayRoll[];
-}
-
-export interface CollaborativeSupportResolution {
-  strain: GameplayRoll;
-  snapback: GameplayRoll | null;
-  damage: GameplayRoll | null;
-  rupture: GameplayRoll | null;
-  /** @nullable */
-  effect: string | null;
-}
-
-export const CastTableOutcomeKind = {
-  Mishap: 'Mishap',
-  Snapback: 'Snapback',
-} as const;
-
-export const CastTableOutcomeKind = {
-  Mishap: 'Mishap',
-  Snapback: 'Snapback',
-} as const;

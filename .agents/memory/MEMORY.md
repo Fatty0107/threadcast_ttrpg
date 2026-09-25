@@ -9,3 +9,4 @@
 - [Radix forced tab panels](radix-forced-tabs.md) — forceMount retains state but can leave inactive panels visible in normal flow; hide them explicitly.
 - [PDF subset font glyphs](pdf-subset-font-glyphs.md) — reusing a PDF's embedded subset font can silently omit new dice and plus-sign characters; use a full font and inspect the export.
 - [Collaborative consequence idempotence](collaborative-consequence-idempotence.md) — a unique Strain roll is not enough; resolve its entire automatic consequence atomically.
+- [Post-merge workflow port conflicts](post-merge-port-conflicts.md) — a failed restart may be competing with an orphaned prior managed server; inspect the listener before changing ports.

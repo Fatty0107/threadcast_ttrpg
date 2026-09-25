@@ -234,6 +234,14 @@ export const PutDicePreferencesResponse = zod.object({
  */
 export const ListRollsResponseItem = zod.object({
   "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
   "playerName": zod.string(),
   "characterName": zod.string(),
   "title": zod.string(),
@@ -266,6 +274,12 @@ export const ListRollsResponse = zod.array(ListRollsResponseItem)
  * @summary Generate and record a gameplay roll
  */
 
+export const createRollBodyTensionContributionMax = 1000;
+
+export const createRollBodyContributedStringMax = 100;
+
+export const createRollBodyContributedModeMax = 100;
+
 export const createRollBodyTitleMax = 160;
 
 export const createRollBodyModifierMin = -50;
@@ -287,8 +301,12 @@ export const createRollBodyThreadSenseTypeMax = 120;
 export const CreateRollBody = zod.object({
   "requestId": zod.string().uuid(),
   "characterId": zod.number().min(1).optional(),
+  "castId": zod.string().uuid().optional(),
+  "tensionContribution": zod.number().min(1).max(createRollBodyTensionContributionMax).optional(),
+  "contributedString": zod.string().min(1).max(createRollBodyContributedStringMax).optional(),
+  "contributedMode": zod.string().min(1).max(createRollBodyContributedModeMax).optional(),
   "title": zod.string().min(1).max(createRollBodyTitleMax),
-  "category": zod.enum(['check', 'mend', 'support', 'damage', 'table']),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
   "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
   "modifier": zod.number().min(createRollBodyModifierMin).max(createRollBodyModifierMax),
   "diceSides": zod.union([zod.literal(0),zod.literal(4),zod.literal(6),zod.literal(8),zod.literal(10),zod.literal(12),zod.literal(20)]),
@@ -321,6 +339,7 @@ export const createCastBodyComponentsMax = 4;
 export const CreateCastBody = zod.object({
   "requestId": zod.string().uuid(),
   "characterId": zod.number().min(1),
+  "castId": zod.string().uuid().optional(),
   "kind": zod.enum(['cast', 'weave']),
   "intent": zod.string().min(1).max(createCastBodyIntentMax),
   "components": zod.array(zod.object({
@@ -379,6 +398,229 @@ export const ResolveCastConsequenceResponse = zod.object({
   "version": zod.number().min(resolveCastConsequenceResponseVersionMin),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Start a shared cast as the Lead
+ */
+
+export const startCollaborativeCastBodyEffectMax = 160;
+
+
+
+export const StartCollaborativeCastBody = zod.object({
+  "leadCharacterId": zod.number().min(1),
+  "effect": zod.string().min(1).max(startCollaborativeCastBodyEffectMax)
+})
+
+
+/**
+ * @summary Get a cast and all linked rolls
+ */
+export const GetCollaborativeCastParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCollaborativeCastResponse = zod.object({
+  "id": zod.string().uuid(),
+  "leadCharacterId": zod.number(),
+  "participantIds": zod.array(zod.number()),
+  "effect": zod.string(),
+  "createdAt": zod.string(),
+  "rolls": zod.array(zod.object({
+  "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Resolve a failed support check and its Lead consequences exactly once
+ */
+export const ResolveCollaborativeSupportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const resolveCollaborativeSupportBodyResModifierMin = -50;
+export const resolveCollaborativeSupportBodyResModifierMax = 50;
+
+
+
+export const ResolveCollaborativeSupportBody = zod.object({
+  "supportRollId": zod.number().min(1),
+  "resModifier": zod.number().min(resolveCollaborativeSupportBodyResModifierMin).max(resolveCollaborativeSupportBodyResModifierMax)
+})
+
+export const ResolveCollaborativeSupportResponse = zod.object({
+  "strain": zod.object({
+  "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+}),
+  "snapback": zod.union([zod.object({
+  "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()]),
+  "damage": zod.union([zod.object({
+  "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()]),
+  "rupture": zod.union([zod.object({
+  "id": zod.number(),
+  "characterId": zod.number().nullish(),
+  "castId": zod.string().nullish(),
+  "leadCharacterId": zod.number().nullish(),
+  "tensionContribution": zod.number().nullish(),
+  "contributedString": zod.string().nullish(),
+  "contributedMode": zod.string().nullish(),
+  "sourceRollId": zod.number().nullish(),
+  "parentRollId": zod.number().nullish(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+}),zod.null()]),
+  "effect": zod.string().nullable()
 })
 
 
