@@ -4,6 +4,7 @@
 - [ThemeContext light mode](theme-context.md) — ThemeProvider toggles dark/light class on html; .light {} CSS block at index.css line ~175 overrides all HSL vars; html.light sets color-scheme: light.
 - [Equipped dice belong to the player](personal-dice-scope.md) — saving does not equip; one selected set follows that account across its characters.
 - [Threadcast casting rules](threadcast-rules-source.md) — use the source rules over inconsistent older sheet labels, especially for Weaves and pool overflow.
+- [Concurrent sheet saves](concurrent-sheet-saves.md) — a fresh server revision must never be paired with an unsaved older whole-sheet snapshot.
 - [Scoped pnpm installs](scoped-pnpm-installs.md) — the package helper can refuse pnpm workspace child installs; use a scoped pnpm command instead.
 - [Radix forced tab panels](radix-forced-tabs.md) — forceMount retains state but can leave inactive panels visible in normal flow; hide them explicitly.
 - [PDF subset font glyphs](pdf-subset-font-glyphs.md) — reusing a PDF's embedded subset font can silently omit new dice and plus-sign characters; use a full font and inspect the export.

@@ -13,6 +13,9 @@
       "path": "../../lib/db"
     },
     {
+      "path": "../../lib/casting-rules"
+    },
+    {
       "path": "../../lib/api-zod"
     }
   ]

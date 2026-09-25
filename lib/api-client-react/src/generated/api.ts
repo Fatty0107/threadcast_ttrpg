@@ -21,6 +21,8 @@ import type {
 
 import type {
   AuthUser,
+  CastInput,
+  CastResult,
   Character,
   CharacterInput,
   CharacterUpdate,
@@ -592,7 +594,7 @@ export const updateCharacter = async (id: number,
 
 
 
-export const getUpdateCharacterMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdateCharacterMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCharacter>>, TError,{id: number;data: BodyType<CharacterUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateCharacter>>, TError,{id: number;data: BodyType<CharacterUpdate>}, TContext> => {
 
@@ -621,12 +623,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateCharacterMutationResult = NonNullable<Awaited<ReturnType<typeof updateCharacter>>>
     export type UpdateCharacterMutationBody = BodyType<CharacterUpdate>
-    export type UpdateCharacterMutationError = ErrorType<unknown>
+    export type UpdateCharacterMutationError = ErrorType<void>
 
     /**
  * @summary Update a character
  */
-export const useUpdateCharacter = <TError = ErrorType<unknown>,
+export const useUpdateCharacter = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCharacter>>, TError,{id: number;data: BodyType<CharacterUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateCharacter>>,
@@ -1001,6 +1003,78 @@ export const useCreateRoll = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateRollMutationOptions(options));
+    }
+
+export const getCreateCastUrl = () => {
+
+
+
+
+  return `/api/casts`
+}
+
+/**
+ * Charges resources, resolves the roll and consequences, and replays the complete response for an identical user/request ID.
+ * @summary Atomically cast using a saved character sheet
+ */
+export const createCast = async (castInput: CastInput, options?: RequestInit): Promise<CastResult> => {
+
+  return customFetch<CastResult>(getCreateCastUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      castInput,)
+  }
+);}
+
+
+
+
+export const getCreateCastMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCast>>, TError,{data: BodyType<CastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCast>>, TError,{data: BodyType<CastInput>}, TContext> => {
+
+const mutationKey = ['createCast'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCast>>, {data: BodyType<CastInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCast(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCastMutationResult = NonNullable<Awaited<ReturnType<typeof createCast>>>
+    export type CreateCastMutationBody = BodyType<CastInput>
+    export type CreateCastMutationError = ErrorType<void>
+
+    /**
+ * @summary Atomically cast using a saved character sheet
+ */
+export const useCreateCast = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCast>>, TError,{data: BodyType<CastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCast>>,
+        TError,
+        {data: BodyType<CastInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCastMutationOptions(options));
     }
 
 export const getGetRollDiscordStatusUrl = () => {

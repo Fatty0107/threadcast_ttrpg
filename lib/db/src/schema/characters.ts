@@ -11,10 +11,11 @@ export const charactersTable = pgTable("characters", {
   mode: text("mode"),
   data: jsonb("data").notNull().default({}),
   isDraft: boolean("is_draft").notNull().default(true),
+  version: integer("version").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const insertCharacterSchema = createInsertSchema(charactersTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCharacterSchema = createInsertSchema(charactersTable).omit({ id: true, version: true, createdAt: true, updatedAt: true });
 export type InsertCharacter = z.infer<typeof insertCharacterSchema>;
 export type Character = typeof charactersTable.$inferSelect;

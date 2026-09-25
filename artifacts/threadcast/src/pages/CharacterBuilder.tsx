@@ -371,7 +371,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     setSubmitError(null);
     if (charId) {
       updateMutation.mutate(
-        { id: parseInt(charId), data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, data } },
+        { id: parseInt(charId), data: { name: build.name, level: build.level, affinity: build.affinity, mode: build.primaryMode, data, expectedVersion: existingChar?.version } },
         {
           onSuccess: () => setLocation(`/characters/${charId}`),
           onError: (err: any) => setSubmitError(err?.message ?? "Failed to save. Please try again."),

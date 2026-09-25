@@ -10,8 +10,6 @@ export type GameplayRollInputCategory = typeof GameplayRollInputCategory[keyof t
 
 export const GameplayRollInputCategory = {
   check: 'check',
-  cast: 'cast',
-  weave: 'weave',
   mend: 'mend',
   support: 'support',
   damage: 'damage',
@@ -142,6 +140,155 @@ export interface GameplayRoll {
   createdAt: string;
 }
 
+export type CastInputKind = typeof CastInputKind[keyof typeof CastInputKind];
+
+
+export const CastInputKind = {
+  cast: 'cast',
+  weave: 'weave',
+} as const;
+
+export interface CastComponent {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  string: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  powerLevel: number;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  mode: string;
+}
+
+export interface CastInput {
+  requestId: string;
+  /** @minimum 1 */
+  characterId: number;
+  kind: CastInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  intent: string;
+  /**
+     * @minItems 1
+     * @maxItems 4
+     */
+  components: CastComponent[];
+}
+
+export type CastTableEffectDamageSides = typeof CastTableEffectDamageSides[keyof typeof CastTableEffectDamageSides];
+
+
+export const CastTableEffectDamageSides = {
+  NUMBER_4: 4,
+  NUMBER_6: 6,
+  NUMBER_8: 8,
+  NUMBER_10: 10,
+  NUMBER_12: 12,
+} as const;
+
+export type CastTableEffectDamage = {
+  sides: CastTableEffectDamageSides;
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  count: number;
+};
+
+export interface CastTableEffect {
+  name: string;
+  description: string;
+  damage?: CastTableEffectDamage;
+  burnout?: number;
+  resetTension?: boolean;
+  condition?: string;
+}
+
+export type CastAftermathTableKind = typeof CastAftermathTableKind[keyof typeof CastAftermathTableKind];
+
+
+export const CastAftermathTableKind = {
+  Mishap: 'Mishap',
+  Snapback: 'Snapback',
+} as const;
+
+export type CastAftermathTable = {
+  kind: CastAftermathTableKind;
+  die: number;
+  effect: CastTableEffect;
+};
+
+export type CastAftermathAdditionalTableKind = typeof CastAftermathAdditionalTableKind[keyof typeof CastAftermathAdditionalTableKind];
+
+
+export const CastAftermathAdditionalTableKind = {
+  Snapback: 'Snapback',
+} as const;
+
+export type CastAftermathAdditionalTable = {
+  kind: CastAftermathAdditionalTableKind;
+  die: number;
+  effect: CastTableEffect;
+  damage?: number;
+};
+
+export type CastAftermathStrain = {
+  die: number;
+  total: number;
+  dc: number;
+  failed: boolean;
+};
+
+export interface CastAftermath {
+  tension: number;
+  pool: number;
+  safeLimit: number;
+  cost: number;
+  overflow: boolean;
+  table?: CastAftermathTable;
+  additionalTable?: CastAftermathAdditionalTable;
+  damage?: number;
+  strain?: CastAftermathStrain;
+  warning?: string;
+}
+
+/**
+ * Full character sheet data as JSONB
+ */
+export type CharacterData = { [key: string]: unknown };
+
+export interface Character {
+  id: number;
+  userId: number;
+  name: string;
+  level: number;
+  /** @nullable */
+  affinity?: string | null;
+  /** @nullable */
+  mode?: string | null;
+  /** Full character sheet data as JSONB */
+  data: CharacterData;
+  isDraft: boolean;
+  /** @minimum 0 */
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CastResult {
+  roll: GameplayRoll;
+  character: Character;
+  aftermath: CastAftermath;
+}
+
 export interface RollDiscordStatus {
   configured: boolean;
   valid: boolean;
@@ -176,27 +323,6 @@ export interface AuthUser {
   role: AuthUserRole;
 }
 
-/**
- * Full character sheet data as JSONB
- */
-export type CharacterData = { [key: string]: unknown };
-
-export interface Character {
-  id: number;
-  userId: number;
-  name: string;
-  level: number;
-  /** @nullable */
-  affinity?: string | null;
-  /** @nullable */
-  mode?: string | null;
-  /** Full character sheet data as JSONB */
-  data: CharacterData;
-  isDraft: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export type CharacterInputData = { [key: string]: unknown };
 
 export interface CharacterInput {
@@ -211,6 +337,9 @@ export interface CharacterInput {
 export type CharacterUpdateData = { [key: string]: unknown };
 
 export interface CharacterUpdate {
+  expectedUpdatedAt?: string;
+  /** @minimum 0 */
+  expectedVersion?: number;
   name?: string;
   level?: number;
   affinity?: string;

@@ -47,6 +47,10 @@ export const GetMeResponse = zod.object({
 /**
  * @summary List all characters for current user
  */
+export const listCharactersResponseVersionMin = 0;
+
+
+
 export const ListCharactersResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -56,6 +60,7 @@ export const ListCharactersResponseItem = zod.object({
   "mode": zod.string().nullish(),
   "data": zod.record(zod.string(), zod.unknown()).describe('Full character sheet data as JSONB'),
   "isDraft": zod.boolean(),
+  "version": zod.number().min(listCharactersResponseVersionMin),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -82,6 +87,10 @@ export const GetCharacterParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getCharacterResponseVersionMin = 0;
+
+
+
 export const GetCharacterResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
@@ -91,6 +100,7 @@ export const GetCharacterResponse = zod.object({
   "mode": zod.string().nullish(),
   "data": zod.record(zod.string(), zod.unknown()).describe('Full character sheet data as JSONB'),
   "isDraft": zod.boolean(),
+  "version": zod.number().min(getCharacterResponseVersionMin),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -103,7 +113,13 @@ export const UpdateCharacterParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateCharacterBodyExpectedVersionMin = 0;
+
+
+
 export const UpdateCharacterBody = zod.object({
+  "expectedUpdatedAt": zod.coerce.date().optional(),
+  "expectedVersion": zod.number().min(updateCharacterBodyExpectedVersionMin).optional(),
   "name": zod.string().optional(),
   "level": zod.number().optional(),
   "affinity": zod.string().optional(),
@@ -111,6 +127,10 @@ export const UpdateCharacterBody = zod.object({
   "data": zod.record(zod.string(), zod.unknown()).optional(),
   "isDraft": zod.boolean().optional()
 })
+
+export const updateCharacterResponseVersionMin = 0;
+
+
 
 export const UpdateCharacterResponse = zod.object({
   "id": zod.number(),
@@ -121,6 +141,7 @@ export const UpdateCharacterResponse = zod.object({
   "mode": zod.string().nullish(),
   "data": zod.record(zod.string(), zod.unknown()).describe('Full character sheet data as JSONB'),
   "isDraft": zod.boolean(),
+  "version": zod.number().min(updateCharacterResponseVersionMin),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -264,7 +285,7 @@ export const CreateRollBody = zod.object({
   "requestId": zod.string().uuid(),
   "characterId": zod.number().min(1).optional(),
   "title": zod.string().min(1).max(createRollBodyTitleMax),
-  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage', 'table']),
+  "category": zod.enum(['check', 'mend', 'support', 'damage', 'table']),
   "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
   "modifier": zod.number().min(createRollBodyModifierMin).max(createRollBodyModifierMax),
   "diceSides": zod.union([zod.literal(0),zod.literal(4),zod.literal(6),zod.literal(8),zod.literal(10),zod.literal(12),zod.literal(20)]),
@@ -273,6 +294,36 @@ export const CreateRollBody = zod.object({
   "bonusDiceCount": zod.number().min(1).max(createRollBodyBonusDiceCountMax).optional(),
   "multiplier": zod.number().min(1).max(createRollBodyMultiplierMax),
   "dc": zod.number().min(1).max(createRollBodyDcMax).optional()
+})
+
+
+/**
+ * Charges resources, resolves the roll and consequences, and replays the complete response for an identical user/request ID.
+ * @summary Atomically cast using a saved character sheet
+ */
+
+export const createCastBodyIntentMax = 500;
+
+export const createCastBodyComponentsItemStringMax = 100;
+
+export const createCastBodyComponentsItemPowerLevelMax = 5;
+
+export const createCastBodyComponentsItemModeMax = 40;
+
+export const createCastBodyComponentsMax = 4;
+
+
+
+export const CreateCastBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "characterId": zod.number().min(1),
+  "kind": zod.enum(['cast', 'weave']),
+  "intent": zod.string().min(1).max(createCastBodyIntentMax),
+  "components": zod.array(zod.object({
+  "string": zod.string().min(1).max(createCastBodyComponentsItemStringMax),
+  "powerLevel": zod.number().min(1).max(createCastBodyComponentsItemPowerLevelMax),
+  "mode": zod.string().min(1).max(createCastBodyComponentsItemModeMax)
+})).min(1).max(createCastBodyComponentsMax)
 })
 
 

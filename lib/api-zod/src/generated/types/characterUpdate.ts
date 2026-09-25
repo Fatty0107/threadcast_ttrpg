@@ -8,6 +8,9 @@
 import type { CharacterUpdateData } from './characterUpdateData';
 
 export interface CharacterUpdate {
+  expectedUpdatedAt?: Date;
+  /** @minimum 0 */
+  expectedVersion?: number;
   name?: string;
   level?: number;
   affinity?: string;

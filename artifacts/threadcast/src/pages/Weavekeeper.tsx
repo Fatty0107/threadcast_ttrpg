@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const DEMO_CHARACTER: Character = {
+  version: 0,
   id: 999, userId: 999, name: "Meren Vail", level: 7,
   affinity: "Water", mode: "Anchor", isDraft: false,
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),

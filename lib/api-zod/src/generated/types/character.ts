@@ -19,6 +19,8 @@ export interface Character {
   /** Full character sheet data as JSONB */
   data: CharacterData;
   isDraft: boolean;
+  /** @minimum 0 */
+  version: number;
   createdAt: string;
   updatedAt: string;
 }

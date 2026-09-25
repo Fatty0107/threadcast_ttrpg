@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Character, type GameplayRoll } from "@workspace/api-client-react";
+import { Character, getCharacter, useCreateCast, getListRollsQueryKey, type GameplayRoll, type CastInput } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ATTRIBUTE_DEFS, ALL_SKILLS, ALL_MODES, FEATS, CATALOG_ITEMS, BURNOUT_LEVELS,
   RARITY_COLORS, RARITY_LABELS, ITEM_BONUS, KIT_CONTENTS,
@@ -127,11 +128,17 @@ function CastAftermathDisplay({ result }: { result: CastUIAftermath }) {
 interface Props {
   character: Character;
   onUpdate: (data: Partial<Character>) => void | Promise<void>;
+  onCastState?: (character: Character) => void;
+  beforeCast?: () => Promise<unknown>;
+  onLocalEdit?: () => void;
+  onLocalSave?: () => void;
 }
 
-export function CharacterSheetContent({ character, onUpdate }: Props) {
+export function CharacterSheetContent({ character, onUpdate, onCastState, beforeCast, onLocalEdit, onLocalSave }: Props) {
   const { openRoll } = useDiceRoller();
   const recordRoll = useGameplayRoll();
+  const queryClient = useQueryClient();
+  const createCast = useCreateCast();
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [localData, setLocalData] = useState<SheetData>((character.data as SheetData) || {});
@@ -160,6 +167,10 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const castRequestLock = useRef(false);
+  const [castInProgress, setCastInProgress] = useState(false);
+  const dirtyRef = useRef(false);
+  const editSerial = useRef(0);
+  const pendingCastRef = useRef<{ body: string; requestId: string } | null>(null);
   const mendRollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mendRollLock = useRef(false);
 
@@ -173,27 +184,51 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     const next = (character.data as SheetData) || {};
     localDataRef.current = next;
     setLocalData(next);
+    dirtyRef.current = false;
+    onLocalSave?.();
+    pendingCastRef.current = null;
     setSupporting(false);
     setSupportCheck(null);
     setSupportError("");
   }, [character.id]);
 
+  useEffect(() => {
+    // A different tab may have cast while this sheet was open. Query refetches
+    // must refresh the displayed resources, but not overwrite unsaved typing.
+    if (castRequestLock.current || pendingSave.current || dirtyRef.current) return;
+    const next = (character.data as SheetData) || {};
+    localDataRef.current = next;
+    setLocalData(next);
+  }, [character.version]);
+
   const save = useCallback((next: SheetData) => {
     clearTimeout(saveTimer.current);
     pendingSave.current = next;
+    const serial = editSerial.current;
     saveTimer.current = setTimeout(() => {
       pendingSave.current = null;
-      void Promise.resolve(onUpdateRef.current({ data: next as any })).catch(() => undefined);
+      void Promise.resolve(onUpdateRef.current({ data: next as any })).then(() => {
+        if (editSerial.current === serial) {
+          dirtyRef.current = false;
+          onLocalSave?.();
+        }
+      }).catch(() => undefined);
     }, 800);
-  }, []);
+  }, [onLocalSave]);
 
   function patch(partial: Partial<SheetData>) {
+    dirtyRef.current = true;
+    editSerial.current += 1;
+    onLocalEdit?.();
     const n = { ...localDataRef.current, ...partial };
     localDataRef.current = n;
     setLocalData(n);
     save(n);
   }
   function patchNested<K extends keyof SheetData>(key: K, field: string, value: unknown) {
+    dirtyRef.current = true;
+    editSerial.current += 1;
+    onLocalEdit?.();
     const prior = localDataRef.current;
     const n = { ...prior, [key]: { ...(prior[key] as object || {}), [field]: value } } as SheetData;
     localDataRef.current = n;
@@ -333,11 +368,13 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   function beginCastRequest(): (() => void) | null {
     if (castRequestLock.current) return null;
     castRequestLock.current = true;
+    setCastInProgress(true);
     let released = false;
     return () => {
       if (released) return;
       released = true;
       castRequestLock.current = false;
+      setCastInProgress(false);
     };
   }
 
@@ -425,86 +462,40 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     return { kind, die: tableRoll.finalDie, effect, damage, warning: warning || undefined, saveConfirmed, damageSaved };
   }
 
-  async function finishCast(roll: GameplayRoll, cost: number, consumePrecisionWeave = false): Promise<CastUIAftermath> {
-    const metrics = castingMetricsRef.current;
-    const latest = localDataRef.current;
-    const latestTension = latest.tension || { current: 0, pool: metrics.threadPool, safeLimit: metrics.safeLimit };
-    if (!Number.isFinite(cost) || cost < 0 || !Number.isFinite(latestTension.current))
-      throw new Error("The roll was logged, but its Tension cost could not be applied.");
-    const hasPrecisionCharge = (latest.feats || []).includes("Precision Weave") && (latest.featCharges || {})["Precision Weave"] !== 0;
-    const actualCost = consumePrecisionWeave && !hasPrecisionCharge ? cost + 1 : cost;
-    const overflow = latestTension.current + actualCost > metrics.threadPool;
-    const nextTension = { ...latestTension, current: overflow ? 0 : latestTension.current + actualCost, pool: metrics.threadPool, safeLimit: metrics.safeLimit };
-    const next: SheetData = {
-      ...latest,
-      tension: nextTension,
-      ...(consumePrecisionWeave && hasPrecisionCharge
-        ? { featCharges: { ...(latest.featCharges || {}), "Precision Weave": 0 } }
-        : {}),
-    };
-    const aftermath: CastUIAftermath = { cost: actualCost, tension: nextTension.current, pool: metrics.threadPool, safeLimit: metrics.safeLimit, overflow, saveConfirmed: true };
-    try {
-      await persistCastingData(next);
-    } catch (error) {
-      aftermath.saveConfirmed = false;
-      aftermath.warning = `The cast roll was logged and ${actualCost} Tension was applied locally, but the sheet save was not confirmed: ${rollErrorMessage(error)}. Check the shared log and character resources.`;
+  async function finishCast(input: Omit<CastInput, "requestId" | "characterId">) {
+    // Flush edits made just before casting; a later debounced whole-sheet PATCH
+    // must never overwrite the transaction's authoritative resources.
+    clearTimeout(saveTimer.current);
+    saveTimer.current = undefined;
+    const pending = pendingSave.current;
+    pendingSave.current = null;
+    if (pending) {
+      await onUpdateRef.current({ data: pending as any });
+      dirtyRef.current = false;
+      onLocalSave?.();
     }
-    try {
-      const kind = overflow || roll.isMisfire ? "Snapback" : (!roll.isBreak && roll.dc !== undefined && roll.total < roll.dc ? "Mishap" : null);
-      if (kind) {
-        const table = await resolveCastTable(kind);
-        aftermath.table = { kind: table.kind, die: table.die, effect: table.effect };
-        aftermath.damage = table.damage;
-        aftermath.saveConfirmed = aftermath.saveConfirmed && table.saveConfirmed;
-        aftermath.damageSaved = table.damageSaved;
-        if (table.warning) aftermath.warning = [aftermath.warning, table.warning].filter(Boolean).join(" ");
-        if (table.effect.resetTension) aftermath.tension = 0;
-        if (table.effect.name === "Total Break") aftermath.warning = [aftermath.warning, "Total Break damage and permanent injury need table resolution."].filter(Boolean).join(" ");
-        if (kind === "Mishap" && table.effect.name === "Tension Spike") {
-          const spiked = aftermath.tension + actualCost;
-          const spikeOverflow = spiked > metrics.threadPool;
-          aftermath.tension = spikeOverflow ? 0 : spiked;
-          aftermath.overflow = spikeOverflow;
-          const current = localDataRef.current;
-          try {
-            await persistCastingData({ ...current, tension: { ...(current.tension || latestTension), current: aftermath.tension, pool: metrics.threadPool, safeLimit: metrics.safeLimit } });
-          } catch (error) {
-            aftermath.saveConfirmed = false;
-            aftermath.warning = [aftermath.warning, `Tension Spike was confirmed, but its added Tension was not saved: ${rollErrorMessage(error)}.`].filter(Boolean).join(" ");
-          }
-          if (spikeOverflow) {
-            const secondary = await resolveCastTable("Snapback");
-            aftermath.additionalTable = { ...secondary, kind: "Snapback" };
-            aftermath.saveConfirmed = aftermath.saveConfirmed && secondary.saveConfirmed;
-            if (secondary.warning) aftermath.warning = [aftermath.warning, secondary.warning].filter(Boolean).join(" ");
-            if (secondary.effect.resetTension) aftermath.tension = 0;
-          } else {
-            const dc = 10 + Math.max(0, spiked - metrics.safeLimit);
-            {
-              try {
-                const check = await recordRoll({ characterId: character.id, title: "Tension Spike · immediate Strain",
-                  category: "check", mode: "NORMAL", modifier: calcMod(metrics.res),
-                  diceSides: 20, diceCount: 1, multiplier: 1, dc });
-                const failed = check.isMisfire || (!check.isBreak && check.total < dc);
-                aftermath.strain = { die: check.finalDie, total: check.total, dc, failed };
-                if (failed) {
-                  const secondary = await resolveCastTable("Snapback");
-                  aftermath.additionalTable = { ...secondary, kind: "Snapback" };
-                  aftermath.saveConfirmed = aftermath.saveConfirmed && secondary.saveConfirmed;
-                  if (secondary.warning) aftermath.warning = [aftermath.warning, secondary.warning].filter(Boolean).join(" ");
-                  if (secondary.effect.resetTension) aftermath.tension = 0;
-                }
-              } catch (error) {
-                aftermath.warning = [aftermath.warning, `Tension Spike was confirmed, but its Strain check could not finish: ${rollErrorMessage(error)}.`].filter(Boolean).join(" ");
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      aftermath.warning = [aftermath.warning, `The cast was logged, but a consequence roll could not finish: ${rollErrorMessage(error)}. Check the shared log and resolve the missing roll; do not reroll a confirmed table.`].filter(Boolean).join(" ");
+    if (beforeCast) await beforeCast();
+    const body = JSON.stringify(input);
+    if (pendingCastRef.current?.body !== body) {
+      pendingCastRef.current = { body, requestId: crypto.randomUUID() };
     }
-    return aftermath;
+    const requestId = pendingCastRef.current.requestId;
+    const response = await createCast.mutateAsync({ data: { ...input, characterId: character.id, requestId } });
+    // An idempotent replay returns the historical roll and aftermath. Never
+    // replace live resources with that historical character snapshot.
+    let fresh: Character;
+    try {
+      fresh = await getCharacter(character.id);
+    } catch {
+      throw new Error("The cast resolved, but the latest sheet could not be loaded. Retry this same cast to recover its result.");
+    }
+    pendingCastRef.current = null;
+    const next = fresh.data as SheetData;
+    localDataRef.current = next;
+    setLocalData(next);
+    onCastState?.(fresh);
+    void queryClient.invalidateQueries({ queryKey: getListRollsQueryKey() });
+    return { roll: response.roll, aftermath: { ...response.aftermath, saveConfirmed: true, damageSaved: true } as CastUIAftermath };
   }
 
   async function rollStrainCheck() {
@@ -929,6 +920,7 @@ ${([
 
   return (
     <div className="tc-sheet max-w-7xl mx-auto">
+      <fieldset disabled={castInProgress} aria-busy={castInProgress} className="border-0 p-0 m-0 min-w-0 w-full">
       {/* ===== HEADER ===== */}
       <div className="tc-top">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1479,7 +1471,7 @@ ${([
                 castingConditions={localData.castingConditions || []}
                 burnout={burnout}
                 onBeginCast={beginCastRequest}
-                onCast={(roll, cost) => finishCast(roll, cost)}
+                onCast={finishCast}
                 primaryMode={primaryMode}
                 secondaryModes={secondaryModes}
                 tertiaryModes={tertiaryModes}
@@ -1562,7 +1554,7 @@ ${([
                 hasPrecisionWeave={feats.includes("Precision Weave")}
                 precisionWeaveChargeAvailable={isFeatAvailable("Precision Weave")}
                 onBeginCast={beginCastRequest}
-                onCast={(roll, cost, consumePrecisionWeave) => finishCast(roll, cost, consumePrecisionWeave)}
+                onCast={finishCast}
               />
             ))}
           </div>
@@ -2217,6 +2209,7 @@ ${([
           )}
         </TabsContent>
       </Tabs>
+      </fieldset>
     </div>
   );
 }
@@ -2286,7 +2279,7 @@ function WeaveCastRow({
   safePowerLevel: number; ctrScore: number; availableTension: number; castingConditions: string[]; burnout: number;
   hasPrecisionWeave: boolean; precisionWeaveChargeAvailable: boolean;
   onBeginCast: () => (() => void) | null;
-  onCast: (roll: GameplayRoll, cost: number, consumePrecisionWeave?: boolean) => Promise<CastUIAftermath>;
+  onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
 }) {
   const mod = calcMod(ctrScore) - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
   const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
@@ -2372,27 +2365,19 @@ function WeaveCastRow({
     requestLock.current = true;
     setPending(true);
     setRollError("");
-    let result;
+    let result: GameplayRoll;
+    let outcome: CastUIAftermath;
     try {
-      result = await recordRoll({
-        characterId, title: `Weave · ${intent}`.slice(0, 160),
-        category: "weave", mode: rollType, modifier: mod,
-        diceSides: 20, diceCount: rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: weaveDC,
-      });
+      const committed = await onCast({ kind: "weave", intent, components: weave.strings.slice(0, weave.numStrings).map((name, i) => ({
+        string: name, powerLevel: weave.powerLevels[i], mode: weave.modes[i],
+      })) });
+      result = committed.roll;
+      outcome = committed.aftermath;
+      setAftermath(outcome);
     } catch (error) {
       setRollError(rollErrorMessage(error));
       setPending(false);
       requestLock.current = false;
-      releaseCastRef.current?.();
-      releaseCastRef.current = null;
-      return;
-    }
-    try {
-      setAftermath(await onCast(result, castCost, precisionDiscount));
-    } catch (error) {
-      requestLock.current = false;
-      setPending(false);
-      setRollError(rollErrorMessage(error));
       releaseCastRef.current?.();
       releaseCastRef.current = null;
       return;
@@ -2400,15 +2385,15 @@ function WeaveCastRow({
     releaseCastRef.current?.();
     releaseCastRef.current = null;
     setPending(false);
-    setRolledCost(castCost);
+    setRolledCost(outcome.cost);
     const { d1, d2, finalDie, total } = result;
     setRollKey(key => key + 1);
-    setAnimDice({ d1, d2, rollType });
+    setAnimDice({ d1, d2, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD" });
     rollTimerRef.current = setTimeout(() => {
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType, dc: weaveDC, intent, modes });
+      setCastResult({ d1, d2, finalDie, total, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", dc: result.dc ?? weaveDC, intent, modes });
     }, ROLL_DURATION_MS);
   }
 
@@ -2522,7 +2507,7 @@ function WeaveCastRow({
               </div>
               <div className="text-[10px] font-mono text-muted-foreground mb-3">{weaveRollType === "HARMONY" ? "Roll 2d20, keep highest." : weaveRollType === "DISCORD" ? "Roll 2d20, keep lowest." : "Roll 1d20."} Thread Check: CTR {fmtMod(mod)}</div>
               <button onClick={doRoll} disabled={pending || !isConfigured || !weave.intent?.trim() || dicePreferencesLoading} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">{pending ? "RESOLVING…" : "⚄ ROLL THE WEAVE"}</button>
-              {rollError && <p role="alert" className="text-xs text-destructive">Roll not saved: {rollError}</p>}
+              {rollError && <p role="alert" className="text-xs text-destructive">Cast not confirmed: {rollError}. Retry this same cast to recover its original result.</p>}
             </div>
           )}
         </div>
@@ -2550,7 +2535,7 @@ function CastStringPanel({
   onBeginCast, castingConditions, burnout,
   primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom,
 }: {
-  str: any; attrScore: number; characterName: string; characterId: number; availableTension: number; onCast: (roll: GameplayRoll, cost: number) => Promise<CastUIAftermath>;
+  str: any; attrScore: number; characterName: string; characterId: number; availableTension: number; onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
   onBeginCast: () => (() => void) | null;
   castingConditions: string[]; burnout: number;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
@@ -2627,27 +2612,19 @@ function CastStringPanel({
     requestLock.current = true;
     setPending(true);
     setRollError("");
-    let result;
+    let result: GameplayRoll;
+    let outcome: CastUIAftermath;
     try {
-      result = await recordRoll({
-        characterId, title: `${str.name} · PL${pl.pl} ${castIntent.trim()}`.slice(0, 160),
-        category: "cast", mode: mode.rollType, modifier: mod,
-        diceSides: 20, diceCount: mode.rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: pl.dc,
-      });
+      const committed = await onCast({ kind: "cast", intent: castIntent.trim(), components: [{
+        string: str.name, powerLevel: pl.pl, mode: mode.name,
+      }] });
+      result = committed.roll;
+      outcome = committed.aftermath;
+      setAftermath(outcome);
     } catch (error) {
       setRollError(rollErrorMessage(error));
       setPending(false);
       requestLock.current = false;
-      releaseCastRef.current?.();
-      releaseCastRef.current = null;
-      return;
-    }
-    try {
-      setAftermath(await onCast(result, pl.cost));
-    } catch (error) {
-      requestLock.current = false;
-      setPending(false);
-      setRollError(rollErrorMessage(error));
       releaseCastRef.current?.();
       releaseCastRef.current = null;
       return;
@@ -2660,12 +2637,12 @@ function CastStringPanel({
 
     const { d1, d2, finalDie, total } = result;
     setRollKey(key => key + 1);
-    setAnimDice({ d1, d2, rollType: mode.rollType });
+    setAnimDice({ d1, d2, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD" });
     rollTimerRef.current = setTimeout(() => {
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: pl.dc });
+      setCastResult({ d1, d2, finalDie, total, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", chosenMode: mode.name, dc: result.dc ?? pl.dc });
     }, ROLL_DURATION_MS);
   }
 

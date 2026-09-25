@@ -5,6 +5,7 @@ import charactersRouter from "./characters";
 import homebrewRouter from "./homebrew";
 import diceRouter from "./dice";
 import rollsRouter from "./rolls";
+import castsRouter from "./casts";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use("/characters", charactersRouter);
 router.use("/homebrew", homebrewRouter);
 router.use(diceRouter);
 router.use(rollsRouter);
+router.use(castsRouter);
 
 export default router;
