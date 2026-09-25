@@ -6,6 +6,7 @@ import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, Li
   StartCollaborativeCastBody, GetCollaborativeCastParams, GetCollaborativeCastResponse,
   ResolveCollaborativeSupportParams, ResolveCollaborativeSupportBody, ResolveCollaborativeSupportResponse } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { postRollEmbed } from "../lib/discord-roll";
 
 const router = Router();
 router.use("/rolls", requireAuth);
@@ -188,22 +189,7 @@ router.post("/collaborative-casts/:id/resolve-support", async (req, res): Promis
 async function sendToDiscord(roll: SavedRoll, url: string, log: { warn: (data: object, message: string) => void }) {
   let status = "failed";
   try {
-    const dieText = roll.d2 === null ? `${roll.d1}` : `[${roll.d1}, ${roll.d2}]`;
-    const signed = roll.modifier < 0 ? `${roll.modifier}` : `+${roll.modifier}`;
-    const formula = roll.category === "damage"
-      ? `${roll.diceSides === 0 ? "1 flat" : `${roll.d1}${roll.d2 === null ? "" : ` + ${roll.d2}`}`}${roll.extraDice.map(d => ` + ${d.value}(d${d.sides})`).join("")} ${signed}`
-      : roll.category === "mend"
-      ? `(${roll.d1} + ${roll.d2}) × ${roll.multiplier}`
-      : `${dieText} ${roll.mode}${roll.multiplier !== 1 ? ` × ${roll.multiplier}` : ""} ${signed}`;
-    const safe = (value: string) => value.replace(/[\r\n\t]+/g, " ").replace(/([\\`*_~|>])/g, "\\$1").replace(/@/g, "@\u200b");
-    const content = `🎲 **${safe(roll.playerName)}** (${safe(roll.characterName)}) — **${safe(roll.title)}**\n${formula}${roll.category === "damage" ? " (minimum 1)" : ""} = **${roll.total}**${roll.dc ? ` vs DC ${roll.dc}` : ""} · ${roll.outcome}`;
-    const result = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: content.slice(0, 2000), allowed_mentions: { parse: [] } }),
-      redirect: "error",
-      signal: AbortSignal.timeout(5000),
-    });
+    const result = await postRollEmbed(roll, url);
     if (result.ok) status = "sent";
     else log.warn({ rollId: roll.id, statusCode: result.status }, "Discord roll delivery failed");
   } catch {
