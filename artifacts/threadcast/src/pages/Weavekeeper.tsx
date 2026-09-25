@@ -990,6 +990,9 @@ export default function Weavekeeper() {
                   </div>
                   {showDemoChar ? (
                     <div className="border border-border/50">
+                      <p className="border-b border-border/50 px-3 py-2 text-xs text-muted-foreground" role="note">
+                        Sample sheet only. Rolls here cannot be recorded; open a saved character to share gameplay rolls.
+                      </p>
                       <CharacterSheetContent character={DEMO_CHARACTER} onUpdate={() => {}} />
                     </div>
                   ) : (

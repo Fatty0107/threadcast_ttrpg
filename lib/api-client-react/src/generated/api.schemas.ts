@@ -5,6 +5,151 @@
  * THREADCAST TTRPG API
  * OpenAPI spec version: 0.1.0
  */
+export type GameplayRollInputCategory = typeof GameplayRollInputCategory[keyof typeof GameplayRollInputCategory];
+
+
+export const GameplayRollInputCategory = {
+  check: 'check',
+  cast: 'cast',
+  weave: 'weave',
+  mend: 'mend',
+  support: 'support',
+  damage: 'damage',
+} as const;
+
+export type GameplayRollInputMode = typeof GameplayRollInputMode[keyof typeof GameplayRollInputMode];
+
+
+export const GameplayRollInputMode = {
+  NORMAL: 'NORMAL',
+  HARMONY: 'HARMONY',
+  DISCORD: 'DISCORD',
+} as const;
+
+export type GameplayRollInputDiceSides = typeof GameplayRollInputDiceSides[keyof typeof GameplayRollInputDiceSides];
+
+
+export const GameplayRollInputDiceSides = {
+  NUMBER_0: 0,
+  NUMBER_4: 4,
+  NUMBER_6: 6,
+  NUMBER_8: 8,
+  NUMBER_10: 10,
+  NUMBER_12: 12,
+  NUMBER_20: 20,
+} as const;
+
+export type GameplayRollInputBonusDiceSides = typeof GameplayRollInputBonusDiceSides[keyof typeof GameplayRollInputBonusDiceSides];
+
+
+export const GameplayRollInputBonusDiceSides = {
+  NUMBER_4: 4,
+  NUMBER_6: 6,
+  NUMBER_8: 8,
+  NUMBER_10: 10,
+  NUMBER_12: 12,
+} as const;
+
+export interface GameplayRollInput {
+  requestId: string;
+  /** @minimum 1 */
+  characterId?: number;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  category: GameplayRollInputCategory;
+  mode: GameplayRollInputMode;
+  /**
+     * @minimum -50
+     * @maximum 50
+     */
+  modifier: number;
+  diceSides: GameplayRollInputDiceSides;
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  diceCount: number;
+  bonusDiceSides?: GameplayRollInputBonusDiceSides;
+  /**
+     * @minimum 1
+     * @maximum 2
+     */
+  bonusDiceCount?: number;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  multiplier: number;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  dc?: number;
+}
+
+export type GameplayRollCategory = typeof GameplayRollCategory[keyof typeof GameplayRollCategory];
+
+
+export const GameplayRollCategory = {
+  check: 'check',
+  cast: 'cast',
+  weave: 'weave',
+  mend: 'mend',
+  support: 'support',
+  damage: 'damage',
+} as const;
+
+export type GameplayRollMode = typeof GameplayRollMode[keyof typeof GameplayRollMode];
+
+
+export const GameplayRollMode = {
+  NORMAL: 'NORMAL',
+  HARMONY: 'HARMONY',
+  DISCORD: 'DISCORD',
+} as const;
+
+export type GameplayRollExtraDiceItem = {
+  sides: number;
+  value: number;
+};
+
+export interface GameplayRoll {
+  id: number;
+  playerName: string;
+  characterName: string;
+  title: string;
+  category: GameplayRollCategory;
+  mode: GameplayRollMode;
+  diceSides: number;
+  d1: number;
+  d2?: number;
+  extraDice: GameplayRollExtraDiceItem[];
+  modifier: number;
+  multiplier: number;
+  finalDie: number;
+  total: number;
+  dc?: number;
+  isBreak: boolean;
+  isMisfire: boolean;
+  outcome: string;
+  diceName: string;
+  diceColor: string;
+  createdAt: string;
+}
+
+export interface RollDiscordStatus {
+  configured: boolean;
+  valid: boolean;
+  recentSent: number;
+  recentFailed: number;
+  recentPending: number;
+  /** @nullable */
+  lastFailureAt?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }

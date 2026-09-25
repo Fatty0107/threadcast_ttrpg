@@ -14,8 +14,9 @@ import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
 import { DiceStage, ROLL_DURATION_MS } from "@/components/shared/DiceStage";
 import { useDiceRoller } from "@/components/shared/DiceRoller";
+import { useGameplayRoll, rollErrorMessage } from "@/lib/gameplay-roll";
 import { GameTerm } from "@/components/shared/GameTerm";
-import { DEFAULT_DICE_STYLE, rollDie, useActiveDiceStyle } from "@/lib/dice-style";
+import { DEFAULT_DICE_STYLE, useActiveDiceStyle } from "@/lib/dice-style";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import "./character-sheet.css";
@@ -104,6 +105,7 @@ interface Props {
 
 export function CharacterSheetContent({ character, onUpdate }: Props) {
   const { openRoll } = useDiceRoller();
+  const recordRoll = useGameplayRoll();
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [localData, setLocalData] = useState<SheetData>((character.data as SheetData) || {});
@@ -117,27 +119,40 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
   const [supportTension, setSupportTension] = useState(1);
   const [supporting, setSupporting] = useState(false);
   const [supportCheck, setSupportCheck] = useState<{ die: number; total: number } | null>(null);
+  const [supportError, setSupportError] = useState("");
+  const supportLock = useRef(false);
   const [mendRoll, setMendRoll] = useState<{ d1: number; d2: number; diceUsed: number; diceRoll: number; healed: number; rolling: boolean; rollKey: number } | null>(null);
+  const [mendError, setMendError] = useState("");
   const isMendRolling = !!mendRoll?.rolling;
   const [expandedKitItem, setExpandedKitItem] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pendingSave = useRef<SheetData | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
   const mendRollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mendRollLock = useRef(false);
 
   useEffect(() => () => {
     if (mendRollTimer.current) clearTimeout(mendRollTimer.current);
+    clearTimeout(saveTimer.current);
+    if (pendingSave.current) onUpdateRef.current({ data: pendingSave.current as any });
   }, []);
 
   useEffect(() => {
     setLocalData((character.data as SheetData) || {});
     setSupporting(false);
     setSupportCheck(null);
+    setSupportError("");
   }, [character.id]);
 
   const save = useCallback((next: SheetData) => {
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => onUpdate({ data: next as any }), 800);
-  }, [onUpdate]);
+    pendingSave.current = next;
+    saveTimer.current = setTimeout(() => {
+      pendingSave.current = null;
+      onUpdateRef.current({ data: next as any });
+    }, 800);
+  }, []);
 
   function patch(partial: Partial<SheetData>) {
     setLocalData(prev => { const n = { ...prev, ...partial }; save(n); return n; });
@@ -275,26 +290,50 @@ export function CharacterSheetContent({ character, onUpdate }: Props) {
     return true;
   }
 
-  function rollSupportCheck() {
-    const die = rollDie(20);
-    setSupportCheck({ die, total: die + calcMod(attrs.ctr || 10) });
+  async function rollSupportCheck(): Promise<boolean> {
+    if (supportLock.current) return false;
+    supportLock.current = true;
+    setSupportError("");
+    try {
+      const result = await recordRoll({ characterId: character.id, title: "Collaborative support · CTR",
+        category: "support", mode: "NORMAL", modifier: calcMod(attrs.ctr || 10),
+        diceSides: 20, diceCount: 1, multiplier: 1, dc: 12 });
+      setSupportCheck({ die: result.d1, total: result.total });
+      return true;
+    } catch (error) {
+      setSupportError(rollErrorMessage(error));
+      return false;
+    } finally {
+      supportLock.current = false;
+    }
   }
 
-  function beginSupport() {
+  async function beginSupport() {
     if (!Number.isInteger(supportTension) || supportTension < 1 || supportTension > availableTension ||
-        dicePreferencesLoading || !attemptCast(supportTension)) return;
+        dicePreferencesLoading || supportLock.current) return;
+    if (!await rollSupportCheck()) return;
+    if (!attemptCast(supportTension)) return;
     setSupporting(true);
-    rollSupportCheck();
   }
 
   // ---- Mend handler ----
-  function doMend() {
+  async function doMend() {
     if (dicePreferencesLoading || mendRollLock.current) return;
     mendRollLock.current = true;
     const diceUsed = recoveryDiceUsed;
-    const d1 = rollDie(6);
-    const d2 = rollDie(6);
-    const diceRoll = recoveryDiceUsed * (d1 + d2);
+    setMendError("");
+    let result;
+    try {
+      result = await recordRoll({ characterId: character.id, title: "Mend", category: "mend",
+        mode: "NORMAL", modifier: 0, diceSides: 6, diceCount: 2, multiplier: diceUsed });
+    } catch (error) {
+      setMendError(rollErrorMessage(error));
+      mendRollLock.current = false;
+      return;
+    }
+    const d1 = result.d1;
+    const d2 = result.d2!;
+    const diceRoll = result.total;
     const healed = Math.min(diceRoll, maxVP - vp.current);
     const resetCharges = { ...(localData.featCharges || {}) };
     FEATS.filter(f => f.usesPerRest && (f.restType === "mend" || f.restType === "combat")).forEach(f => {
@@ -740,6 +779,7 @@ ${([
               <span className="text-muted-foreground text-xs">{recoveryDiceCurrent}/{maxRecoveryDice} dice remaining</span>
             </div>
             {dicePreferencesLoading && <p className="mb-2 text-[10px] text-muted-foreground" role="status">Loading dice preferences… Mend is unavailable until your die selection loads.</p>}
+            {mendError && <p role="alert" className="mb-2 text-xs text-destructive">Mend not saved: {mendError}</p>}
             {dicePreferenceError && <p className="mb-2 text-[10px] text-amber-500" role="status">Dice preference unavailable; the house die is being used.</p>}
             {mendRoll && (
               <div className="mb-3" aria-live="polite">
@@ -770,8 +810,8 @@ ${([
               {recoveryDiceCurrent === 0 && <span className="text-muted-foreground text-xs">No dice remaining. Long Rest to recover.</span>}
             </div>
             {recoveryDiceUsed > 0 && (
-              <button onClick={doMend} disabled={isMendRolling || dicePreferencesLoading} className="tc-command mt-4 border-chart-2/50 text-chart-2 hover:bg-chart-2/20 disabled:cursor-not-allowed disabled:opacity-50">
-                SPEND {recoveryDiceUsed}d6+{calcMod(attrs.res || 10)} → MEND
+              <button onClick={doMend} disabled={mendRollLock.current || isMendRolling || dicePreferencesLoading} className="tc-command mt-4 border-chart-2/50 text-chart-2 hover:bg-chart-2/20 disabled:cursor-not-allowed disabled:opacity-50">
+                SPEND {recoveryDiceUsed} RECOVERY {recoveryDiceUsed === 1 ? "DIE" : "DICE"} → MEND
               </button>
             )}
           </div>
@@ -837,7 +877,7 @@ ${([
                           className="tc-roll"
                           aria-label={`Roll ${attr.label} check with ${fmtMod(mod)} modifier`}
                           data-testid={`button-roll-attribute-${attr.key}`}
-                          onClick={() => openRoll(`${attr.label} Check`, mod, character.name)}
+                          onClick={() => openRoll(`${attr.label} Check`, mod, character.name, character.id)}
                         >{fmtMod(mod)}</button>
                       </div>
                       {(score !== baseScore) && <div className="text-[10px] font-mono text-chart-2 mt-1" title="Total includes feat and guild bonuses">Total {score}{bonus > 0 ? ` · feat +${bonus}` : ""}</div>}
@@ -940,13 +980,13 @@ ${([
                   className="tc-roll"
                   aria-label="Roll unarmed strike attack"
                   data-testid="button-roll-unarmed-attack"
-                  onClick={() => openRoll("Unarmed Strike — Attack", calcMod(attrs.res || 10), character.name)}
+                  onClick={() => openRoll("Unarmed Strike — Attack", calcMod(attrs.res || 10), character.name, character.id)}
                 >ATK {fmtMod(calcMod(attrs.res || 10))}</button>
                 <button
                   className="tc-roll"
                   aria-label="Roll unarmed strike damage"
                   data-testid="button-roll-unarmed-damage"
-                  onClick={() => openRoll("Unarmed Strike — Damage", Math.max(1, calcMod(attrs.res || 10)), character.name)}
+                  onClick={() => openRoll("Unarmed Strike — Damage", calcMod(attrs.res || 10), character.name, character.id, { diceSides: 0, diceCount: 0 })}
                 >1{fmtMod(Math.max(1, calcMod(attrs.res || 10)))} blunt</button>
               </div>
             </div>
@@ -977,12 +1017,21 @@ ${([
                         <button
                           className="tc-roll"
                           aria-label={`Roll ${item.name} attack`}
-                          onClick={() => openRoll(`${item.name} — Attack`, atkMod, character.name)}
+                          onClick={() => openRoll(`${item.name} — Attack`, atkMod, character.name, character.id)}
                         >ATK {fmtMod(atkMod)}</button>
                         <button
                           className="tc-roll"
                           aria-label={`Roll ${item.name} damage`}
-                          onClick={() => openRoll(`${item.name} — Damage`, atkMod, character.name)}
+                          onClick={() => {
+                            const base = /^([12])d(4|6|8|10|12)$/.exec(bonus?.damageDice ?? "1d6");
+                            const extra = /^\+([12])d(4|6|8|10|12)/.exec(bonus?.damageBonusDice ?? "");
+                            openRoll(`${item.name} — Damage`, atkMod, character.name, character.id, {
+                              diceSides: Number(base?.[2] ?? 6) as 4 | 6 | 8 | 10 | 12,
+                              diceCount: Number(base?.[1] ?? 1) as 1 | 2,
+                              ...(extra ? { bonusDiceSides: Number(extra[2]) as 4 | 6 | 8 | 10 | 12,
+                                bonusDiceCount: Number(extra[1]) as 1 | 2 } : {}),
+                            });
+                          }}
                         >{bonus?.damageDice || "1d6"}{fmtMod(atkMod)}{bonus?.damageBonusDice ? ` ${bonus.damageBonusDice}` : ""}</button>
                       </div>
                     </div>
@@ -1097,7 +1146,7 @@ ${([
                       <button
                         className="tc-roll"
                         aria-label={`Roll ${skill.name} check with ${fmtMod(total)} modifier`}
-                        onClick={() => openRoll(`${skill.name} Check`, total, character.name)}
+                        onClick={() => openRoll(`${skill.name} Check`, total, character.name, character.id)}
                       >
                         {fmtMod(total)}
                       </button>
@@ -1150,6 +1199,7 @@ ${([
                 str={str}
                 attrScore={attrScore}
                 characterName={character.name}
+                characterId={character.id}
                 availableTension={availableTension}
                 onCast={cost => attemptCast(cost)}
                 primaryMode={primaryMode}
@@ -1221,6 +1271,7 @@ ${([
               <WeaveCastRow
                 key={`${character.id}-${weave.id}`}
                 weave={weave}
+                characterId={character.id}
                 wi={wi}
                 maxStrings={level >= 7 ? 4 : 3}
                 localData={localData}
@@ -1264,6 +1315,7 @@ ${([
               CTR: {supportCheck.die} {fmtMod(calcMod(attrs.ctr || 10))} = {supportCheck.total} vs DC 12 —
               {supportCheck.total >= 12 ? " connection maintained." : " failed! Tell the Lead to make a Strain Check vs DC 15 immediately."}
             </p>}
+            {supportError && <p role="alert" className="text-xs text-destructive">Support check not saved: {supportError}</p>}
           </div>
         </TabsContent>
 
@@ -1944,17 +1996,21 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
 
 // ===== WEAVE CAST ROW =====
 function WeaveCastRow({
-  weave, wi, maxStrings, localData, patch,
+  weave, wi, characterId, maxStrings, localData, patch,
   safePowerLevel, ctrScore, availableTension,
   hasPrecisionWeave, precisionWeaveChargeAvailable, onCast,
 }: {
-  weave: WeavingEntry; wi: number; maxStrings: number;
+  weave: WeavingEntry; wi: number; characterId: number; maxStrings: number;
   localData: any; patch: (p: any) => void;
   safePowerLevel: number; ctrScore: number; availableTension: number;
   hasPrecisionWeave: boolean; precisionWeaveChargeAvailable: boolean;
   onCast: (cost: number, consumePrecisionWeave?: boolean) => boolean;
 }) {
   const mod = calcMod(ctrScore);
+  const recordRoll = useGameplayRoll();
+  const requestLock = useRef(false);
+  const [rollError, setRollError] = useState("");
+  const [pending, setPending] = useState(false);
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [castOpen, setCastOpen] = useState(false);
@@ -2010,30 +2066,46 @@ function WeaveCastRow({
     : "DISCORD";
   function openCast() { setCastOpen(true); setCastResult(null); setRolledCost(null); if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; } setAnimDice(null); }
   function closeCast() {
-    if (animDice) return;
+    if (animDice || pending) return;
     setCastOpen(false); setCastResult(null); setRolledCost(null);
     if (rollTimerRef.current) { clearTimeout(rollTimerRef.current); rollTimerRef.current = null; }
     setAnimDice(null);
   }
 
-  function doRoll() {
-    if (!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension || animDice) return;
+  async function doRoll() {
+    if (!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension || animDice || requestLock.current) return;
     const rollType = weaveRollType;
     const intent = weave.intent.trim();
     const modes = weave.modes.slice(0, weave.numStrings);
-    if (!onCast(castCost, precisionDiscount)) return;
+    requestLock.current = true;
+    setPending(true);
+    setRollError("");
+    let result;
+    try {
+      result = await recordRoll({
+        characterId, title: `Weave · ${intent}`.slice(0, 160),
+        category: "weave", mode: rollType, modifier: mod,
+        diceSides: 20, diceCount: rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: adjudicatedDC,
+      });
+    } catch (error) {
+      setRollError(rollErrorMessage(error));
+      setPending(false);
+      requestLock.current = false;
+      return;
+    }
+    setPending(false);
+    if (!onCast(castCost, precisionDiscount)) {
+      requestLock.current = false;
+      setRollError("The roll was recorded, but the cast could not spend Tension. Check your sheet.");
+      return;
+    }
     setRolledCost(castCost);
-    const needs2 = rollType !== "NORMAL";
-    const d1 = rollDie(20);
-    const d2 = needs2 ? rollDie(20) : undefined;
+    const { d1, d2, finalDie, total } = result;
     setRollKey(key => key + 1);
     setAnimDice({ d1, d2, rollType });
     rollTimerRef.current = setTimeout(() => {
       rollTimerRef.current = null;
-      let finalDie = d1;
-      if (rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
-      if (rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
-      const total = finalDie + mod;
+      requestLock.current = false;
       setAnimDice(null);
       setCastResult({ d1, d2, finalDie, total, rollType, dc: adjudicatedDC, intent, modes });
     }, ROLL_DURATION_MS);
@@ -2107,7 +2179,7 @@ function WeaveCastRow({
               Weave {wi + 1} · {weave.numStrings} strings · DC {adjudicatedDC} · {displayedCost}T
               <span className="text-muted-foreground/60 ml-1">({checkType} · {effectType})</span>
             </span>
-            <button onClick={closeCast} disabled={!!animDice} className="text-muted-foreground hover:text-foreground text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed">CLOSE ✕</button>
+            <button onClick={closeCast} disabled={!!animDice || pending} className="text-muted-foreground hover:text-foreground text-xs font-mono disabled:opacity-40 disabled:cursor-not-allowed">CLOSE ✕</button>
           </div>
           {hasPrecisionWeave && weave.numStrings === 2 && (
             <p className="text-[10px] font-mono text-chart-2">
@@ -2154,7 +2226,8 @@ function WeaveCastRow({
                 <span className="text-[10px] font-mono ml-auto">{weaveRollType}</span>
               </div>
               <div className="text-[10px] font-mono text-muted-foreground mb-3">{weaveRollType === "HARMONY" ? "Roll 2d20, keep highest." : weaveRollType === "DISCORD" ? "Roll 2d20, keep lowest." : "Roll 1d20."} Thread Check: CTR {fmtMod(mod)}</div>
-              <button onClick={doRoll} disabled={!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">⚄ ROLL THE WEAVE</button>
+              <button onClick={doRoll} disabled={pending || !isConfigured || !weave.intent?.trim() || dicePreferencesLoading || castCost > availableTension} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">{pending ? "RECORDING…" : "⚄ ROLL THE WEAVE"}</button>
+              {rollError && <p role="alert" className="text-xs text-destructive">Roll not saved: {rollError}</p>}
             </div>
           )}
         </div>
@@ -2178,14 +2251,18 @@ interface CastPL { pl: number; cost: number; dc: number; effect: string }
 interface CastResult { d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number }
 
 function CastStringPanel({
-  str, attrScore, characterName, availableTension, onCast,
+  str, attrScore, characterName, characterId, availableTension, onCast,
   primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom,
 }: {
-  str: any; attrScore: number; characterName: string; availableTension: number; onCast: (cost: number) => boolean;
+  str: any; attrScore: number; characterName: string; characterId: number; availableTension: number; onCast: (cost: number) => boolean;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
   safePowerLevel: number; custom: boolean;
 }) {
   const mod = calcMod(attrScore);
+  const recordRoll = useGameplayRoll();
+  const requestLock = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [rollError, setRollError] = useState("");
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [expanded, setExpanded] = useState(true);
@@ -2226,7 +2303,7 @@ function CastStringPanel({
   }
 
   function closeOverlay() {
-    if (animDice) return;
+    if (animDice || pending) return;
     setCastPL(null);
     setSelectedMode(null);
     setCastResult(null);
@@ -2234,25 +2311,41 @@ function CastStringPanel({
     setAnimDice(null);
   }
 
-  function doRoll() {
-    if (!selectedMode || !castPL || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension) return;
+  async function doRoll() {
+    if (!selectedMode || !castPL || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension || requestLock.current) return;
     const mode = selectedMode;
     const pl = castPL;
-    if (!onCast(pl.cost)) return;
+    requestLock.current = true;
+    setPending(true);
+    setRollError("");
+    let result;
+    try {
+      result = await recordRoll({
+        characterId, title: `${str.name} · PL${pl.pl} ${castIntent.trim()}`.slice(0, 160),
+        category: "cast", mode: mode.rollType, modifier: mod,
+        diceSides: 20, diceCount: mode.rollType === "NORMAL" ? 1 : 2, multiplier: 1, dc: castDC,
+      });
+    } catch (error) {
+      setRollError(rollErrorMessage(error));
+      setPending(false);
+      requestLock.current = false;
+      return;
+    }
+    setPending(false);
+    if (!onCast(pl.cost)) {
+      requestLock.current = false;
+      setRollError("The roll was recorded, but the cast could not spend Tension. Check your sheet.");
+      return;
+    }
     setRolledIntent(castIntent.trim());
     setSelectedMode(null);
 
-    const needs2 = mode.rollType !== "NORMAL";
-    const d1 = rollDie(20);
-    const d2 = needs2 ? rollDie(20) : undefined;
+    const { d1, d2, finalDie, total } = result;
     setRollKey(key => key + 1);
     setAnimDice({ d1, d2, rollType: mode.rollType });
     rollTimerRef.current = setTimeout(() => {
       rollTimerRef.current = null;
-      let finalDie = d1;
-      if (mode.rollType === "HARMONY" && d2 !== undefined) finalDie = Math.max(d1, d2);
-      if (mode.rollType === "DISCORD" && d2 !== undefined) finalDie = Math.min(d1, d2);
-      const total = finalDie + mod;
+      requestLock.current = false;
       setAnimDice(null);
       setCastResult({ d1, d2, finalDie, total, rollType: mode.rollType, chosenMode: mode.name, dc: castDC });
     }, ROLL_DURATION_MS);
@@ -2429,7 +2522,7 @@ function CastStringPanel({
                     </button>
                     <button
                       onClick={doRoll}
-                      disabled={!castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension}
+                      disabled={pending || !castIntent.trim() || castDC < 1 || castDC > 40 || dicePreferencesLoading || castPL.cost > availableTension}
                       className={cn(
                         "flex-1 py-3 font-[family-name:'Cinzel',serif] font-bold text-sm border-2 tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                         selectedMode.rollType === "HARMONY" ? "border-chart-2 text-chart-2 hover:bg-chart-2/10" :
@@ -2437,8 +2530,9 @@ function CastStringPanel({
                         "border-primary text-primary hover:bg-primary/10"
                       )}
                     >
-                      ⚄ ROLL THE THREAD
+                      {pending ? "RECORDING…" : "⚄ ROLL THE THREAD"}
                     </button>
+                    {rollError && <p role="alert" className="text-xs text-destructive">{rollError}</p>}
                   </div>
                 </div>
 

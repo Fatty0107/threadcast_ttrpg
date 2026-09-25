@@ -1,54 +1,43 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { formatModifier } from "@/lib/game-rules";
-import { useActiveDiceStyle, rollDie } from "@/lib/dice-style";
+import { useActiveDiceStyle } from "@/lib/dice-style";
+import { useGameplayRoll, rollErrorMessage } from "@/lib/gameplay-roll";
 import { DiceStage, ROLL_DURATION_MS, type StageDie } from "./DiceStage";
 import { Link } from "wouter";
 import { Dices, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthContext";
-import type { DiceStyle } from "@workspace/api-client-react";
+import type { DiceStyle, GameplayRoll } from "@workspace/api-client-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 type RollMode = "NORMAL" | "HARMONY" | "DISCORD";
-
-export interface RollResult {
-  id: string;
-  characterName: string;
-  title: string;
-  mode: RollMode;
-  d1: number;
-  d2?: number;
-  modifier: number;
-  total: number;
-  isBreak: boolean;
-  isMisfire: boolean;
-  diceName: string;
-  diceColor: string;
-  timestamp: number;
-}
+type DamageDice = { diceSides: 0 | 4 | 6 | 8 | 10 | 12; diceCount: 0 | 1 | 2; bonusDiceSides?: 4 | 6 | 8 | 10 | 12; bonusDiceCount?: 1 | 2 };
 
 interface DiceRollerContextType {
-  openRoll: (title: string, modifier: number, characterName?: string) => void;
-  rolls: RollResult[];
+  openRoll: (title: string, modifier: number, characterName?: string, characterId?: number, damage?: DamageDice) => void;
 }
 
 const DiceRollerContext = createContext<DiceRollerContextType | undefined>(undefined);
 
 export function DiceRollerProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const recordRoll = useGameplayRoll();
   const { style, isLoading: diceLoading, isError: diceLoadError, refetch: retryDice } = useActiveDiceStyle();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [modifier, setModifier] = useState(0);
   const [characterName, setCharacterName] = useState("Unknown");
+  const [characterId, setCharacterId] = useState<number | undefined>();
+  const [damage, setDamage] = useState<DamageDice | undefined>();
   const [mode, setMode] = useState<RollMode>("NORMAL");
   const [isRolling, setIsRolling] = useState(false);
   const [rollingDice, setRollingDice] = useState<StageDie[]>([]);
   const [rollKey, setRollKey] = useState(0);
   const [rollStyle, setRollStyle] = useState<DiceStyle | null>(null);
-  const [currentResult, setCurrentResult] = useState<RollResult | null>(null);
-  const [rolls, setRolls] = useState<RollResult[]>([]);
+  const [currentResult, setCurrentResult] = useState<GameplayRoll | null>(null);
+  const [rollError, setRollError] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestLock = useRef(false);
   const accountRef = useRef(user?.id);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
@@ -58,14 +47,14 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     accountRef.current = user?.id;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
-    setRolls([]);
+    requestLock.current = false;
     setIsOpen(false);
     setCurrentResult(null);
     setIsRolling(false);
     setRollStyle(null);
   }, [user?.id]);
 
-  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown") => {
+  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown", newCharacterId?: number, newDamage?: DamageDice) => {
     if (timer.current) clearTimeout(timer.current);
     returnFocusRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
       ? document.activeElement
@@ -73,6 +62,9 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setTitle(newTitle);
     setModifier(newModifier);
     setCharacterName(newCharacterName);
+    setCharacterId(newCharacterId);
+    setDamage(newDamage);
+    setRollError("");
     setMode("NORMAL");
     setCurrentResult(null);
     setIsRolling(false);
@@ -81,41 +73,43 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const executeRoll = () => {
-    if (isRolling || diceLoading) return;
-    const d1 = rollDie(20);
-    const d2 = mode === "NORMAL" ? undefined : rollDie(20);
-    const finalDie = d2 === undefined ? d1 : mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
-    const result: RollResult = {
-      id: crypto.randomUUID(),
-      characterName,
-      title,
-      mode,
-      d1,
-      d2,
-      modifier,
-      total: finalDie + modifier,
-      isBreak: finalDie === 20,
-      isMisfire: finalDie === 1,
-      diceName: style.name,
-      diceColor: style.edgeColor,
-      timestamp: Date.now(),
-    };
-    setRollingDice([{ sides: 20, value: d1 }, ...(d2 === undefined ? [] : [{ sides: 20 as const, value: d2 }])]);
+  const executeRoll = async () => {
+    if (requestLock.current || isRolling || diceLoading) return;
+    requestLock.current = true;
+    setIsRolling(true);
+    setRollError("");
+    let result: GameplayRoll;
+    try {
+      result = await recordRoll({ title, modifier, characterId, mode: damage ? "NORMAL" : mode,
+        category: damage ? "damage" : "check", diceSides: damage?.diceSides ?? 20,
+        diceCount: damage?.diceCount ?? (mode === "NORMAL" ? 1 : 2),
+        bonusDiceSides: damage?.bonusDiceSides, bonusDiceCount: damage?.bonusDiceCount, multiplier: 1 });
+    } catch (error) {
+      requestLock.current = false;
+      setRollError(rollErrorMessage(error));
+      setIsRolling(false);
+      return;
+    }
+    if (accountRef.current !== user?.id) return;
+    const { d1, d2 } = result;
+    setRollingDice(damage?.diceSides === 0 ? [] : [
+      { sides: (damage?.diceSides ?? 20) as StageDie["sides"], value: d1 },
+      ...(d2 === undefined ? [] : [{ sides: (damage?.diceSides ?? 20) as StageDie["sides"], value: d2 }]),
+      ...result.extraDice.map(d => ({ sides: d.sides as StageDie["sides"], value: d.value })),
+    ]);
     setRollStyle(style);
     setRollKey(key => key + 1);
-    setIsRolling(true);
     setCurrentResult(null);
     timer.current = setTimeout(() => {
       setCurrentResult(result);
-      setRolls(prev => [result, ...prev].slice(0, 100));
+      requestLock.current = false;
       setIsRolling(false);
       timer.current = null;
     }, ROLL_DURATION_MS);
   };
 
   return (
-    <DiceRollerContext.Provider value={{ openRoll, rolls }}>
+    <DiceRollerContext.Provider value={{ openRoll }}>
       {children}
 
       <DialogPrimitive.Root open={isOpen} onOpenChange={open => { if (!open && !isRolling) setIsOpen(false); }}>
@@ -149,7 +143,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
             <div className="mb-1 text-xs text-muted-foreground uppercase tracking-widest">{characterName}</div>
             <DialogPrimitive.Title className="font-[family-name:'Cinzel',serif] text-2xl text-foreground font-semibold mb-1">{title}</DialogPrimitive.Title>
             <div className="flex items-center justify-between gap-3 mb-5 text-xs text-muted-foreground">
-              <span>Thread Check · {formatModifier(modifier)} modifier</span>
+              <span>{damage ? "Damage" : "Thread Check"} · {formatModifier(modifier)} modifier</span>
               <Link href="/dice" aria-disabled={isRolling} onClick={event => {
                 if (isRolling) event.preventDefault();
                 else setIsOpen(false);
@@ -162,9 +156,16 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
               <div className="mb-3 flex h-48 items-center justify-center border border-border text-xs uppercase tracking-widest text-muted-foreground" role="status">
                 Calling your dice to the table…
               </div>
+            ) : damage?.diceSides === 0 ? (
+              <div className="mb-3 flex h-48 items-center justify-center border border-border text-sm text-muted-foreground">
+                Flat damage · 1 {formatModifier(modifier)} (minimum 1)
+              </div>
             ) : (
               <DiceStage
-                dice={isRolling || currentResult ? rollingDice : mode === "NORMAL" ? [{ sides: 20, value: 20 }] : [{ sides: 20, value: 16 }, { sides: 20, value: 8 }]}
+                dice={isRolling || currentResult ? rollingDice : damage
+                  ? [...Array.from({ length: damage.diceCount }, () => ({ sides: damage.diceSides as StageDie["sides"], value: damage.diceSides })),
+                     ...Array.from({ length: damage.bonusDiceCount ?? 0 }, () => ({ sides: damage.bonusDiceSides as StageDie["sides"], value: damage.bonusDiceSides! }))]
+                  : mode === "NORMAL" ? [{ sides: 20, value: 20 }] : [{ sides: 20, value: 16 }, { sides: 20, value: 8 }]}
                 style={(isRolling || currentResult) && rollStyle ? rollStyle : style}
                 phase={isRolling ? "rolling" : currentResult ? "settled" : "preview"}
                 rollKey={rollKey}
@@ -185,10 +186,11 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                 <button type="button" className="underline" onClick={() => retryDice()}>Retry</button>
               </div>
             )}
+            {rollError && <div className="mb-3 text-xs text-destructive" role="alert">Roll not saved: {rollError}</div>}
 
             {!currentResult && !isRolling && (
               <div className="space-y-4">
-                <div className="flex gap-2">
+                {!damage && <div className="flex gap-2">
                   {(["NORMAL", "HARMONY", "DISCORD"] as RollMode[]).map(m => (
                     <button
                       key={m}
@@ -204,14 +206,16 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                       {m}
                     </button>
                   ))}
-                </div>
+                </div>}
                 <div className="text-[10px] text-muted-foreground font-mono text-center">
-                  {mode === "HARMONY" && "2d20 keep highest — conditions favor you"}
-                  {mode === "DISCORD" && "2d20 keep lowest — conditions are against you"}
-                  {mode === "NORMAL" && "1d20 — standard Thread Check"}
+                  {damage ? `${damage.diceCount ? `${damage.diceCount}d${damage.diceSides}` : "1 flat"}${damage.bonusDiceCount ? ` + ${damage.bonusDiceCount}d${damage.bonusDiceSides}` : ""} ${formatModifier(modifier)} (minimum 1)` : <>
+                    {mode === "HARMONY" && "2d20 keep highest — conditions favor you"}
+                    {mode === "DISCORD" && "2d20 keep lowest — conditions are against you"}
+                    {mode === "NORMAL" && "1d20 — standard Thread Check"}
+                  </>}
                 </div>
                 <Button className="w-full h-14 text-sm sm:text-base tracking-[.16em]" onClick={executeRoll} disabled={diceLoading} data-testid="button-roll-thread-check">
-                  <Dices className="mr-2 h-5 w-5" /> {diceLoading ? "LOADING YOUR DICE" : "CAST THE DICE"}
+                  <Dices className="mr-2 h-5 w-5" /> {diceLoading ? "LOADING YOUR DICE" : damage ? "ROLL DAMAGE" : "CAST THE DICE"}
                 </Button>
               </div>
             )}
@@ -236,10 +240,10 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                  <div className="flex justify-center items-end gap-3 mb-6">
                   <div className="text-center">
                     <div className="text-[10px] text-muted-foreground mb-1">
-                      {currentResult.mode === "NORMAL" ? "d20" : currentResult.mode === "HARMONY" ? `[${currentResult.d1}, ${currentResult.d2}] ▲ keep highest` : `[${currentResult.d1}, ${currentResult.d2}] ▼ keep lowest`}
+                      {damage ? `${damage.diceCount ? `${damage.diceCount}d${damage.diceSides}` : "flat"}${currentResult.extraDice.length ? ` + ${currentResult.extraDice.length} bonus dice` : ""}` : currentResult.mode === "NORMAL" ? "d20" : currentResult.mode === "HARMONY" ? `[${currentResult.d1}, ${currentResult.d2}] ▲ keep highest` : `[${currentResult.d1}, ${currentResult.d2}] ▼ keep lowest`}
                     </div>
                     <div className="text-3xl text-foreground">
-                      {currentResult.d2 === undefined ? currentResult.d1 : currentResult.mode === "HARMONY" ? Math.max(currentResult.d1, currentResult.d2) : Math.min(currentResult.d1, currentResult.d2)}
+                      {damage ? currentResult.finalDie : currentResult.d2 === undefined ? currentResult.d1 : currentResult.mode === "HARMONY" ? Math.max(currentResult.d1, currentResult.d2) : Math.min(currentResult.d1, currentResult.d2)}
                     </div>
                   </div>
                   <div className="text-xl text-muted-foreground mb-1">{formatModifier(modifier)}</div>
@@ -253,6 +257,10 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                   </div>
                 </div>
 
+                {damage && <p className="mb-4 text-xs text-muted-foreground">
+                  {damage.diceSides === 0 ? "1 flat" : [currentResult.d1, currentResult.d2].filter(v => v !== undefined).join(" + ")}
+                  {currentResult.extraDice.map(d => ` + ${d.value} (d${d.sides})`).join("")} {formatModifier(modifier)}
+                </p>}
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" size="sm" onClick={() => { setCurrentResult(null); setRollingDice([]); }} data-testid="button-roll-again">
                     ROLL AGAIN

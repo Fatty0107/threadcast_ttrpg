@@ -16,6 +16,8 @@ tags:
     description: Character management
   - name: dice
     description: Saved dice preferences
+  - name: rolls
+    description: Shared gameplay roll log
 paths:
   /healthz:
     get:
@@ -205,6 +207,67 @@ paths:
         "401":
           description: Not authenticated
 
+  /rolls:
+    get:
+      operationId: listRolls
+      tags: [rolls]
+      summary: Recent shared gameplay rolls
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Recent rolls, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameplayRoll"
+        "401":
+          description: Not authenticated
+    post:
+      operationId: createRoll
+      tags: [rolls]
+      summary: Generate and record a gameplay roll
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameplayRollInput"
+      responses:
+        "201":
+          description: Recorded server-generated roll
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameplayRoll"
+        "400":
+          description: Invalid roll request
+        "401":
+          description: Not authenticated
+        "403":
+          description: Character does not belong to the player
+
+  /rolls/discord/status:
+    get:
+      operationId: getRollDiscordStatus
+      tags: [rolls]
+      summary: Weavekeeper-only Discord delivery status
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Delivery status without webhook credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RollDiscordStatus"
+        "403":
+          description: Weavekeeper access required
+
 components:
   securitySchemes:
     sessionCookie:
@@ -212,6 +275,65 @@ components:
       in: cookie
       name: session
   schemas:
+    GameplayRollInput:
+      type: object
+      additionalProperties: false
+      required: [requestId, title, category, mode, modifier, diceSides, diceCount, multiplier]
+      properties:
+        requestId: { type: string, format: uuid }
+        characterId: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        category: { type: string, enum: [check, cast, weave, mend, support, damage] }
+        mode: { type: string, enum: [NORMAL, HARMONY, DISCORD] }
+        modifier: { type: integer, minimum: -50, maximum: 50 }
+        diceSides: { type: integer, enum: [0, 4, 6, 8, 10, 12, 20] }
+        diceCount: { type: integer, minimum: 0, maximum: 2 }
+        bonusDiceSides: { type: integer, enum: [4, 6, 8, 10, 12] }
+        bonusDiceCount: { type: integer, minimum: 1, maximum: 2 }
+        multiplier: { type: integer, minimum: 1, maximum: 20 }
+        dc: { type: integer, minimum: 1, maximum: 40 }
+    GameplayRoll:
+      type: object
+      required: [id, playerName, characterName, title, category, mode, diceSides, d1, extraDice, modifier, multiplier, finalDie, total, isBreak, isMisfire, outcome, diceName, diceColor, createdAt]
+      properties:
+        id: { type: integer }
+        playerName: { type: string }
+        characterName: { type: string }
+        title: { type: string }
+        category: { type: string, enum: [check, cast, weave, mend, support, damage] }
+        mode: { type: string, enum: [NORMAL, HARMONY, DISCORD] }
+        diceSides: { type: integer }
+        d1: { type: integer }
+        d2: { type: integer }
+        extraDice:
+          type: array
+          items:
+            type: object
+            required: [sides, value]
+            properties:
+              sides: { type: integer }
+              value: { type: integer }
+        modifier: { type: integer }
+        multiplier: { type: integer }
+        finalDie: { type: integer }
+        total: { type: integer }
+        dc: { type: integer }
+        isBreak: { type: boolean }
+        isMisfire: { type: boolean }
+        outcome: { type: string }
+        diceName: { type: string }
+        diceColor: { type: string }
+        createdAt: { type: string }
+    RollDiscordStatus:
+      type: object
+      required: [configured, valid, recentSent, recentFailed, recentPending]
+      properties:
+        configured: { type: boolean }
+        valid: { type: boolean }
+        recentSent: { type: integer }
+        recentFailed: { type: integer }
+        recentPending: { type: integer }
+        lastFailureAt: { type: ["string", "null"] }
     HealthStatus:
       type: object
       properties:

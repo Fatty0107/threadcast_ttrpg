@@ -208,3 +208,84 @@ export const PutDicePreferencesResponse = zod.object({
 })
 
 
+/**
+ * @summary Recent shared gameplay rolls
+ */
+export const ListRollsResponseItem = zod.object({
+  "id": zod.number(),
+  "playerName": zod.string(),
+  "characterName": zod.string(),
+  "title": zod.string(),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "diceSides": zod.number(),
+  "d1": zod.number(),
+  "d2": zod.number().optional(),
+  "extraDice": zod.array(zod.object({
+  "sides": zod.number(),
+  "value": zod.number()
+})),
+  "modifier": zod.number(),
+  "multiplier": zod.number(),
+  "finalDie": zod.number(),
+  "total": zod.number(),
+  "dc": zod.number().optional(),
+  "isBreak": zod.boolean(),
+  "isMisfire": zod.boolean(),
+  "outcome": zod.string(),
+  "diceName": zod.string(),
+  "diceColor": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListRollsResponse = zod.array(ListRollsResponseItem)
+
+
+/**
+ * @summary Generate and record a gameplay roll
+ */
+
+export const createRollBodyTitleMax = 160;
+
+export const createRollBodyModifierMin = -50;
+export const createRollBodyModifierMax = 50;
+
+export const createRollBodyDiceCountMin = 0;
+export const createRollBodyDiceCountMax = 2;
+
+export const createRollBodyBonusDiceCountMax = 2;
+
+export const createRollBodyMultiplierMax = 20;
+
+export const createRollBodyDcMax = 40;
+
+
+
+export const CreateRollBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "characterId": zod.number().min(1).optional(),
+  "title": zod.string().min(1).max(createRollBodyTitleMax),
+  "category": zod.enum(['check', 'cast', 'weave', 'mend', 'support', 'damage']),
+  "mode": zod.enum(['NORMAL', 'HARMONY', 'DISCORD']),
+  "modifier": zod.number().min(createRollBodyModifierMin).max(createRollBodyModifierMax),
+  "diceSides": zod.union([zod.literal(0),zod.literal(4),zod.literal(6),zod.literal(8),zod.literal(10),zod.literal(12),zod.literal(20)]),
+  "diceCount": zod.number().min(createRollBodyDiceCountMin).max(createRollBodyDiceCountMax),
+  "bonusDiceSides": zod.union([zod.literal(4),zod.literal(6),zod.literal(8),zod.literal(10),zod.literal(12)]).optional(),
+  "bonusDiceCount": zod.number().min(1).max(createRollBodyBonusDiceCountMax).optional(),
+  "multiplier": zod.number().min(1).max(createRollBodyMultiplierMax),
+  "dc": zod.number().min(1).max(createRollBodyDcMax).optional()
+})
+
+
+/**
+ * @summary Weavekeeper-only Discord delivery status
+ */
+export const GetRollDiscordStatusResponse = zod.object({
+  "configured": zod.boolean(),
+  "valid": zod.boolean(),
+  "recentSent": zod.number(),
+  "recentFailed": zod.number(),
+  "recentPending": zod.number(),
+  "lastFailureAt": zod.string().nullish()
+})
+
+

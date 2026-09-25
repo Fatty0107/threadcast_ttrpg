@@ -1,8 +1,9 @@
 import { useRoute } from "wouter";
 import { useGetCharacter, useUpdateCharacter } from "@workspace/api-client-react";
 import { CharacterSheetContent } from "@/components/character/CharacterSheetContent";
-import { useRef, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CharacterSheet() {
   const [, params] = useRoute("/characters/:id");
@@ -12,23 +13,14 @@ export default function CharacterSheet() {
     query: { enabled: !!characterId } as any
   });
   const updateMutation = useUpdateCharacter();
+  const { toast } = useToast();
   
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
   const handleUpdate = useCallback((updateData: any) => {
-    // Optimistic cache update would be ideal here, but for simplicity we'll just debounce the API call
-    if (timerRef.current) clearTimeout(timerRef.current);
-    
-    timerRef.current = setTimeout(() => {
-      updateMutation.mutate({ id: characterId, data: updateData });
-    }, 1000);
-  }, [characterId, updateMutation]);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+    updateMutation.mutate({ id: characterId, data: updateData }, {
+      onError: () => toast({ variant: "destructive", title: "Sheet changes not saved",
+        description: "Your roll is still in the shared log. Check your character resources and try updating them again." }),
+    });
+  }, [characterId, updateMutation, toast]);
 
   if (isLoading) {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;

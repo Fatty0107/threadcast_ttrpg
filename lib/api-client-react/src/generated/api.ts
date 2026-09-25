@@ -25,8 +25,11 @@ import type {
   CharacterInput,
   CharacterUpdate,
   DicePreferences,
+  GameplayRoll,
+  GameplayRollInput,
   HealthStatus,
-  LoginInput
+  LoginInput,
+  RollDiscordStatus
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -851,4 +854,229 @@ export const usePutDicePreferences = <TError = ErrorType<void>,
       > => {
       return useMutation(getPutDicePreferencesMutationOptions(options));
     }
+
+export const getListRollsUrl = () => {
+
+
+
+
+  return `/api/rolls`
+}
+
+/**
+ * @summary Recent shared gameplay rolls
+ */
+export const listRolls = async ( options?: RequestInit): Promise<GameplayRoll[]> => {
+
+  return customFetch<GameplayRoll[]>(getListRollsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRollsQueryKey = () => {
+    return [
+    `/api/rolls`
+    ] as const;
+    }
+
+
+export const getListRollsQueryOptions = <TData = Awaited<ReturnType<typeof listRolls>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRolls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRollsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRolls>>> = ({ signal }) => listRolls({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRolls>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRollsQueryResult = NonNullable<Awaited<ReturnType<typeof listRolls>>>
+export type ListRollsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Recent shared gameplay rolls
+ */
+
+export function useListRolls<TData = Awaited<ReturnType<typeof listRolls>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRolls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRollsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateRollUrl = () => {
+
+
+
+
+  return `/api/rolls`
+}
+
+/**
+ * @summary Generate and record a gameplay roll
+ */
+export const createRoll = async (gameplayRollInput: GameplayRollInput, options?: RequestInit): Promise<GameplayRoll> => {
+
+  return customFetch<GameplayRoll>(getCreateRollUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      gameplayRollInput,)
+  }
+);}
+
+
+
+
+export const getCreateRollMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoll>>, TError,{data: BodyType<GameplayRollInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRoll>>, TError,{data: BodyType<GameplayRollInput>}, TContext> => {
+
+const mutationKey = ['createRoll'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRoll>>, {data: BodyType<GameplayRollInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRoll(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRollMutationResult = NonNullable<Awaited<ReturnType<typeof createRoll>>>
+    export type CreateRollMutationBody = BodyType<GameplayRollInput>
+    export type CreateRollMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate and record a gameplay roll
+ */
+export const useCreateRoll = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRoll>>, TError,{data: BodyType<GameplayRollInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRoll>>,
+        TError,
+        {data: BodyType<GameplayRollInput>},
+        TContext
+      > => {
+      return useMutation(getCreateRollMutationOptions(options));
+    }
+
+export const getGetRollDiscordStatusUrl = () => {
+
+
+
+
+  return `/api/rolls/discord/status`
+}
+
+/**
+ * @summary Weavekeeper-only Discord delivery status
+ */
+export const getRollDiscordStatus = async ( options?: RequestInit): Promise<RollDiscordStatus> => {
+
+  return customFetch<RollDiscordStatus>(getGetRollDiscordStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRollDiscordStatusQueryKey = () => {
+    return [
+    `/api/rolls/discord/status`
+    ] as const;
+    }
+
+
+export const getGetRollDiscordStatusQueryOptions = <TData = Awaited<ReturnType<typeof getRollDiscordStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRollDiscordStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRollDiscordStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRollDiscordStatus>>> = ({ signal }) => getRollDiscordStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRollDiscordStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRollDiscordStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getRollDiscordStatus>>>
+export type GetRollDiscordStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Weavekeeper-only Discord delivery status
+ */
+
+export function useGetRollDiscordStatus<TData = Awaited<ReturnType<typeof getRollDiscordStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRollDiscordStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRollDiscordStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
