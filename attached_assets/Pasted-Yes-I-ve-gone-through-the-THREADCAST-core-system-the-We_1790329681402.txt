@@ -1,0 +1,1524 @@
+Yes. I’ve gone through the THREADCAST core system, the Weaver’s Handbook, and the individual Affinity/Strings documents, and I have a pretty solid picture of how your system is intended to function. I’m deliberately not going to start designing or changing anything yet; I want to make sure I understand the rules as you intend them rather than “fixing” things that may be intentional.
+
+At the highest level, I understand THREADCAST as a rules-light, d20-based narrative TTRPG where the actual spell list is replaced by Affinities + Strings + Modes. An Affinity determines what kind of reality a character can interact with, a String determines the specific expression of that Affinity, and a Mode determines how the character manipulates the leyline. The guitar/string analogy is basically the central mechanical philosophy: the Affinity is the instrument, the Strings are the notes, and the Mode is the playing technique.
+
+I also understand the central risk loop: casting generates Tension, Tension accumulates, Safe Limit determines when the caster starts making Strain Checks, and Thread Pool is the hard ceiling beyond which Snapback becomes automatic. A normal failed Thread Check produces a Mishap, while a natural 1 or failed Strain Check produces the much more dangerous Snapback table.
+
+The character progression also seems deliberately designed around customization rather than a traditional spell-class system: six attributes, Attuned Skills, an Affinity, individually designed Strings, a Primary/Secondary/Tertiary Resonance Mode, Techniques, and narrative leveling. Strings are specifically supposed to reflect the character's history and personality rather than being generic copies of another character's spell list.
+
+And the individual character documents make that philosophy much clearer. For example, Melody's Leyline Energy Affinity isn't simply “energy magic”; her Strings are specifically built around drawing, converting, and releasing existing leyline energy or interacting with another caster's active thread, with explicit boundaries around what counts as a legitimate energy source. Meanwhile Evander's Emotion Affinity can perceive and manipulate existing emotional seeds, but cannot manufacture love, loyalty, beliefs, memories, or relationships. Lemon's Illusion Affinity similarly has a hard distinction between changing perception and changing reality. So I understand that the boundaries of an Affinity are just as important as what it can do.
+
+There are, however, several things I want you to clarify before I consider myself fully “fluent” in your system.
+
+First: which document is the ultimate authority? The THREADCAST PDF describes itself as the core TTRPG rules, but several character handouts explicitly say their TP/DC numbers are “proposed,” “draft,” or “suggested.” For example, Lemon's document explicitly says its values aren't established canon. Florian's does the same. Are the individual character PDFs meant to be examples/prototypes of how the system works, or are they already mechanically canon for those characters?
+
+Second: I noticed a really important distinction in the core rules that I want to make sure I have right. The general casting procedure says a Thread Check is d20 + CTR modifier + RB if Attuned, but Modes then have their own Thread Check attributes: Striker uses POT, Anchor uses RES, Slider uses CTR, Binder uses ACU, etc. So is the intended hierarchy Mode-specific attribute overrides the generic CTR casting check whenever a Mode is being used, with CTR still governing things like Ward Rating and general magical precision? Or is CTR supposed to remain involved somehow?
+
+Third: how exactly do Affinity Strings and Modes interact? My current interpretation is that a String answers “what can I do?”, while a Mode answers “how am I doing it?”. So, for example, a Fire mage using a Striker Mode could produce an explosive fire attack, while the same Fire mage using Anchor might turn that same Affinity into a stabilizing barrier. Is that the intended design? The handbook explicitly frames Affinity as the domain and Mode as the method of manipulating it.
+
+Fourth: are Strings supposed to have mechanical authority over freeform magic? In other words, if a player says, “I have a Fire Affinity, so I want to heat this metal,” do they need a String that reasonably covers heating/material interaction, or can they attempt basically any plausible Fire effect and use the Strings as the things they've specifically mastered? The core says casting is deliberately flexible and there is no fixed spell list, but it also says Strings are what define the character's distinct expressions. This is probably one of the most important things for me to understand when you eventually ask me to create mechanics.
+
+Fifth: what exactly does Power Level represent in your head? Mechanically it's currently scale, cost, and difficulty: PL 1 is 1 Tension/8 DC, PL 2 is 3/11, PL 3 is 6/14, PL 4 is 10/17, and PL 5 is 15/20. But I want to know whether you consider PL primarily a measure of raw magical magnitude, or whether a highly precise but conceptually complicated effect can still be PL 4/5 even if it doesn't deal much damage. The core description suggests PL is about scale rather than damage specifically.
+
+Sixth: how strict is the “one String = one conceptual capability” rule? Looking at Saiph, for example, his Corona, Starheart, Spectrum, Orbit, Constellation, and Vacuum Strings progressively reveal that his supposed “Fire” Affinity is actually something much more cosmic. Is that something you want me to treat as a major design principle: a character's Affinity can initially be misunderstood, with Strings gradually revealing the deeper nature of what their Affinity actually is? Or is Saiph a special case?
+
+Seventh: can an Affinity evolve conceptually? Related to the previous question: if somebody starts with an Affinity that appears to be “Fire,” could their later Strings reveal that the underlying Affinity is actually something broader like radiation, energy, entropy, stars, etc.? Or is the Affinity itself fixed forever and only the player's understanding of it changes? Saiph's progression very strongly suggests the latter “revelation” concept is important.
+
+Eighth: I want to clarify your terminology around TP. Your system uses Thread Pool (TP) as a derived stat, but the individual Strings use TP/DC to mean the amount of Tension generated by that particular cast. I understand what you mean from context, but mechanically those are two different things. Do you intentionally use TP for both Thread Pool and Tension Points, or is that something you eventually want renamed/cleaned up?
+
+Ninth: does Tension get added on a failed cast? Some character handouts explicitly state that Tension is added when the cast is attempted, successful or not. Melody's rules say TP is added when the cast is attempted even if the Thread Check fails. Aeolus's document says the same thing. Is that a universal core rule now?
+
+Tenth: when a Mishap says the effect occurs at half power, does the String's own wording take precedence over the generic Mishap? For example, some Strings have very specific effects, conditions, saves, damage pools, reactions, and so on. I want to know whether Mishaps simply modify whatever that String was attempting, or whether there are situations where the String explicitly prevents a particular Mishap result.
+
+Eleventh: how much freedom does the Weavekeeper have to adjudicate plausibility? The character documents repeatedly contain wording like “the Weavekeeper adjudicates whether a plausible chance exists,” and the illusion rules, for example, distinguish between an illusion being convincing and an impossible physical result. Is your intended philosophy basically “the rules determine cost/risk, but the Weavekeeper determines whether the requested fictional effect is conceptually possible in the first place”?
+
+Twelfth: what is the intended relationship between Strings and Techniques? My current understanding is that a String is an Affinity-specific magical capability, while a Technique is a Mode-specific way of manipulating magic. So two Fire characters could theoretically have completely different Strings but both know Striker Techniques such as Groundbreaker or Focused Shot. Is that correct? The core character creation structure strongly suggests that.
+
+Thirteenth: can Techniques modify Strings in ways that aren't explicitly written on the String? For example, if someone has a String that creates a physical barrier and knows an Anchor Technique that strengthens barriers, can the Technique naturally modify that String, or do you only allow combinations that the specific String explicitly supports?
+
+Fourteenth: how do you envision Weaving? I understand the mechanical progression: two Strings = normal check and enhanced effect, three = Discord and dramatically enhanced effect at double cost, four = Discord and triple cost from level 7 onward. But I'm unsure whether the player invents the combined effect freely or whether each String needs to contribute a clearly identifiable component. For example, would “Emotion + Illusion” potentially let someone create an illusion that emotionally reinforces an existing fear, or would that require a specially designed Weave approved by the Weavekeeper?
+
+Fifteenth: can Strings from different Affinities ever be Weaved? Normally a character has one Affinity, and the Handbook says dual Affinity is effectively mythical. But collaborative casting allows multiple mages to contribute Tension. So I'm wondering whether two different Affinities can meaningfully combine their Strings into a single magical effect.
+
+Sixteenth: what does “Internal Magic” mean in actual play? The core distinguishes it from leyline casting: no Tension, no Snapback, minor effects, and more than three uses per hour causes Fatigue. Is Internal Magic something every mage can do, or is it something that depends on Affinity/Mode? And can it ever accomplish something mechanically meaningful, or is it deliberately restricted to flavor/convenience?
+
+Seventeenth: what do you consider the most important balancing principle for Strings? Looking at the character handouts, you seem to care much more about conceptual boundaries than simply putting “damage = X” on everything. For example, Hycinthia can manipulate blood, but cannot seize blood inside an unwounded enemy; healing cannot resurrect people or restore memories; Lemon's illusions cannot create physical objects; Evander can't force a specific action. Is that intentional as one of the core design philosophies?
+
+And finally, what am I supposed to preserve above all else when I eventually work on this system? Is it the narrative flavor and character-specific magic, the dangerous tension economy, mechanical balance, the Affinity/Strings/Mode distinction, the “magic always has a cost” philosophy, or something else? I don't need you to pick only one; I mainly want to know which parts you consider sacred canon that I should never casually alter.
+
+Once you've answered those, I can ask a second, much more targeted round of questions about edge cases—things like reactions, saves, concentration, attacks vs. Thread Checks, collaborative casting, Burnout, Wounds, Signature, environmental modifiers, and how you want custom Strings to be judged.
+
+Ah, yes — that last answer is an important correction to how I was thinking about PL 5. I was treating PL 5 too much like “the upper end of a normal character's spell scale,” when in your actual system it is catastrophic-scale magic: siege-scale destruction, terrain reshaping, and effects potentially felt for miles. The core itself describes PL 5 that way. So if a proposed effect is genuinely within the String's domain but seems “too powerful even for PL 5,” we're talking about something beyond the ordinary five-level casting framework rather than just a slightly stronger version of PL 5.
+
+I also understand your answer about control better now. Magnitude and control are separate axes. A player can take a large PL effect and attempt to make it extremely precise, but the question isn't necessarily “that's too weak to justify the PL”; instead, the difficulty of maintaining that precision can be handled through the relevant control/concentration mechanics. That's consistent with the system's distinction between raw magical strength and Control as the learned ability to execute precise manipulations.
+
+And I now have the Weaving structure much more clearly: each String has its own PL, those PLs contribute to a combined DC/TP calculation, two Strings are the normal Weave, three doubles the normal cost and imposes Discord, and four triples the normal cost and is restricted to Level 7+. The important part is that the Strings don't have to be expressed identically: the caster can use the same Mode across the Weave or have different Modes interacting within it. The purpose of Weaving is specifically to produce things that the individual Strings couldn't produce alone.
+
+There's also a very interesting consequence here that I want to test with you: the example String tables aren't just player-facing ability lists—they're effectively calibration data for the Weavekeeper. If a player invents something not written in the table, you're looking at its magnitude, conceptual validity, Mode interaction, control requirements, and resulting mechanical impact, then deciding whether the declared PL is appropriate. That's much closer to a fiction-first magic construction system than a conventional spell list.
+
+So I want to move into the next layer: the actual math and adjudication behind a custom casting. I don't want to assume these, because this is where I could easily misunderstand your intended system.
+
+When you say the individual PLs of a Weave produce a combined calculated DC/TP, how exactly are you calculating that? For example, if String A is PL 2 and String B is PL 3, what are the resulting Tension cost and Thread Check DC? Is it simply adding the individual costs/DCs together, averaging them, using the highest PL and adding something, or is there a separate Weaving formula?
+
+Also, what happens if someone does PL 1 + PL 5? I want to know whether the enormous disparity between the two Strings matters mechanically or whether the same calculation applies.
+
+I also want to understand Mode selection in Weaving more precisely. Suppose someone says, “String A through Striker + String B through Slider.” Does each Mode independently determine what that String is doing, with the two results then being combined into the final effect? Or is the player essentially describing one unified magical action and saying, “I am using Striker for A and Slider for B because that's how I'm achieving this”?
+
+Next, I want to go deeper into Control checks. You said there is a different check for control/concentration when someone tries to make a powerful effect unusually precise. What is that check called, what attribute does it use, and when exactly is it triggered? Is it something the player rolls in addition to the Thread Check, or does it replace the Thread Check in certain circumstances?
+
+And does Control difficulty scale with PL? For example, is controlling a PL 5 effect into a tiny precise shape inherently harder than controlling a PL 2 effect, even if the final effect is mechanically similar?
+
+I also want to clarify something from the core that caught my attention: the system explicitly says Power Levels represent scale, not specific spells, with PL 3 examples ranging from a concentrated fire lance to compressed air capable of scattering a crowd to a stone barrier. That's very much consistent with what you've been explaining. But does “scale” include complexity? For example, would a highly complicated magical effect with relatively low physical output ever be PL 4 because of what it is capable of doing, or is PL primarily about the magnitude of the resulting phenomenon?
+
+And finally, I want to ask about Tensioner, because it seems like a special case that may change my understanding of your whole Mode system. The core describes Tensioner as deliberately holding a leyline under extreme tension over multiple rounds, reaching PL 3 after one round, PL 4 after two, and PL 5 after three or more, with escalating damage and Snapback risk. Is Tensioner therefore capable of taking a normal String and pushing its effective PL beyond what the character could normally cast immediately, or is that progression specifically the Mode's own effect and the String still has to determine what kind of phenomenon is being produced?
+
+That last one especially will help me understand how your Modes aren't just “spellcasting styles,” but actual mechanical philosophies for manipulating Strings.
+
+Things to Keep in Mind While Playing THREADCAST
+
+THREADCAST is not a game where your character has a list of spells that they can only use exactly as written. Your Affinity gives you a domain of magic, your Strings define the parts of that domain you have developed, and your Modes determine how you manipulate those Strings. The examples in your String tables are there to show the kind of scale and possibilities available to you; they are not a list of everything your character is allowed to do. The core rules explicitly treat Power Levels as measures of scale rather than specific spells, and casting is designed to be flexible and descriptive.
+
+Affinity → String → Power Level → Mode
+
+Think of your magic as having several layers.
+
+Your Affinity is the broad domain. It tells you what kind of thing your character can interact with. Fire, Emotion, Illusion, Healing, Luck, Cosmic phenomena, Mirrors, and so on are examples of Affinities. Your Affinity is the overall magical language your character speaks.
+
+Your Strings are sub-domains within that Affinity. A String represents a particular aspect of your Affinity that your character has developed an understanding of. It is not a spell. For example, a Fire Affinity might have Strings concerning heat, flame, light, combustion, pressure, or something much stranger depending on what that character's Affinity actually represents. The Weaver's Handbook describes an Affinity as the character's domain and their individual Strings as the things they have learned to pull from that domain.
+
+Power Level determines magnitude. PL does not tell you what spell you are casting. It tells you how much magical force you are trying to put behind what you're doing. A PL 3 effect could be a concentrated attack, a significant defensive structure, forced movement, environmental manipulation, or something completely different depending on the Affinity and String. The same PL can therefore look wildly different between two characters.
+
+Your Mode determines how you manipulate that String. This is extremely important. The same String can behave very differently depending on the Mode you choose. A Striker might use a String offensively, an Anchor might stabilize or hold something in place, a Slider might redirect or reposition its effect, a Binder might combine or structure it into something persistent, and so on. The Mode is not simply a bonus applied to the String; it changes how you are attempting to use the magic.
+
+So, when casting, think:
+
+What part of my Affinity am I using? → How powerful am I making it? → How am I manipulating it? → What am I actually trying to accomplish?
+
+The String Tables Are Examples, Not Spell Lists
+
+The biggest thing to remember is this:
+
+You are not limited to what is written in your String table.
+
+If a String table says that your String can create a particular effect at PL 2, that does not mean that effect is the only thing you can do with that String at PL 2. It is an example of what that level of magical magnitude can look like.
+
+For example, imagine a character has a Corona String within their Affinity. Their table might show a PL 2 effect that creates a 10-foot ring of heat. That establishes a benchmark for what PL 2 looks like for that String. The player could instead say:
+
+“I'm using Corona at PL 2 through Striker. I want to compress the heat into a narrow arc and throw it forward.”
+
+That isn't written in the table. That's okay.
+
+The question isn't, “Is this exact ability written on the sheet?” The question is, “Does this make sense as an expression of this String, through this Mode, at the Power Level the player declared?”
+
+If yes, the Weavekeeper can allow it and determine the appropriate resolution.
+
+If the player proposes something that is beyond the magnitude of the declared PL, the Weavekeeper can tell them that the effect needs to be reduced, changed, or attempted at a higher PL.
+
+Choosing a Power Level
+
+When you want to cast, you choose the Power Level you want to attempt.
+
+PL represents the magnitude of the magical effect you are trying to produce. It is not a difficulty rating for a particular spell and it does not determine the exact shape of the effect.
+
+For reference, the core scale is:
+
+PL 1 — Flicker: small, trivial magical effects.
+
+PL 2 — Touch: room-scale effects and meaningful but limited manipulation.
+
+PL 3 — Surge: significant effects capable of substantially affecting creatures, objects, or an area.
+
+PL 4 — Fierce: major effects capable of affecting larger groups, structures, or environments.
+
+PL 5 — Breaking: catastrophic, enormous-scale magic. Think siege-scale destruction, major terrain alteration, or effects whose consequences can extend across enormous areas.
+
+So don't look at PL 5 and think “the strongest version of the spell.” PL 5 is an enormous amount of magical force.
+
+The important thing is that PL measures what you're trying to accomplish, not whether the exact example exists in your table.
+
+You Can Change the Shape of an Effect
+
+You are also allowed to make an effect smaller, narrower, weaker, more focused, or more controlled than the example in the String table.
+
+Suppose the example for your PL 3 String affects a large area. You might instead say:
+
+“I want to concentrate the entire effect into one tiny point.”
+
+Or:
+
+“I want the effect to curve around my allies.”
+
+Or:
+
+“I want the same amount of power, but I want it to affect only one target.”
+
+The fact that the table doesn't explicitly show that configuration does not automatically make it impossible.
+
+However, magnitude and control are different things. A powerful effect being extremely precise can introduce a separate challenge involving control or concentration. You aren't necessarily reducing the magical magnitude just because you are making the effect more precise.
+
+The Mode Is Your Method
+
+Once you have chosen your String and PL, you choose the Mode you are using.
+
+The Mode tells the table how your character is interacting with the String.
+
+For example, suppose you have a String concerned with heat.
+
+You could potentially approach it as:
+
+Heat + Striker: “I focus the heat into an aggressive blast.”
+
+Heat + Anchor: “I create a stable zone of intense heat that remains in one place.”
+
+Heat + Slider: “I move the heat from one location to another.”
+
+Heat + Binder: “I weave the heat into a persistent magical structure.”
+
+Those are not necessarily separate abilities you learned. They are different ways of expressing the same String.
+
+This is why the Modes matter so much. A String doesn't completely determine what the final effect looks like. The player chooses the method of manipulation and then describes what they are trying to accomplish with it.
+
+The core Mode descriptions support this distinction: for example, Slider is concerned with moving where tension manifests, while Binder concerns intertwining multiple leylines into a unified structure.
+
+Your Turn at the Table
+
+When you want to do something unusual with your magic, you don't need to search your character sheet for a spell that says exactly what you want.
+
+Instead, tell the Weavekeeper something like:
+
+“I'm using my [String] at PL [X] through [Mode]. I want to [describe what you're trying to accomplish].”
+
+For example:
+
+“I'm using Corona at PL 3 through Slider. I want to pull the heat from the burning wall and redirect it into the creature standing behind me.”
+
+Or:
+
+“I'm using my Emotion String at PL 2 through Anchor. I want to stabilize the panic in the room rather than erase anyone's fear.”
+
+Or:
+
+“I'm using my Mirror String at PL 2 through Striker. I want to concentrate the reflected light into a blinding flash.”
+
+The exact effect doesn't have to exist in your String table.
+
+The Weavekeeper then determines whether the proposed effect makes sense for the String + PL + Mode combination and whether any additional control, concentration, range, target, or other requirements apply.
+
+Creative Casting Is Encouraged
+
+THREADCAST expects players to experiment.
+
+The system is specifically designed around describing what you want to do rather than selecting a predetermined spell.
+
+So don't think:
+
+“My sheet doesn't say I can do that.”
+
+Think:
+
+“Is this something my Affinity and String could reasonably accomplish, and how would my Mode let me attempt it?”
+
+You may come up with something that has never appeared in a String table before. That's not breaking the system. That's the system working as intended.
+
+The important limitation is that creativity does not mean unlimited power. Your proposed effect still has to belong to the conceptual territory of your String, fit the chosen Mode, and be appropriate for the PL you declared.
+
+Using Multiple Strings: Weaving
+
+The moment you use two or more Strings simultaneously, you are Weaving.
+
+Weaving allows Strings to interact and create an effect that neither String could necessarily produce by itself.
+
+For example, a character might have:
+
+Heat String + Pressure String
+
+Instead of using either one independently, they could say:
+
+“I'm Weaving Heat and Pressure at PL 2 and PL 3 respectively through Striker. I want to create a compressed blast of superheated air.”
+
+Each String has its own Power Level. The resulting Weave then uses the system's combined calculation for its Thread Check DC and Tension cost.
+
+The Strings don't need to have identical PLs, and they don't have to produce the same kind of effect.
+
+You also have freedom in how the Modes interact. You could use:
+
+Heat → Striker
+Pressure → Striker
+
+to create one unified offensive manipulation.
+
+Or:
+
+Heat → Striker
+Pressure → Slider
+
+if the two Strings need to be manipulated differently to accomplish the effect.
+
+The important question is whether the proposed combination makes sense.
+
+Weaving Can Create Something New
+
+A Weave is not simply:
+
+“String A does its thing + String B does its thing.”
+
+The entire point of Weaving is that the Strings can interact.
+
+Fire + Wind might become a directed firestorm.
+
+Sound + Pressure might become a concussive shockwave.
+
+Light + Mirror might produce a complicated reflected-light construct.
+
+Emotion + Illusion might allow a character to create an illusion specifically shaped around an existing emotional response.
+
+The exact possibilities depend on the Strings, the Modes being used, the PLs selected, and what the player is actually attempting.
+
+Creative liberty is part of the system.
+
+Weaving Has a Cost
+
+The more Strings you combine, the more dangerous the casting becomes.
+
+With two Strings, you make a normal Weave at the calculated combined cost.
+
+With three Strings, the Thread Check is made with Discord, and the normal Tension cost is doubled.
+
+With four Strings, available from Level 7 onward, the Thread Check is also made with Discord, and the normal Tension cost is tripled. Four-String Weaving represents extremely high-level magical manipulation.
+
+So Weaving gives you more creative possibilities, but you're deliberately pushing more magical threads together at once.
+
+The Table Is Your Starting Point, Not Your Ceiling
+
+Your String table should be treated as a reference guide.
+
+It shows the kinds of things your character has already demonstrated, the scale those effects can reach, and examples of what different PLs might look like. It gives both you and the Weavekeeper something to compare your ideas against.
+
+But your character is not restricted to those examples.
+
+If you have an idea that isn't written there, try it.
+
+Choose the String.
+
+Choose the PL.
+
+Choose the Mode.
+
+Describe what you want to do.
+
+Then let the Weavekeeper determine whether the proposed manipulation fits the magic.
+
+That is one of the fundamental ideas behind THREADCAST: you don't ask “Which spell on my sheet does this?” You ask “How can my character use their magic to accomplish this?”
+
+one of my players just asked this:
+
+For the weaving, can different players weave strings together?? Or does it only work for one person weaving their own strings??
+
+(so add a section for that and how it works)
+
+Yes — and I think this is worth making explicit because Collaborative Casting already exists in the core rules, but the distinction between pooling Tension and actually contributing Strings isn't spelled out clearly enough. The core currently says two or more mages can pool their Thread Pools, with one Lead making the Thread Checks and directing the effect, while supporting mages contribute Tension from their own pools.
+
+For your player handout, I'd add this:
+
+Collaborative Weaving — Can Multiple Players Weave Together?
+
+Yes. Weaving does not have to be performed by a single mage.
+
+Normally, when you Weave, you are combining multiple Strings that you have access to. However, two or more mages can also work together to create a single magical effect. This is called Collaborative Weaving.
+
+Think of it less like one person grabbing several strings and more like several people grabbing different parts of the same piece of music and making it play together.
+
+How Collaborative Weaving Works
+
+One mage is designated as the Lead. The Lead is responsible for defining the overall effect and directing the Weave.
+
+The supporting mages contribute their own magic to the effect.
+
+For example:
+
+Mage A: Fire Affinity — Corona String
+Mage B: Wind Affinity — Pressure String
+
+Mage A wants to create a massive spiraling firestorm. Mage A acts as the Lead, while Mage B contributes their Wind String to shape and accelerate the flames.
+
+The resulting effect can be something that neither mage could have produced with their String alone.
+
+The Lead makes the required Thread Checks and controls the overall casting. Supporting mages contribute Tension from their own Thread Pools and must maintain their connection to the Weave.
+
+The Supporting Mage Still Matters
+
+A supporting mage isn't simply giving the Lead extra Tension.
+
+Their contribution is part of the magic itself.
+
+If the Weavekeeper allows the supporting mage's String to become part of the actual Weave, that String can influence what the final effect is capable of.
+
+For example:
+
+A Fire mage creates the destructive heat.
+A Wind mage provides movement and direction.
+A Stone mage provides structure.
+An Emotion mage could potentially affect the emotional atmosphere surrounding the effect.
+
+The important question is always:
+
+“What does this mage's String contribute to the Weave?”
+
+If the Strings interact in a way that makes conceptual sense, the combined effect can do something that neither String could accomplish independently.
+
+Who Chooses the Power Level?
+
+The Lead declares the intended effect and the overall Power Level, with the Weavekeeper adjudicating whether the proposed magnitude fits that PL.
+
+The supporting mage does not get to independently declare a second spell and simply attach it to the first. Their contribution is part of the same magical effect.
+
+However, the supporting mage and Lead should work together to describe how their respective Strings interact.
+
+What About Modes?
+
+Modes can also be coordinated between players.
+
+For example:
+
+Mage A — Fire / Corona / Striker
+Mage B — Wind / Pressure / Slider
+
+Mage A creates a concentrated wall of flame while Mage B continuously redirects and curves it around the battlefield.
+
+Or both mages can use the same Mode:
+
+Fire / Striker + Wind / Striker
+
+producing a more aggressively offensive combined effect.
+
+The Mode determines how each mage manipulates their contribution, while the Weave determines how those contributions interact.
+
+Collaborative Casting vs. Weaving
+
+These are related, but they aren't exactly the same thing.
+
+Collaborative Casting means multiple mages are contributing to one large-scale magical effect and pooling their resources. The core rules explicitly allow this: one mage becomes the Lead, makes the Thread Checks, and supporting mages contribute Tension from their own Thread Pools.
+
+Weaving specifically means combining Strings to produce an effect that the individual Strings could not produce alone. Normally those Strings belong to one character, but Collaborative Weaving allows Strings belonging to different characters to become part of the same magical effect.
+
+So:
+
+One mage + multiple Strings = Weaving
+Multiple mages + one shared magical effect = Collaborative Casting
+Multiple mages + their individual Strings intentionally interacting = Collaborative Weaving
+
+There Is Still a Limit
+
+Collaborative Weaving does not mean that everyone can throw a String into the same effect with no consequences.
+
+The Weavekeeper still determines whether the proposed combination makes conceptual sense and whether its magnitude fits the declared Power Level.
+
+The more complicated the interaction becomes, the more carefully the group should define what each String is contributing.
+
+The goal isn't:
+
+“We have six mages, so let's combine six Strings and make the biggest spell possible.”
+
+It's:
+
+“What is each mage actually adding to this Weave, and what does that allow the group to accomplish together?”
+
+That distinction keeps Collaborative Weaving creative rather than turning it into a simple way to stack everyone's power.
+
+One important mechanical distinction I'd keep in the final rules: the existing core rule already establishes that supporting mages contribute Tension from their own Thread Pools, and that they make a CTR Check (DC 12) each round they contribute; if they fail, the Lead immediately makes a Strain Check (DC 15).
+
+I would not replace those mechanics with a new “everyone rolls their own Thread Check” system unless you specifically want Collaborative Weaving to be more complex. The Lead remaining the person who makes the actual Thread Checks keeps the system clean.
+
+okay cool
+I made a website for this so my players can do the sheets and dice rolling there with all the mechanics automatically working together and calculating properly
+How would that work in detail?
+Explain what needs to be there
+
+
+Oh, if you're building the website specifically for THREADCAST, I would make it much more than a character sheet with a dice roller. The website can essentially become the digital rules engine for the entire game—the player chooses what they're trying to do, and the site handles the bookkeeping, calculations, dice, Tension, Weaving, Mishaps, etc.
+
+The important part is that the website should automate the mathematics without automating the creative adjudication. THREADCAST is intentionally flexible: the player describes an effect, chooses their String/PL/Mode, and the Weavekeeper decides whether the proposed effect fits.
+
+Here's how I'd structure the whole thing.
+
+THREADCAST Digital Character & Casting System
+1. The Main Player Dashboard
+
+When a player logs in, the first thing they should see is essentially:
+
+[ CHARACTER NAME ]
+
+Affinity: Fire
+Level: 5
+Primary Mode: Striker
+Secondary Mode: Anchor
+Tertiary Mode: —
+
+Then a very visible resource section:
+
+Resource	Current	Maximum
+❤️ Vitality	18	22
+🧵 Tension	7	14
+🔥 Burnout	0	6
+⚠️ Fatigue	1	6
+
+And below that:
+
+Thread Pool: 14
+Safe Limit: 7
+Ward Rating: 12
+Guard Rating: 11
+Refinement Bonus: +4
+
+These should all be calculated fields, not things the player manually enters.
+
+The core rules define Thread Pool as:
+
+(POT modifier + CTR modifier + Level) × 2
+
+with a minimum of 6.
+
+Safe Limit is:
+
+POT modifier + CTR modifier + Level
+
+So if someone changes their CTR from 14 → 16, the website should immediately recalculate everything affected by that change.
+
+2. Character Sheet
+
+I'd divide the sheet into tabs rather than putting everything on one enormous page.
+
+TAB 1 — Overview
+
+The stuff they need constantly:
+
+Name
+Portrait
+Level
+Background
+Affinity
+Guild
+Guild Rank
+Primary Mode
+Secondary Mode
+Tertiary Mode
+VP
+Tension
+Burnout
+Fatigue
+Thread Pool
+Safe Limit
+Ward Rating
+Guard Rating
+Recovery Dice
+Signature
+
+The core character sheet specifically tracks these categories.
+
+3. Attributes
+
+Have six large clickable cards:
+
+POT — Potency
+
+Raw magical strength.
+
+CTR — Control
+
+Magical precision.
+
+RES — Resilience
+
+Physical toughness and magical strain resistance.
+
+ACU — Acuity
+
+Mental sharpness and tactical awareness.
+
+PRE — Presence
+
+Force of will and social authority.
+
+THS — Thread Sense
+
+Ability to perceive and understand leylines.
+
+The core uses these six attributes and converts scores into modifiers using:
+
+(Score − 10) ÷ 2, rounded down.
+
+So the UI could show:
+
+CONTROL
+16
++3
+
+And clicking +3 could immediately give:
+
+Control Check → 1d20 + 3
+
+This is where the website becomes really nice.
+
+4. Every Skill Should Be Rollable
+
+The 18 skills should appear in a searchable list.
+
+For example:
+
+Skill	Attribute	Attuned
+Thread Reach	THS	✓
+Surge	POT	✓
+Weave Reading	THS	
+Ward Craft	CTR	✓
+Inscription	ACU	
+Anatomy of Magic	ACU	✓
+
+Attuned skills add the Refinement Bonus to the relevant check.
+
+So if I click:
+
+Ward Craft
+
+the site automatically rolls:
+
+1d20 + CTR modifier + RB
+
+if the character is Attuned.
+
+The player shouldn't have to remember what gets added.
+
+5. Strings Need Their Own System
+
+This is probably one of the most important parts of your website.
+
+Don't make Strings just text boxes.
+
+Each String should be a proper object in the database.
+
+For example:
+
+CORONA
+
+Affinity: Fire
+
+Description:
+The mage's ability to manipulate concentrated heat and flame...
+
+Then:
+
+Known: ✓
+Unlocked at: Level 1
+
+And underneath:
+
+Example Uses
+PL	Example
+1	Warm an object
+2	Create a small flame barrier
+3	Project concentrated fire
+4	Large-scale fire manipulation
+
+But label this very clearly:
+
+These are examples, not a spell list.
+
+That's essential to THREADCAST's design.
+
+The website should never present those entries as:
+
+AVAILABLE SPELLS
+
+because that's not how your system works.
+
+6. The Casting Interface
+
+This should probably be the coolest part of the website.
+
+A player clicks:
+
+🧵 CAST
+
+And gets a casting wizard.
+
+STEP 1 — Choose String(s)
+
+The player sees:
+
+Choose your String
+
+☑ Corona
+☐ Ember
+☐ Ash
+☐ Heat
+☐ ...
+
+If they choose one:
+
+1 String
+
+If they choose two:
+
+2 Strings — Weaving
+
+Three:
+
+3 Strings — Discord + increased cost
+
+Four:
+
+4 Strings — Discord + increased cost
+
+The core already establishes the escalating Weaving costs:
+
+2 Strings → normal cost
+3 Strings → Discord + double normal cost
+4 Strings → Discord + triple normal cost
+
+7. Then Choose the Mode
+
+This should happen before describing the effect, since that's how you've defined THREADCAST.
+
+Display the character's available Modes:
+
+STRIKER
+
+Offense / raw force
+
+ANCHOR
+
+Stability / defense
+
+SLIDER
+
+Repositioning / deflection
+
+BINDER
+
+Interlocking / persistent structures
+
+etc.
+
+The website can give the player a tiny reminder of what the Mode does.
+
+But don't restrict them to predetermined "Mode abilities."
+
+8. Then Choose Power Level
+
+Display:
+
+POWER LEVEL
+
+PL 1 — Flicker
+DC 8 · 1 Tension
+
+PL 2 — Touch
+DC 11 · 3 Tension
+
+PL 3 — Surge
+DC 14 · 6 Tension
+
+PL 4 — Fierce
+DC 17 · 10 Tension
+
+PL 5 — Breaking
+DC 20 · 15 Tension
+
+And I would make PL5 visually intimidating.
+
+Because based on your actual system, PL5 isn't just "really powerful." It's catastrophic, siege-scale magic that can reshape terrain and affect areas over miles.
+
+The website should communicate that.
+
+9. THEN Describe the Effect
+
+Give them a text box:
+
+What are you trying to do?
+
+Describe your intended effect...
+
+Example:
+
+"I create a curved wall of fire around the party, leaving an opening behind us."
+
+Then:
+
+CASTING SUMMARY
+
+String: Corona
+Mode: Anchor
+Power Level: 3
+Target: 10 ft curved barrier
+Tension Cost: 6
+Thread Check: CTR + RB
+DC: 14
+
+Then:
+
+[ ASK WEAVEKEEPER ]
+
+The player tells the Weavekeeper what they're doing.
+
+The Weavekeeper can approve it, modify the PL, reject it, etc.
+
+This is important because the computer should calculate the rules; the Weavekeeper should adjudicate creative intent.
+
+10. The Actual Roll
+
+Once approved:
+
+THREAD CHECK
+
+CTR: +3
+Refinement Bonus: +4
+Total modifier: +7
+
+Then:
+
+🎲 ROLL
+
+The website rolls the d20.
+
+Suppose:
+
+13 + 7 = 20
+
+Then:
+
+SUCCESS
+
+DC 14
+Roll 20
+SUCCESS
+
+The website automatically adds the appropriate Tension.
+
+11. Natural 1 and Natural 20
+
+The website absolutely needs to distinguish:
+
+Natural 1
+
+Not:
+
+1 + modifiers = 8
+
+and then treating it as an ordinary failure.
+
+It needs to know:
+
+NATURAL 1
+
+→ trigger the appropriate Snapback/Misfire logic.
+
+Likewise:
+
+Natural 20
+
+should be detected separately as a Thread Break.
+
+The core explicitly gives natural 20 and natural 1 special treatment.
+
+So the dice engine should return something like:
+
+{
+    rawRoll: 1,
+    modifier: 7,
+    total: 8,
+    naturalOne: true,
+    naturalTwenty: false
+}
+
+rather than just returning 8.
+
+12. Automatic Tension
+
+This is where the site saves everyone a ton of bookkeeping.
+
+Suppose:
+
+Current Tension:
+
+7 / 14
+
+Player casts PL3:
+
++6 Tension
+
+Website automatically changes it to:
+
+13 / 14
+
+Then if they cast another PL2:
+
+16 / 14
+
+The website immediately displays:
+
+⚠️ ABOVE SAFE LIMIT
+
+And calculates the Strain Check DC:
+
+10 + (Current Tension − Safe Limit)
+
+So:
+
+10 + (16 − 14) = DC 12
+
+The player sees:
+
+STRAIN CHECK REQUIRED
+d20 + RES vs DC 12
+
+The actual rule is directly supported by the core.
+
+13. Thread Pool Warning
+
+If they exceed their Thread Pool:
+
+🔴 THREAD POOL EXCEEDED
+
+Current Tension: 18
+Thread Pool: 16
+
+Then:
+
+AUTOMATIC SNAPBACK
+
+The website should not let them accidentally forget this.
+
+14. Release Tension Button
+
+Have a button right beside Tension:
+
+[ RELEASE TENSION ]
+
+When clicked:
+
+How much Tension do you want to release?
+
+The website caps the amount at their Safe Limit according to the rule.
+
+Then displays:
+
+Signature Burst
+
+because releasing Tension produces a visible manifestation of the character's Signature.
+
+15. MEND
+
+Another button:
+
+[ MEND — 10 MINUTES ]
+
+Confirmation:
+
+Reset Tension to 0 and apply the recovery effects of a Mend?
+
+Then automatically update the sheet.
+
+16. Mishap System
+
+You absolutely want the website to automate this.
+
+If the player fails a Thread Check without rolling a natural 1:
+
+❌ THREAD CHECK FAILED
+
+Then:
+
+MISHAP
+
+🎲 Roll d6
+
+The website automatically rolls it and displays the result.
+
+For example:
+
+4 — Tension Spike
+
+Then automatically applies whatever the Mishap does.
+
+No one needs to pull up the PDF.
+
+17. Snapback System
+
+Same thing.
+
+If a Snapback is triggered:
+
+⚠️ SNAPBACK
+
+The website rolls the Snapback table.
+
+Then displays:
+
+SNAPBACK RESULT
+
+[Result description]
+
+And automatically applies any mechanical effects that can be automated.
+
+This is especially useful because Snapback can affect things like conditions, damage, Tension, etc.
+
+18. Weaving Needs Its Own Interface
+
+Don't make players manually calculate Weaving.
+
+If they select:
+
+Corona + Pressure
+
+the website should transform the casting interface into:
+
+🧵 WEAVING
+
+String 1
+
+Corona
+PL: 3
+Mode: Striker
+
+String 2
+
+Pressure
+PL: 2
+Mode: Slider
+
+Then:
+
+Combined Weave
+
+And whatever your final Weaving calculation is can be applied automatically.
+
+You told me your system uses an individual PL for each String but then calculates a combined DC/TP for the Weave. So this is where the website should have a dedicated function for that calculation rather than trying to treat it as one ordinary PL.
+
+I would not hard-code a formula into the website until you've finalized that combined calculation.
+
+19. Collaborative Weaving
+
+And now the thing we were just discussing.
+
+The website can have:
+
+🤝 COLLABORATIVE CAST
+
+One player clicks:
+
+[ START COLLABORATIVE CAST ]
+
+They become:
+
+LEAD
+
+Then the other players in the campaign can join the casting.
+
+For example:
+
+LEAD
+
+Fae — Fire
+
+Corona
+PL 3
+Striker
+
+SUPPORT
+
+Alex — Wind
+
+Pressure
+PL 2
+Slider
+
+SUPPORT
+
+Mira — Stone
+
+Foundation
+PL 2
+Anchor
+
+Then the system displays:
+
+3 MAGES CONTRIBUTING
+
+The Lead describes the overall effect.
+
+The Lead makes the Thread Check.
+
+The supporting characters contribute Tension from their own Thread Pools, exactly as the core's Collaborative Casting rules describe.
+
+Each supporting mage gets:
+
+[ CONTRIBUTE ]
+
+When they click it, the website tracks their contribution.
+
+It should also automatically prompt:
+
+Supporting Mage CTR Check — DC 12
+
+each round they're contributing.
+
+If they fail:
+
+⚠️ SUPPORT FAILURE
+
+Lead must make a Strain Check — DC 15
+
+Those are the existing Collaborative Casting mechanics.
+
+20. Party / Campaign Page
+
+You could have a separate:
+
+🏰 CAMPAIGN
+
+Where players see:
+
+PARTY
+Character	Level	Affinity	VP	Tension
+Fae	5	Fire	22/22	7/14
+Alex	4	Wind	19/20	3/11
+Mira	5	Stone	24/24	9/15
+
+But players shouldn't necessarily see everything about everyone.
+
+The Weavekeeper should have an admin view.
+
+21. Weavekeeper Dashboard
+
+This is where I'd make the website dramatically more powerful.
+
+The Weavekeeper should be able to see:
+
+PARTY
+Every character
+HP
+Tension
+Burnout
+Fatigue
+Conditions
+Level
+Initiative
+ACTIVE MAGIC
+Ongoing Strings
+Concentration
+Wards
+Persistent effects
+Weaves
+Collaborative Casts
+ROLLS
+
+Live roll feed:
+
+Fae rolled Thread Check
+d20 (17) + 7 = 24 vs DC 14
+
+Alex rolled CTR Check
+d20 (8) + 3 = 11 vs DC 12 ❌
+
+Mira rolled RES Check
+d20 (18) + 2 = 20
+
+This would make running the game much easier.
+
+22. Combat Mode
+
+You could have a separate combat interface.
+
+INITIATIVE
+1. Fae
+2. Alex
+3. Enemy
+4. Mira
+
+Each character gets a combat card:
+
+FAE
+
+❤️ 22/22
+🧵 7/14
+🔥 Burnout 0
+⚠️ Fatigue 1
+
+And buttons:
+
+Attack
+Cast
+Skill Check
+Reaction
+Minor Action
+Move
+
+The system tracks whose turn it is.
+
+23. Conditions
+
+You should have a proper condition engine.
+
+For example:
+
+Shaking Hands
+Burned
+Discord
+Harmony
+Fatigue
+Burnout
+Wounds
+Corruption
+etc.
+
+Rather than merely displaying:
+
+Discord
+
+the system should know:
+
+Condition:
+Discord
+
+Applies to:
+Thread Checks
+
+Duration:
+Until X
+
+Source:
+Snapback #3
+
+Then when the player presses Roll Thread Check, the system automatically knows whether Discord applies.
+
+This is the same principle used by modern digital RPG tools: the sheet should contain the rules logic instead of merely being a digital form.
+
+24. Dice History
+
+Every roll should be recorded.
+
+ROLL HISTORY
+
+Fae — Thread Check
+17 + 7 = 24
+DC 14
+SUCCESS
+
+Corona / Striker / PL3
+
+Then:
+
+Fae — Strain Check
+8 + 2 = 10
+DC 12
+FAILURE
+
+Snapback triggered.
+
+This becomes extremely useful when players argue:
+
+"WAIT, WHAT DID I ROLL?"
+
+😂
+
+25. Character Progression
+
+The website should also handle leveling.
+
+When the Weavekeeper changes:
+
+Level 4 → Level 5
+
+the website automatically knows:
+
+New String unlocked
+Refinement Bonus changes
+Thread Pool changes
+Safe Limit changes
+Attribute increase
+etc.
+
+The core gives new Strings at odd levels and new Techniques at even levels, with Secondary Mode at 4 and Tertiary Mode at 7.
+
+But don't automatically choose the new String for them.
+
+Instead:
+
+NEW STRING UNLOCKED
+
+You have reached Level 5.
+
+Choose your new String
+
+[ Select String ]
+
+And perhaps:
+
+Your Weavekeeper must approve this String.
+
+26. Character Creation Wizard
+
+Instead of giving new players a giant form, make character creation sequential:
+
+1. Identity
+
+Name, age, appearance.
+
+2. Background
+
+Choose Background.
+
+Website applies the appropriate bonuses automatically.
+
+3. Attributes
+
+Spend the starting points.
+
+Website prevents illegal values.
+
+4. Affinity
+
+Choose Affinity.
+
+5. Strings
+
+Work with Weavekeeper to define Strings.
+
+6. Primary Mode
+7. Path / Guild
+8. Attuned Skills
+9. Derived Statistics
+10. Signature
+11. Review
+
+Then:
+
+CREATE CHARACTER
+
+This follows the actual character creation structure in the core rules.
+
+27. Database Structure
+
+If you're actually coding this, I'd structure the backend roughly like this:
+
+User
+ └── Campaign
+      ├── Character
+      │    ├── Attributes
+      │    ├── Skills
+      │    ├── Affinity
+      │    ├── Strings
+      │    ├── Modes
+      │    ├── Techniques
+      │    ├── Conditions
+      │    ├── Resources
+      │    └── Equipment
+      │
+      ├── Sessions
+      │    ├── Rolls
+      │    ├── Events
+      │    ├── Combat
+      │    └── Weaves
+      │
+      └── Weavekeeper
+
+And your rules engine should be separate from the UI.
+
+That's important.
+
+Don't put:
+
+if (level === 5) ...
+
+all over your React components.
+
+Instead have something like:
+
+/rules
+   attributes
+   skills
+   powerLevels
+   tension
+   weaving
+   collaborativeCasting
+   mishaps
+   snapbacks
+   leveling
+
+Then your UI simply asks the rules engine:
+
+"What is this character's Thread Pool?"
+
+and gets:
+
+14
+
+That makes the system vastly easier to maintain.
+
+28. The Casting Engine
+
+Conceptually, your casting engine should look like:
+
+Player
+   ↓
+Select String(s)
+   ↓
+Select Mode(s)
+   ↓
+Select PL(s)
+   ↓
+Describe Effect
+   ↓
+Weavekeeper Approval
+   ↓
+Rules Engine
+   ↓
+Calculate DC
+   ↓
+Calculate Tension
+   ↓
+Apply Modifiers
+   ↓
+Roll
+   ↓
+Success / Failure / Nat 1 / Nat 20
+   ↓
+Resolve Effect
+   ↓
+Update Tension
+   ↓
+Check Safe Limit
+   ↓
+Possible Strain Check
+   ↓
+Update Character
+   ↓
+Add Roll to Session Log
+
+That's basically the heart of the entire website.
+
+29. And There's One REALLY Important Design Rule
+
+I'd make the website follow this philosophy:
+
+Automate numbers. Don't automate imagination.
+
+The computer should automatically know:
+
+"You have CTR +3, RB +4, PL3 is DC14, this costs 6 Tension, you're now at 13/14, and you need a Strain Check if you go higher."
+
+But it should not decide:
+
+"Corona cannot do that because there isn't an entry on the String table."
+
+Because that's contrary to how you've designed THREADCAST.
+
+The player should be able to say:
+
+"I use Corona + Anchor to make a curved dome of heat around everyone."
+
+The system should then present the mechanical framework, while the Weavekeeper determines whether the proposed effect fits the String, Mode and PL.
+
+That's also why I'd make "Custom Effect" a first-class option in the UI rather than forcing players to choose from a list of pre-written spells.
+
+30. What I'd Make the Website Have
+
+So, at the highest level:
+
+PLAYER SIDE
+
+Dashboard
+
+Character overview
+VP
+Tension
+Burnout
+Fatigue
+
+Character Sheet
+
+Attributes
+Skills
+Affinity
+Strings
+Modes
+Techniques
+Equipment
+Signature
+
+Casting
+
+String selection
+Mode selection
+PL selection
+Effect description
+Weaving
+Collaborative Weaving
+Thread Check
+Tension calculation
+Mishap/Snapback
+
+Dice
+
+d4
+d6
+d8
+d10
+d12
+d20
+Custom rolls
+Roll history
+
+Campaign
+
+Party
+Session
+Initiative
+Combat
+Active effects
+WEAVEKEEPER SIDE
+
+Campaign Manager
+
+Players
+Characters
+NPCs
+Sessions
+
+Live Session
+
+Initiative
+Party status
+Roll feed
+Conditions
+Active magic
+
+Character Management
+
+Edit attributes
+Approve Strings
+Unlock Modes
+Level characters
+Apply conditions
+
+Casting Control
+
+Approve/reject custom effects
+Override PL
+Modify DC
+Modify Tension
+Force Mishap/Snapback
+Resolve unusual interactions
+
+Collaborative Casting
+
+Start ritual
+Assign Lead
+Add supporting mages
+Track individual Tension
+Track contribution checks
+
+And I'd make one central "THREADCAST ENGINE" underneath all of this. That's the part that actually knows the rules.
+
+That way, if you later change something like "PL3 costs 6 Tension" → "PL3 costs 7", you change it once in the rules engine, and the character sheet, casting interface, Weaving calculator, combat system, and Weavekeeper dashboard all update automatically.
+
+That architecture is especially important for THREADCAST because you're building a system where the player has enormous freedom in describing effects, while the mechanics still need to consistently calculate the consequences. A digital sheet that merely reproduces the PDF would miss most of the potential here.
