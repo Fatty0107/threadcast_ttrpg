@@ -101,11 +101,16 @@ export function RollLog() {
                   <div className="text-muted-foreground truncate" title={roll.title}>{roll.title}</div>
                   <div className="flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground/70 mt-0.5">
                     <span>
-                      {roll.diceSides === 0 ? "1 flat" : roll.d2 === undefined ? `d${roll.diceSides}: ${roll.d1}` : `2d${roll.diceSides}: [${roll.d1}, ${roll.d2}]`}
-                      {roll.extraDice.map(d => ` + d${d.sides}: ${d.value}`).join("")}
-                      {roll.multiplier !== 1 && ` ×${roll.multiplier}`}
-                      {roll.modifier !== 0 && ` ${formatModifier(roll.modifier)}`}
-                      {roll.category === "damage" && " (min 1)"}
+                      {roll.category === "damage" && roll.title === "Snapback · Total Break damage" &&
+                      roll.diceSides === 12 && roll.total === 48
+                        ? "Maximum damage by rule: 48 VP (4d12 at maximum; no dice rolled)"
+                        : <>
+                            {roll.diceSides === 0 ? "1 flat" : roll.d2 === undefined ? `d${roll.diceSides}: ${roll.d1}` : `2d${roll.diceSides}: [${roll.d1}, ${roll.d2}]`}
+                            {roll.extraDice.map(d => ` + d${d.sides}: ${d.value}`).join("")}
+                            {roll.multiplier !== 1 && ` ×${roll.multiplier}`}
+                            {roll.modifier !== 0 && ` ${formatModifier(roll.modifier)}`}
+                            {roll.category === "damage" && " (min 1)"}
+                          </>}
                     </span>
                     <span className={cn(roll.mode === "HARMONY" ? "text-chart-2" : roll.mode === "DISCORD" ? "text-destructive/70" : "")}>{roll.mode}</span>
                     {roll.dc && <span>DC {roll.dc}</span>}

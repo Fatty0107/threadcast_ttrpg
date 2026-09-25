@@ -5,6 +5,18 @@ import {
   resolvePermanentInjury,
 } from "./cast-resolution.ts";
 import { guildBonusAlreadyInAttributes } from "../../../../lib/casting-rules/src/guild-bonus.ts";
+import { buildRollEmbed } from "./discord-roll-format.ts";
+
+test("Discord distinguishes fixed Total Break damage from rolled damage", () => {
+  const damage = {
+    characterName: "Melody", title: "Snapback · Total Break damage",
+    category: "damage", mode: "NORMAL", diceSides: 12,
+    d1: 12, d2: 12, extraDice: [{ sides: 12, value: 12 }, { sides: 12, value: 12 }],
+    modifier: 0, multiplier: 1, total: 48, dc: null, outcome: "Damage",
+  };
+  assert.match(buildRollEmbed(damage).embed.description, /Maximum damage by rule.*no dice rolled/);
+  assert.match(buildRollEmbed({ ...damage, title: "Snapback · Collapse damage" }).embed.description, /2d12 \(12, 12\)/);
+});
 
 test("builder attributes do not receive guild bonuses a second time during casting", () => {
   const built = { baseAttributes: { pot: 14, ctr: 14 }, attributes: { pot: 15, ctr: 15 } };

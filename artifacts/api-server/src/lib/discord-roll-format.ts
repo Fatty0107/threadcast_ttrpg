@@ -16,6 +16,12 @@ function rollTitle(roll: Roll): string {
 }
 
 function rollFormula(roll: Roll): string {
+  // Total Break explicitly deals maximum damage; the stored 12s are a
+  // representation of that rule, not four randomly rolled dice.
+  if (roll.category === "damage" && roll.title === "Snapback · Total Break damage" &&
+      roll.diceSides === 12 && roll.total === 48) {
+    return "Maximum damage by rule — 48 VP (4d12 at maximum; no dice rolled)";
+  }
   const dice = roll.diceSides === 0 ? "1 flat"
     : roll.d2 === null ? `1d${roll.diceSides} (${roll.d1})`
     : `2d${roll.diceSides} (${roll.d1}, ${roll.d2}${roll.mode === "NORMAL" || roll.category === "damage" || roll.category === "mend"
