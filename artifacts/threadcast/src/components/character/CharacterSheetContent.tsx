@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Character, getCharacter, useCreateCast, getListRollsQueryKey, type GameplayRoll, type CastInput } from "@workspace/api-client-react";
+import {
+  Character, getCharacter, useCreateCast, useCreateCastStrainCheck, useResolveCastConsequence,
+  getListRollsQueryKey, type GameplayRoll, type CastInput, type CastStrainInput, type CastResult as ApiCastResult,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ATTRIBUTE_DEFS, ALL_SKILLS, ALL_MODES, FEATS, CATALOG_ITEMS, BURNOUT_LEVELS,
@@ -10,7 +13,7 @@ import {
   calcRecoveryDice, getGuildRankData, GUILDS,
 } from "@/lib/ttrpg-data";
 import { findString } from "@/lib/affinity-data";
-import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, mishapResult, snapbackResult, strainDC, type CastAftermath } from "@/lib/casting-rules";
+import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, strainDC, type CastAftermath } from "@/lib/casting-rules";
 import { CastAftermath as CastAftermathView } from "./CastAftermath";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
@@ -21,6 +24,8 @@ import { GameTerm } from "@/components/shared/GameTerm";
 import { DEFAULT_DICE_STYLE, useActiveDiceStyle } from "@/lib/dice-style";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthContext";
+import { escapePrintHtml } from "@/lib/print-escape";
 import "./character-sheet.css";
 
 // ---- Types ----
@@ -94,22 +99,39 @@ interface SheetData {
   notesSession?: string;
   recoveryDiceCurrent?: number;
   castingConditions?: string[];
+  castConsequences?: CastConsequence[];
+  permanentInjuries?: PermanentInjury[];
   featCharges?: Record<string, number>;
   featChoices?: Record<string, any>;
   guildFeatChoice?: string;
   weavings?: WeavingEntry[];
 }
 
-type CastUIAftermath = CastAftermath & { saveConfirmed: boolean; damageSaved?: boolean };
-type ResolvedCastTable = {
-  kind: "Mishap" | "Snapback";
-  die: number;
-  effect: ReturnType<typeof mishapResult>;
-  damage?: number;
-  warning?: string;
-  saveConfirmed: boolean;
-  damageSaved?: boolean;
+type CastConsequence = {
+  id: string;
+  name: string;
+  prompt: string;
+  choiceType: "target" | "string" | "sense";
+  status: "pending" | "resolved";
+  choice?: string;
 };
+type PermanentInjury = {
+  id: string;
+  die: number;
+  name: string;
+  description: string;
+  string?: string;
+  senseType?: string;
+};
+type PendingCastRequest = {
+  requestId: string;
+  body: string;
+  operation: "cast" | "strain";
+  createdAt: number;
+  key: string;
+};
+
+type CastUIAftermath = CastAftermath & { saveConfirmed: boolean; damageSaved?: boolean };
 
 function CastAftermathDisplay({ result }: { result: CastUIAftermath }) {
   if (result.saveConfirmed) return <CastAftermathView result={result} />;
@@ -117,7 +139,11 @@ function CastAftermathDisplay({ result }: { result: CastUIAftermath }) {
     <div className="mt-3 border border-amber-500/40 bg-amber-500/5 p-3 space-y-1 font-mono text-[11px]" role="alert">
       <p className="text-amber-500 font-bold">Sheet save not confirmed. Resource changes shown here are not confirmed persisted.</p>
       {result.table && <p>{result.table.kind} d{result.table.kind === "Mishap" ? 6 : 12} {result.table.die} — {result.table.effect.name}: {result.table.effect.description}</p>}
+      {result.table?.direction && <p>Discharge direction · d8 {result.table.direction.die}: {result.table.direction.name}.</p>}
+      {result.table?.permanentInjury && <p>Permanent Injury · d6 {result.table.permanentInjury.die}: {result.table.permanentInjury.name} — {result.table.permanentInjury.description}</p>}
       {result.additionalTable && <p>Snapback d12 {result.additionalTable.die} — {result.additionalTable.effect.name}: {result.additionalTable.effect.description}</p>}
+      {result.additionalTable?.direction && <p>Discharge direction · d8 {result.additionalTable.direction.die}: {result.additionalTable.direction.name}.</p>}
+      {result.additionalTable?.permanentInjury && <p>Permanent Injury · d6 {result.additionalTable.permanentInjury.die}: {result.additionalTable.permanentInjury.name} — {result.additionalTable.permanentInjury.description}</p>}
       {result.damage !== undefined && <p>{result.damageSaved ? "Damage saved" : "Damage rolled but not saved"}: {result.damage} VP.</p>}
       {result.additionalTable?.damage !== undefined && <p>Secondary damage: {result.additionalTable.damage} VP; check the warning below for save status.</p>}
       {result.warning && <p>{result.warning}</p>}
@@ -139,6 +165,9 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const recordRoll = useGameplayRoll();
   const queryClient = useQueryClient();
   const createCast = useCreateCast();
+  const createStrainCheck = useCreateCastStrainCheck();
+  const resolveConsequence = useResolveCastConsequence();
+  const { user } = useAuth();
   const { style: activeDiceStyle, isLoading: dicePreferencesLoading, isError: dicePreferenceError } = useActiveDiceStyle();
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [localData, setLocalData] = useState<SheetData>((character.data as SheetData) || {});
@@ -152,7 +181,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const [recoveryDiceUsed, setRecoveryDiceUsed] = useState(0);
   const [supportTension, setSupportTension] = useState(1);
   const [supporting, setSupporting] = useState(false);
-  const [supportCheck, setSupportCheck] = useState<{ die: number; total: number } | null>(null);
+  const [supportCheck, setSupportCheck] = useState<{ d1: number; d2?: number; finalDie: number; total: number; mode: string } | null>(null);
   const [supportError, setSupportError] = useState("");
   const supportLock = useRef(false);
   const [mendRoll, setMendRoll] = useState<{ d1: number; d2: number; diceUsed: number; diceRoll: number; healed: number; rolling: boolean; rollKey: number } | null>(null);
@@ -160,24 +189,74 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const [strainPending, setStrainPending] = useState(false);
   const [strainMessage, setStrainMessage] = useState("");
   const strainLock = useRef(false);
+  const [pendingCastRequests, setPendingCastRequests] = useState<PendingCastRequest[]>([]);
+  const [resumedCastResult, setResumedCastResult] = useState<ApiCastResult | null>(null);
+  const [strainResult, setStrainResult] = useState<ApiCastResult | null>(null);
+  const [consequenceChoices, setConsequenceChoices] = useState<Record<string, string>>({});
+  const [savedConsequenceChoices, setSavedConsequenceChoices] = useState<Record<string, string>>({});
+  const [consequenceBusy, setConsequenceBusy] = useState<string | null>(null);
+  const [consequenceError, setConsequenceError] = useState<Record<string, string>>({});
+  const [threadSenseRolls, setThreadSenseRolls] = useState<Record<string, { busy?: boolean; roll?: GameplayRoll; error?: string }>>({});
+  const [resumeError, setResumeError] = useState("");
+  const [sheetSaveError, setSheetSaveError] = useState("");
   const isMendRolling = !!mendRoll?.rolling;
   const [expandedKitItem, setExpandedKitItem] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pendingSave = useRef<SheetData | null>(null);
+  const sheetUpdateQueue = useRef<Promise<void>>(Promise.resolve());
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const castRequestLock = useRef(false);
   const [castInProgress, setCastInProgress] = useState(false);
   const dirtyRef = useRef(false);
   const editSerial = useRef(0);
-  const pendingCastRef = useRef<{ body: string; requestId: string } | null>(null);
+  const pendingCastPrefix = user?.id == null ? null : `threadcast:pending-cast:v1:${user.id}:${character.id}:`;
+  const consequenceChoicePrefix = user?.id == null ? null : `threadcast:consequence-choice:v1:${user.id}:${character.id}:`;
+  const [storageError, setStorageError] = useState("");
   const mendRollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mendRollLock = useRef(false);
+
+  function enqueueSheetUpdate(data: SheetData): Promise<unknown> {
+    const update = sheetUpdateQueue.current
+      .catch(() => undefined)
+      .then(() => Promise.resolve(onUpdateRef.current({ data: data as any })));
+    sheetUpdateQueue.current = update.then(() => undefined, () => undefined);
+    return update;
+  }
+
+  const refreshPendingCastRequests = useCallback(() => {
+    if (!pendingCastPrefix || typeof window === "undefined") {
+      setPendingCastRequests([]);
+      return;
+    }
+    try {
+      const pending: PendingCastRequest[] = [];
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (!key?.startsWith(pendingCastPrefix)) continue;
+        const saved = JSON.parse(window.localStorage.getItem(key) || "null");
+        if (!saved || typeof saved.requestId !== "string" || typeof saved.body !== "string" ||
+            !["cast", "strain"].includes(saved.operation) || !Number.isFinite(saved.createdAt)) {
+          throw new Error("A saved cast retry record is invalid. Do not start another cast until it is recovered.");
+        }
+        pending.push({ ...saved, key } as PendingCastRequest);
+      }
+      pending.sort((a, b) => a.createdAt - b.createdAt);
+      setPendingCastRequests(pending);
+      setStorageError("");
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : "Saved cast retries could not be loaded.");
+    }
+  }, [pendingCastPrefix]);
+
+  function consequenceChoiceKey(id: string) {
+    return consequenceChoicePrefix ? `${consequenceChoicePrefix}${id}` : null;
+  }
 
   useEffect(() => () => {
     if (mendRollTimer.current) clearTimeout(mendRollTimer.current);
     clearTimeout(saveTimer.current);
-    if (pendingSave.current) void Promise.resolve(onUpdateRef.current({ data: pendingSave.current as any })).catch(() => undefined);
+    if (pendingSave.current) void enqueueSheetUpdate(pendingSave.current).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -186,11 +265,86 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     setLocalData(next);
     dirtyRef.current = false;
     onLocalSave?.();
-    pendingCastRef.current = null;
+    setResumedCastResult(null);
     setSupporting(false);
     setSupportCheck(null);
     setSupportError("");
+    setThreadSenseRolls({});
   }, [character.id]);
+
+  useEffect(() => {
+    refreshPendingCastRequests();
+    if (typeof window === "undefined") return;
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.startsWith(pendingCastPrefix || "")) refreshPendingCastRequests();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [pendingCastPrefix, refreshPendingCastRequests]);
+
+  useEffect(() => {
+    if (!consequenceChoicePrefix || typeof window === "undefined") {
+      setConsequenceChoices({});
+      setSavedConsequenceChoices({});
+      return;
+    }
+    const next: Record<string, string> = {};
+    try {
+      const consequences = Array.isArray(localData.castConsequences) ? localData.castConsequences : [];
+      consequences.forEach(consequence => {
+        const key = consequenceChoiceKey(consequence.id);
+        if (!key) return;
+        if (consequence.status !== "pending") {
+          window.localStorage.removeItem(key);
+          return;
+        }
+        const saved = window.localStorage.getItem(key);
+        if (saved !== null) next[consequence.id] = saved;
+      });
+      setConsequenceChoices(next);
+      setSavedConsequenceChoices(next);
+    } catch {
+      setConsequenceError(previous => ({ ...previous, storage: "Saved consequence choices could not be loaded." }));
+    }
+  }, [character.id, character.version, consequenceChoicePrefix, localData.castConsequences]);
+
+  useEffect(() => {
+    if (!consequenceChoicePrefix || typeof window === "undefined") return;
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key?.startsWith(consequenceChoicePrefix)) return;
+      const id = event.key.slice(consequenceChoicePrefix.length);
+      if (event.newValue !== null) {
+        setConsequenceChoices(previous => ({ ...previous, [id]: event.newValue || "" }));
+        setSavedConsequenceChoices(previous => ({ ...previous, [id]: event.newValue || "" }));
+        return;
+      }
+      setConsequenceChoices(previous => {
+        const { [id]: _removed, ...remaining } = previous;
+        return remaining;
+      });
+      setSavedConsequenceChoices(previous => {
+        const { [id]: _removed, ...remaining } = previous;
+        return remaining;
+      });
+      if (castRequestLock.current || pendingSave.current || dirtyRef.current) {
+        setSheetSaveError("A consequence changed in another session. Your unsaved sheet draft was retained; save or reconcile it before refreshing.");
+        return;
+      }
+      void (async () => {
+        await sheetUpdateQueue.current;
+        if (beforeCast) await beforeCast();
+        if (castRequestLock.current || pendingSave.current || dirtyRef.current) return;
+        const fresh = await getCharacter(character.id);
+        if (castRequestLock.current || pendingSave.current || dirtyRef.current) return;
+        const next = fresh.data as SheetData;
+        localDataRef.current = next;
+        setLocalData(next);
+        onCastState?.(fresh);
+      })().catch(() => undefined);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [beforeCast, character.id, consequenceChoicePrefix, onCastState]);
 
   useEffect(() => {
     // A different tab may have cast while this sheet was open. Query refetches
@@ -204,15 +358,20 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const save = useCallback((next: SheetData) => {
     clearTimeout(saveTimer.current);
     pendingSave.current = next;
+    setSheetSaveError("");
     const serial = editSerial.current;
     saveTimer.current = setTimeout(() => {
-      pendingSave.current = null;
-      void Promise.resolve(onUpdateRef.current({ data: next as any })).then(() => {
+      void enqueueSheetUpdate(next).then(() => {
+        if (pendingSave.current === next) pendingSave.current = null;
         if (editSerial.current === serial) {
           dirtyRef.current = false;
+          setSheetSaveError("");
           onLocalSave?.();
         }
-      }).catch(() => undefined);
+      }).catch(error => {
+        if (!pendingSave.current) pendingSave.current = next;
+        setSheetSaveError(`Sheet edits are still unsaved and have been retained. Save them before resolving cast outcomes: ${rollErrorMessage(error)}`);
+      });
     }, 800);
   }, [onLocalSave]);
 
@@ -239,6 +398,20 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   // ---- Derived ----
   const feats = localData.feats || [];
   const baseAttrs: Record<string, number> = localData.attributes || {};
+  const permanentInjuries = Array.isArray(localData.permanentInjuries) ? localData.permanentInjuries : [];
+  const castConsequences = Array.isArray(localData.castConsequences) ? localData.castConsequences : [];
+  const pendingConsequences = castConsequences.filter(consequence => consequence.status === "pending");
+  const resolvedConsequences = castConsequences.filter(consequence => consequence.status === "resolved");
+  const nerveDamageCount = permanentInjuries.filter(injury => injury.name === "Nerve Damage (Hands)").length;
+  const reducedCeilingCount = permanentInjuries.filter(injury => injury.name === "Reduced Ceiling").length;
+  const hasPendingLostThread = pendingConsequences.some(consequence => consequence.name === "Lost Thread");
+  const castingConditionsWithInjuries = [
+    ...(localData.castingConditions || []),
+    ...(permanentInjuries.some(injury => injury.name === "The Shakes") ? ["Shaking Hands"] : []),
+  ];
+  const lostStringNames = new Set(permanentInjuries
+    .filter(injury => injury.name === "Lost Thread" && injury.string)
+    .map(injury => injury.string!.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, "")));
   // ASI feat bonuses applied on top of base attributes
   const asiAttrBonuses: Record<string, number> = {};
   feats.forEach((name, idx) => {
@@ -296,12 +469,12 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const equippedWR = equippedItems.reduce((s, i) => s + (ITEM_BONUS[i.id]?.wardRating   || 0), 0);
 
   const maxVP          = calcVPMax(attrs.res || 10, level) + featVpBonus + guildFeatVpBonus;
-  const maxPool        = calcThreadPool(level, attrs.pot || 10, attrs.ctr || 10) + featPoolBonus + guildFeatPoolBonus;
+  const maxPool        = Math.max(0, calcThreadPool(level, attrs.pot || 10, attrs.ctr || 10) + featPoolBonus + guildFeatPoolBonus - (nerveDamageCount * 2) - (reducedCeilingCount * 4));
   const threadPool     = maxPool;
   const availableTension = threadPool - tension.current;
-  const safeLimit      = calcSafeLimit(level, attrs.pot || 10, attrs.ctr || 10) + featSLBonus + guildFeatSLBonus;
+  const safeLimit      = Math.max(0, calcSafeLimit(level, attrs.pot || 10, attrs.ctr || 10) + featSLBonus + guildFeatSLBonus - nerveDamageCount);
   const guardRating    = calcGuardRating(attrs.res || 10) + equippedGR;
-  const wardRating     = calcWardRating(attrs.ctr || 10) + featWardBonus + guildFeatWardBonus + equippedWR;
+  const wardRating     = calcWardRating(attrs.ctr || 10) - nerveDamageCount + featWardBonus + guildFeatWardBonus + equippedWR;
   const maxRecoveryDice = calcRecoveryDice(attrs.res || 10);
   const recoveryDiceCurrent = localData.recoveryDiceCurrent ?? maxRecoveryDice;
   const castingMetricsRef = useRef({ threadPool, safeLimit, res: attrs.res || 10 });
@@ -378,130 +551,166 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     };
   }
 
-  async function persistCastingData(next: SheetData) {
-    clearTimeout(saveTimer.current);
-    saveTimer.current = undefined;
-    pendingSave.current = null;
-    localDataRef.current = next;
-    setLocalData(next);
-    await onUpdateRef.current({ data: next as any });
+  function readStoredCastRequests(): PendingCastRequest[] {
+    if (!pendingCastPrefix || typeof window === "undefined") return [];
+    const pending: PendingCastRequest[] = [];
+    try {
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (!key?.startsWith(pendingCastPrefix)) continue;
+        const saved = JSON.parse(window.localStorage.getItem(key) || "null");
+        if (!saved || typeof saved.requestId !== "string" || typeof saved.body !== "string" ||
+            !["cast", "strain"].includes(saved.operation) || !Number.isFinite(saved.createdAt)) {
+          throw new Error("A saved cast retry record is invalid. Do not start another cast until it is recovered.");
+        }
+        pending.push({ ...saved, key } as PendingCastRequest);
+      }
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : "Saved cast retries could not be read.");
+    }
+    return pending.sort((a, b) => a.createdAt - b.createdAt);
   }
 
-  async function resolveCastTable(kind: "Mishap" | "Snapback"): Promise<ResolvedCastTable> {
-    const tableRoll = await recordRoll({ characterId: character.id, title: `${kind} table`, category: "table",
-      mode: "NORMAL", modifier: 0, diceSides: kind === "Mishap" ? 6 : 12, diceCount: 1, multiplier: 1 });
-    const effect = kind === "Mishap" ? mishapResult(tableRoll.finalDie) : snapbackResult(tableRoll.finalDie);
-    let warning = "";
-    let saveConfirmed = true;
-    let damageSaved: boolean | undefined;
-    const appendWarning = (message: string) => { warning = warning ? `${warning} ${message}` : message; };
-    const metrics = castingMetricsRef.current;
-    const prior = localDataRef.current;
-    const conditions = [...(prior.castingConditions || [])];
-    if (effect.condition && !conditions.includes(effect.condition)) conditions.push(effect.condition);
-    const immediate: SheetData = {
-      ...prior,
-      tension: effect.resetTension
-        ? { ...(prior.tension || { current: 0, pool: metrics.threadPool, safeLimit: metrics.safeLimit }), current: 0, pool: metrics.threadPool, safeLimit: metrics.safeLimit }
-        : prior.tension,
-      burnout: Math.min(6, (prior.burnout || 0) + (effect.burnout || 0)),
-      castingConditions: conditions,
-    };
+  function saveCastRequest(operation: "cast" | "strain", payload: Omit<CastInput, "requestId"> | Omit<CastStrainInput, "requestId">): PendingCastRequest {
+    if (!pendingCastPrefix) throw new Error("Your signed-in identity is not available to save a durable cast retry.");
+    const requestId = crypto.randomUUID();
+    const body = JSON.stringify({ ...payload, requestId });
+    const key = `${pendingCastPrefix}${requestId}`;
+    const createdAt = Date.now();
     try {
-      await persistCastingData(immediate);
+      window.localStorage.setItem(key, JSON.stringify({ requestId, body, operation, createdAt }));
     } catch (error) {
-      saveConfirmed = false;
-      appendWarning(`${kind} d${kind === "Mishap" ? 6 : 12} ${tableRoll.finalDie} ${effect.name} was confirmed and applied locally, but its sheet changes were not saved: ${rollErrorMessage(error)}.`);
+      throw new Error(`The request was not sent because its durable retry could not be saved: ${rollErrorMessage(error)}`);
     }
+    const entry = { requestId, body, operation, createdAt, key };
+    refreshPendingCastRequests();
+    return entry;
+  }
 
-    let damage: number | undefined;
-    if (effect.damage) {
-      try {
-        const { sides, count } = effect.damage;
-        const roll = await recordRoll({ characterId: character.id, title: `${kind} · ${effect.name} damage`,
-          category: "damage", mode: "NORMAL", modifier: 0, diceSides: sides,
-          diceCount: Math.min(2, count), ...(count > 2 ? { bonusDiceSides: sides, bonusDiceCount: count - 2 } : {}),
-          multiplier: 1 });
-        damage = roll.total;
-        damageSaved = false;
-        const current = localDataRef.current;
-        const vp = current.vitalityPoints || { current: 0, max: 0 };
-        try {
-          await persistCastingData({ ...current, vitalityPoints: { ...vp, current: Math.max(0, vp.current - damage) } });
-          damageSaved = true;
-        } catch (error) {
-          saveConfirmed = false;
-          appendWarning(`${kind} d${kind === "Mishap" ? 6 : 12} ${tableRoll.finalDie} ${effect.name} was confirmed; ${damage} damage was rolled but the sheet did not save the damage: ${rollErrorMessage(error)}.`);
-        }
-      } catch (error) {
-        damageSaved = undefined;
-        appendWarning(`${kind} d${kind === "Mishap" ? 6 : 12} ${tableRoll.finalDie} ${effect.name} was confirmed and its non-damage effects were applied, but the damage roll could not finish: ${rollErrorMessage(error)}.`);
+  function clearSavedCastRequest(entry: PendingCastRequest) {
+    try {
+      window.localStorage.removeItem(entry.key);
+    } catch {
+      // Keeping a completed request is safe: retrying its same ID replays the
+      // confirmed result instead of applying the cast a second time.
+    }
+    refreshPendingCastRequests();
+  }
+
+  async function refreshCharacterAfterCast() {
+    try {
+      const fresh = await getCharacter(character.id);
+      const next = fresh.data as SheetData;
+      localDataRef.current = next;
+      setLocalData(next);
+      onCastState?.(fresh);
+      return fresh;
+    } catch {
+      throw new Error("The request resolved, but the latest sheet could not be loaded. Retry this exact saved request to recover its result.");
+    }
+  }
+
+  async function submitCastRequest(entry: PendingCastRequest, recovered = false): Promise<ApiCastResult> {
+    const payload = JSON.parse(entry.body) as CastInput;
+    const response = await createCast.mutateAsync({ data: payload });
+    await refreshCharacterAfterCast();
+    clearSavedCastRequest(entry);
+    if (recovered) setResumedCastResult(response);
+    void queryClient.invalidateQueries({ queryKey: getListRollsQueryKey() });
+    return response;
+  }
+
+  async function submitStrainRequest(entry: PendingCastRequest): Promise<ApiCastResult> {
+    const payload = JSON.parse(entry.body) as CastStrainInput;
+    const response = await createStrainCheck.mutateAsync({ data: payload });
+    await refreshCharacterAfterCast();
+    clearSavedCastRequest(entry);
+    setStrainResult(response);
+    void queryClient.invalidateQueries({ queryKey: getListRollsQueryKey() });
+    return response;
+  }
+
+  async function flushSheetBeforeCast() {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = undefined;
+    await sheetUpdateQueue.current;
+    const pending = pendingSave.current;
+    if (pending) {
+      const serial = editSerial.current;
+      await enqueueSheetUpdate(pending);
+      if (pendingSave.current === pending) pendingSave.current = null;
+      if (editSerial.current === serial) {
+        dirtyRef.current = false;
+        setSheetSaveError("");
+        onLocalSave?.();
       }
     }
-    if (kind === "Snapback" && effect.name === "Rupture") {
-      try {
-        const resCheck = await recordRoll({ characterId: character.id, title: "Rupture · RES check",
-          category: "check", mode: "NORMAL", modifier: calcMod(castingMetricsRef.current.res),
-          diceSides: 20, diceCount: 1, multiplier: 1, dc: 14 });
-        const failed = resCheck.isMisfire || (!resCheck.isBreak && resCheck.total < 14);
-        if (failed) {
-          const current = localDataRef.current;
-          const nextConditions = [...(current.castingConditions || [])];
-          if (!nextConditions.includes("Shaking Hands")) nextConditions.push("Shaking Hands");
-          try {
-            await persistCastingData({ ...current, castingConditions: nextConditions });
-          } catch (error) {
-            saveConfirmed = false;
-            appendWarning(`Rupture d12 ${tableRoll.finalDie} RES failure was confirmed; Shaking Hands was applied locally but not saved: ${rollErrorMessage(error)}.`);
-          }
-        }
-      } catch (error) {
-        appendWarning(`Rupture d12 ${tableRoll.finalDie} was confirmed and its non-damage effects were applied, but the RES check could not finish: ${rollErrorMessage(error)}.`);
-      }
+    await sheetUpdateQueue.current;
+    if (pendingSave.current || dirtyRef.current) {
+      throw new Error("Unsaved sheet edits remain. They were retained; save or resolve the sheet conflict before continuing.");
     }
-    return { kind, die: tableRoll.finalDie, effect, damage, warning: warning || undefined, saveConfirmed, damageSaved };
+    if (beforeCast) await beforeCast();
   }
 
   async function finishCast(input: Omit<CastInput, "requestId" | "characterId">) {
-    // Flush edits made just before casting; a later debounced whole-sheet PATCH
-    // must never overwrite the transaction's authoritative resources.
-    clearTimeout(saveTimer.current);
-    saveTimer.current = undefined;
-    const pending = pendingSave.current;
-    pendingSave.current = null;
-    if (pending) {
-      await onUpdateRef.current({ data: pending as any });
-      dirtyRef.current = false;
-      onLocalSave?.();
+    const intendedPayload = { ...input, characterId: character.id };
+    const intentBody = JSON.stringify(intendedPayload);
+    const stored = readStoredCastRequests();
+    const samePending = stored.find(entry => {
+      if (entry.operation !== "cast") return false;
+      const saved = JSON.parse(entry.body);
+      delete saved.requestId;
+      return JSON.stringify(saved) === intentBody;
+    });
+    if (samePending) {
+      await flushSheetBeforeCast();
+      const response = await submitCastRequest(samePending);
+      return {
+        roll: response.roll,
+        aftermath: { ...response.aftermath, saveConfirmed: true, damageSaved: true } as CastUIAftermath,
+      };
     }
-    if (beforeCast) await beforeCast();
-    const body = JSON.stringify(input);
-    if (pendingCastRef.current?.body !== body) {
-      pendingCastRef.current = { body, requestId: crypto.randomUUID() };
-    }
-    const requestId = pendingCastRef.current.requestId;
-    const response = await createCast.mutateAsync({ data: { ...input, characterId: character.id, requestId } });
-    // An idempotent replay returns the historical roll and aftermath. Never
-    // replace live resources with that historical character snapshot.
-    let fresh: Character;
+    if (stored.length) throw new Error("A previous cast or Strain Check is still awaiting confirmation. Resume it above before starting another.");
+    await flushSheetBeforeCast();
+    if (readStoredCastRequests().length) throw new Error("Another tab saved a cast request. Resume that exact request before starting another.");
+    setResumedCastResult(null);
+    const entry = saveCastRequest("cast", intendedPayload);
+    const response = await submitCastRequest(entry);
+    return {
+      roll: response.roll,
+      aftermath: { ...response.aftermath, saveConfirmed: true, damageSaved: true } as CastUIAftermath,
+    };
+  }
+
+  async function resumeCastRequest(entry: PendingCastRequest) {
+    const release = beginCastRequest();
+    if (!release) return;
+    strainLock.current = true;
+    setStrainPending(entry.operation === "strain");
+    setStrainMessage("");
+    setResumeError("");
+    setResumedCastResult(null);
     try {
-      fresh = await getCharacter(character.id);
-    } catch {
-      throw new Error("The cast resolved, but the latest sheet could not be loaded. Retry this same cast to recover its result.");
+      await flushSheetBeforeCast();
+      if (entry.operation === "strain") {
+        await submitStrainRequest(entry);
+      } else {
+        await submitCastRequest(entry, true);
+      }
+    } catch (error) {
+      const message = rollErrorMessage(error);
+      if (entry.operation === "strain") setStrainMessage(`Saved Strain Check still needs confirmation: ${message}`);
+      else setResumeError(message);
+    } finally {
+      strainLock.current = false;
+      setStrainPending(false);
+      release();
     }
-    pendingCastRef.current = null;
-    const next = fresh.data as SheetData;
-    localDataRef.current = next;
-    setLocalData(next);
-    onCastState?.(fresh);
-    void queryClient.invalidateQueries({ queryKey: getListRollsQueryKey() });
-    return { roll: response.roll, aftermath: { ...response.aftermath, saveConfirmed: true, damageSaved: true } as CastUIAftermath };
   }
 
   async function rollStrainCheck() {
     const latest = localDataRef.current;
-    const metrics = castingMetricsRef.current;
-    const dc = strainDC(latest.tension?.current ?? 0, metrics.safeLimit);
+    const dc = strainDC(latest.tension?.current ?? 0, castingMetricsRef.current.safeLimit);
     if (strainLock.current || dc === null || dicePreferencesLoading) return;
     const release = beginCastRequest();
     if (!release) {
@@ -511,29 +720,147 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     strainLock.current = true;
     setStrainPending(true);
     setStrainMessage("");
+    setStrainResult(null);
     try {
-      const check = await recordRoll({ characterId: character.id, title: "Start of turn · Strain Check",
-        category: "check", mode: "NORMAL", modifier: calcMod(attrs.res || 10),
-        diceSides: 20, diceCount: 1, multiplier: 1, dc });
-      const failed = check.isMisfire || (!check.isBreak && check.total < dc);
-      let message = `Strain: ${check.total} vs DC ${dc} — ${failed ? "failed" : "passed"}.`;
-      if (failed) {
-        try {
-          const table = await resolveCastTable("Snapback");
-          message += ` Snapback d12 ${table.die}: ${table.effect.name}${table.damage === undefined ? "" : `; ${table.damage} damage rolled`}.`;
-          if (table.warning) message += ` ${table.warning}`;
-          if (!table.saveConfirmed) message += " Sheet save not confirmed.";
-          if (table.effect.name === "Total Break") message += " Resolve maximum damage and permanent injury at the table.";
-        } catch (error) {
-          message += ` Snapback roll could not finish: ${rollErrorMessage(error)}. Check the shared log.`;
-        }
-      }
-      setStrainMessage(message);
+      const stored = readStoredCastRequests();
+      if (stored.length) throw new Error("A previous request is awaiting confirmation. Resume it above before rolling Strain.");
+      await flushSheetBeforeCast();
+      const entry = saveCastRequest("strain", { characterId: character.id });
+      const response = await submitStrainRequest(entry);
+      const strain = response.aftermath.strain;
+      setStrainMessage(strain
+        ? `Strain: ${strain.total} vs DC ${strain.dc} — ${strain.failed ? "failed; Snapback resolved atomically." : "passed"}.`
+        : "Strain Check resolved atomically.");
     } catch (error) {
-      setStrainMessage(`Strain Check was not saved: ${rollErrorMessage(error)}`);
+      setStrainMessage(`Strain Check needs confirmation: ${rollErrorMessage(error)}`);
     } finally {
       strainLock.current = false;
       setStrainPending(false);
+      release();
+    }
+  }
+
+  async function submitConsequenceChoice(consequence: CastConsequence) {
+    const savedChoice = savedConsequenceChoices[consequence.id];
+    const choice = (savedChoice ?? consequenceChoices[consequence.id] ?? "").trim();
+    if (!choice) {
+      setConsequenceError(previous => ({ ...previous, [consequence.id]: "Choose or enter a consequence before resolving it." }));
+      return;
+    }
+    if (consequence.choiceType === "string") {
+      const isAttuned = (localDataRef.current.strings || []).some(name => name === choice);
+      if (!isAttuned || lostStringNames.has(choice.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, ""))) {
+        setConsequenceError(previous => ({ ...previous, [consequence.id]: "Choose an available attuned String from the current character sheet." }));
+        return;
+      }
+    }
+    const storageKey = consequenceChoiceKey(consequence.id);
+    if (!storageKey) {
+      setConsequenceError(previous => ({ ...previous, [consequence.id]: "Your signed-in identity is not available to save this choice for retry." }));
+      return;
+    }
+    if (!savedChoice) {
+      try {
+        window.localStorage.setItem(storageKey, choice);
+        setSavedConsequenceChoices(previous => ({ ...previous, [consequence.id]: choice }));
+      } catch (error) {
+        setConsequenceError(previous => ({ ...previous, [consequence.id]: `Choice was not sent because its durable retry could not be saved: ${rollErrorMessage(error)}` }));
+        return;
+      }
+    }
+    const release = beginCastRequest();
+    if (!release) {
+      setConsequenceError(previous => ({ ...previous, [consequence.id]: "Another cast or consequence is resolving. Retry this saved choice when it finishes." }));
+      return;
+    }
+    setConsequenceBusy(consequence.id);
+    setConsequenceError(previous => ({ ...previous, [consequence.id]: "" }));
+    let requestSent = false;
+    try {
+      await flushSheetBeforeCast();
+      requestSent = true;
+      const updated = await resolveConsequence.mutateAsync({ id: consequence.id, data: { choice } });
+      const next = updated.data as SheetData;
+      localDataRef.current = next;
+      setLocalData(next);
+      onCastState?.(updated);
+      try {
+        window.localStorage.removeItem(storageKey);
+      } catch {
+        // The authoritative sheet is already updated. Any leftover choice is
+        // harmless and will be cleared when the resolved consequence reloads.
+      }
+      setSavedConsequenceChoices(previous => {
+        const { [consequence.id]: _resolved, ...remaining } = previous;
+        return remaining;
+      });
+      setConsequenceChoices(previous => {
+        const { [consequence.id]: _resolved, ...remaining } = previous;
+        return remaining;
+      });
+      setConsequenceError(previous => ({ ...previous, [consequence.id]: "" }));
+      void queryClient.invalidateQueries();
+    } catch (error) {
+      if (requestSent) {
+        try {
+          const fresh = await getCharacter(character.id);
+          const next = fresh.data as SheetData;
+          localDataRef.current = next;
+          setLocalData(next);
+          onCastState?.(fresh);
+        } catch {
+          // Keep the durable choice visible and locked when the server cannot
+          // yet confirm whether it committed.
+        }
+      }
+      setConsequenceError(previous => ({
+        ...previous,
+        [consequence.id]: requestSent
+          ? `Choice was not confirmed. Retry the saved choice (${choice}) to safely complete it: ${rollErrorMessage(error)}`
+          : `The choice is saved for retry, but sheet edits could not be flushed. Your draft was retained and the choice was not sent: ${rollErrorMessage(error)}`,
+      }));
+    } finally {
+      setConsequenceBusy(null);
+      release();
+    }
+  }
+
+  async function rollAffectedThreadSense(senseType: string) {
+    const release = beginCastRequest();
+    if (!release) {
+      setThreadSenseRolls(previous => ({
+        ...previous,
+        [senseType]: { ...previous[senseType], error: "Another cast or consequence is resolving. Try this check when it finishes." },
+      }));
+      return;
+    }
+    setThreadSenseRolls(previous => ({
+      ...previous,
+      [senseType]: { ...previous[senseType], busy: true, error: "" },
+    }));
+    try {
+      await flushSheetBeforeCast();
+      const roll = await recordRoll({
+        characterId: character.id,
+        title: "Thread Sense",
+        category: "check",
+        mode: "NORMAL",
+        modifier: 0,
+        diceSides: 20,
+        diceCount: 1,
+        multiplier: 1,
+        threadSenseType: senseType,
+      });
+      setThreadSenseRolls(previous => ({
+        ...previous,
+        [senseType]: { busy: false, roll },
+      }));
+    } catch (error) {
+      setThreadSenseRolls(previous => ({
+        ...previous,
+        [senseType]: { ...previous[senseType], busy: false, error: rollErrorMessage(error) },
+      }));
+    } finally {
       release();
     }
   }
@@ -543,10 +870,12 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     supportLock.current = true;
     setSupportError("");
     try {
+      const threadDiscord = burnout >= 1 || castingConditionsWithInjuries.includes("Discord on Thread Checks until Mend") ||
+        castingConditionsWithInjuries.includes("Shaking Hands");
       const result = await recordRoll({ characterId: character.id, title: "Collaborative support · CTR",
-        category: "support", mode: "NORMAL", modifier: calcMod(attrs.ctr || 10),
-        diceSides: 20, diceCount: 1, multiplier: 1, dc: 12 });
-      setSupportCheck({ die: result.d1, total: result.total });
+        category: "support", mode: threadDiscord ? "DISCORD" : "NORMAL", modifier: calcMod(attrs.ctr || 10) - nerveDamageCount,
+        diceSides: 20, diceCount: threadDiscord ? 2 : 1, multiplier: 1, dc: 12 });
+      setSupportCheck({ d1: result.d1, d2: result.d2 ?? undefined, finalDie: result.finalDie, total: result.total, mode: result.mode });
       return true;
     } catch (error) {
       setSupportError(rollErrorMessage(error));
@@ -718,9 +1047,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     if (!printWindow) { alert("Allow pop-ups to export PDF."); return; }
 
     const totalStr = (localData.strings || []).length;
-    const printEscape = (value: string) => value.replace(/[&<>"']/g, ch => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    })[ch] || ch);
+    const printEscape = escapePrintHtml;
     const weaveRows = (localData.weavings || []).map((w, wi) => {
       const count = Math.max(2, Math.min(4, w.numStrings || 2));
       const cost = (w.strings || []).slice(0, count).reduce((sum, name, index) => {
@@ -804,7 +1131,7 @@ td{padding:2px 4px;border-bottom:1px solid #ddd;vertical-align:middle}
 <div class="g6">
 ${ATTRIBUTE_DEFS.map(a => {
   const score = attrs[a.key] || 10;
-  const mod = calcMod(score);
+  const mod = calcMod(score) - (a.key === "ctr" ? nerveDamageCount : 0);
   return `<div class="stat-box"><div class="stat-lbl">${a.abbr}</div><div class="stat-val">${score}</div><div class="stat-mod">${mod>=0?"+":""}${mod}</div></div>`;
 }).join("")}
 </div>
@@ -832,6 +1159,8 @@ ${ATTRIBUTE_DEFS.map(a => {
   <div><strong>Corruption</strong> ${corruption}/10<br>${checkBoxes(corruption,10)}</div>
 </div>
 ${localData.woundsNotes ? `<div style="margin-top:6px"><h3>Wounds &amp; Conditions</h3><div style="border:1px solid #ccc;padding:4px;font-size:8pt;white-space:pre-wrap;margin-top:2px">${localData.woundsNotes}</div></div>` : ""}
+${permanentInjuries.length ? `<div style="margin-top:6px"><h3>Permanent Injuries</h3>${permanentInjuries.map(injury => `<div style="border:1px solid #aaa;padding:3px 5px;margin:2px 0;font-size:7.5pt"><strong>${printEscape(injury.name)} · d6 ${printEscape(String(injury.die))}</strong><br>${printEscape(injury.description)}${injury.string ? `<br>Lost String: ${printEscape(injury.string)}` : ""}${injury.senseType ? `<br>Thread Sense type: ${printEscape(injury.senseType)}` : ""}</div>`).join("")}<div style="font-size:7pt;color:#555">Total Break applies 48 VP maximum damage. CTR injury modifiers and reduced Thread Pool / Safe Limit are applied on the sheet.</div></div>` : ""}
+${resolvedConsequences.length ? `<div style="margin-top:6px"><h3>Resolved Cast Outcomes</h3>${resolvedConsequences.map(outcome => `<div style="font-size:7.5pt;margin:2px 0"><strong>${outcome.name}</strong>: ${outcome.prompt}${outcome.choice ? ` Choice: ${outcome.choice}` : ""}</div>`).join("")}</div>` : ""}
 </div>
 </div>
 
@@ -854,7 +1183,7 @@ ${equippedWeapons.map(item => {
 <table><thead><tr><th>Skill</th><th>Attr</th><th>Attuned</th><th>Modifier</th><th>Total</th></tr></thead><tbody>
 ${ALL_SKILLS.map(skill => {
   const attrScore = attrs[skill.attr] || 10;
-  const mod = calcMod(attrScore);
+  const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
   const isAt = attunedSkills.includes(skill.name);
   const total = mod + (isAt ? rb : 0);
   return `<tr><td class="${isAt?"at":""}">${skill.name}</td><td style="font-family:monospace;font-size:7.5pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${isAt?"●":"○"}</td><td style="font-family:monospace">${mod>=0?"+":""}${mod}${isAt?" +"+rb:""}</td><td style="font-family:monospace;font-weight:bold">${total>=0?"+":""}${total}</td></tr>`;
@@ -920,7 +1249,115 @@ ${([
 
   return (
     <div className="tc-sheet max-w-7xl mx-auto">
-      <fieldset disabled={castInProgress} aria-busy={castInProgress} className="border-0 p-0 m-0 min-w-0 w-full">
+      {storageError && <p role="alert" className="mb-3 border border-destructive/40 bg-destructive/5 p-3 font-mono text-xs text-destructive">{storageError}</p>}
+      {sheetSaveError && <p role="alert" className="mb-3 border border-destructive/40 bg-destructive/5 p-3 font-mono text-xs text-destructive">{sheetSaveError}</p>}
+      {pendingCastRequests.length > 0 && (
+        <section className="mb-4 border border-amber-500/50 bg-amber-500/5 p-4 space-y-2 font-mono text-xs" aria-label="Saved requests awaiting confirmation">
+          <h2 className="font-bold text-amber-500">A saved request needs confirmation</h2>
+          <p className="text-muted-foreground">Resume submits the exact stored request ID and body. Do not start a new cast until the saved result is recovered.</p>
+          {pendingCastRequests.map(entry => (
+            <div key={entry.key} className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-500/20 pt-2">
+              <span>{entry.operation === "strain" ? "Start-of-turn Strain Check" : "Cast"} · request {entry.requestId.slice(0, 8)}…</span>
+              <button type="button" className="tc-command border-amber-500/50 text-amber-500 disabled:opacity-50"
+                onClick={() => void resumeCastRequest(entry)} disabled={castInProgress}>
+                {castInProgress ? "RESOLVING…" : "RESUME SAVED REQUEST"}
+              </button>
+            </div>
+          ))}
+          {resumeError && <p role="alert" className="text-destructive">{resumeError}</p>}
+        </section>
+      )}
+      {resumedCastResult && (
+        <section className="mb-4 border border-primary/30 bg-primary/5 p-4 font-mono text-xs" aria-live="polite">
+          <p className="font-bold text-primary">Saved cast request confirmed · {resumedCastResult.roll.title}: {resumedCastResult.roll.total}</p>
+          <CastAftermathDisplay result={{ ...resumedCastResult.aftermath, saveConfirmed: true, damageSaved: true }} />
+        </section>
+      )}
+      {pendingConsequences.length > 0 && (
+        <section className="mb-4 border border-amber-500/50 bg-amber-500/5 p-4 space-y-4 font-mono text-xs" aria-label="Pending cast consequence choices">
+          <div>
+            <h2 className="font-bold text-amber-500">Resolve the cast consequence</h2>
+            <p className="text-muted-foreground">Choices are saved with the character. A retry repeats the same choice safely.</p>
+          </div>
+          {pendingConsequences.map(consequence => {
+            const savedChoice = savedConsequenceChoices[consequence.id];
+            const strings = (localData.strings || []).filter(name =>
+              !lostStringNames.has(name.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, "")));
+            const choice = savedChoice ?? consequenceChoices[consequence.id] ?? "";
+            return (
+              <div key={consequence.id} className="border-t border-amber-500/20 pt-3 space-y-2">
+                <p className="font-bold">{consequence.name}</p>
+                <p className="text-muted-foreground">{consequence.prompt}</p>
+                {consequence.choiceType === "string" ? (
+                  <select aria-label={`Choose String for ${consequence.name}`} className="w-full bg-background border border-border p-2"
+                    value={choice} disabled={!!savedChoice || consequenceBusy === consequence.id}
+                    onChange={event => setConsequenceChoices(previous => ({ ...previous, [consequence.id]: event.target.value }))}>
+                    <option value="">Choose an attuned String…</option>
+                    {strings.map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                ) : (
+                  <input aria-label={`Enter choice for ${consequence.name}`} className="w-full bg-background border border-border p-2"
+                    maxLength={120} value={choice} disabled={!!savedChoice || consequenceBusy === consequence.id}
+                    placeholder={consequence.choiceType === "sense" ? "Thread Sense type" : "Target"}
+                    onChange={event => setConsequenceChoices(previous => ({ ...previous, [consequence.id]: event.target.value }))} />
+                )}
+                <button type="button" className="tc-command border-amber-500/50 text-amber-500 disabled:opacity-50"
+                  disabled={castInProgress || consequenceBusy === consequence.id || !choice.trim()}
+                  onClick={() => void submitConsequenceChoice(consequence)}>
+                  {consequenceBusy === consequence.id ? "SAVING CHOICE…" : savedChoice ? "RETRY SAVED CHOICE" : "CONFIRM CHOICE"}
+                </button>
+                {consequenceError[consequence.id] && <p role="alert" className="text-destructive">{consequenceError[consequence.id]}</p>}
+              </div>
+            );
+          })}
+          {consequenceError.storage && <p role="alert" className="text-destructive">{consequenceError.storage}</p>}
+        </section>
+      )}
+      {resolvedConsequences.length > 0 && (
+        <section className="mb-4 border border-chart-2/30 bg-chart-2/5 p-4 space-y-2 font-mono text-xs" aria-label="Resolved cast consequences">
+          <h2 className="font-bold text-chart-2">Resolved cast outcomes</h2>
+          {resolvedConsequences.map(consequence => (
+            <div key={consequence.id} className="border-t border-border/40 pt-2">
+              <p className="font-bold">{consequence.name}</p>
+              <p className="text-muted-foreground">{consequence.prompt}</p>
+              {consequence.choice && <p>Confirmed choice: <strong>{consequence.choice}</strong></p>}
+            </div>
+          ))}
+        </section>
+      )}
+      {permanentInjuries.length > 0 && (
+        <section className="mb-4 border border-destructive/30 bg-destructive/5 p-4 space-y-2 font-mono text-xs" aria-label="Permanent injuries">
+          <h2 className="font-bold text-destructive">Permanent injuries</h2>
+          {permanentInjuries.map(injury => (
+            <div key={injury.id} className="border-t border-border/40 pt-2">
+              <p className="font-bold">{injury.name} · d6 {injury.die}</p>
+              <p className="text-muted-foreground">{injury.description}</p>
+              <p>Total Break: maximum damage of 48 VP was applied; the character’s current Vitality reflects the damage.</p>
+              {injury.name === "Nerve Damage (Hands)" && <p>Applied: CTR modifier −{nerveDamageCount}; Thread Pool −{nerveDamageCount * 2}; Safe Limit −{nerveDamageCount}.</p>}
+              {injury.name === "Reduced Ceiling" && <p>Applied: Thread Pool −{reducedCeilingCount * 4} total.</p>}
+              {injury.name === "Lost Thread" && injury.string && <p>Unavailable String: {injury.string}</p>}
+              {injury.name === "Leyline Misread" && injury.senseType && (
+                <div className="mt-2 space-y-2">
+                  <p>Thread Sense checks of type <strong>{injury.senseType}</strong> are affected by Discord.</p>
+                  <button type="button" className="tc-command border-destructive/40 text-destructive disabled:opacity-50"
+                    disabled={castInProgress || !!threadSenseRolls[injury.senseType]?.busy}
+                    onClick={() => void rollAffectedThreadSense(injury.senseType!)}>
+                    {threadSenseRolls[injury.senseType]?.busy ? "ROLLING THREAD SENSE…" : `ROLL ${injury.senseType.toUpperCase()} THREAD SENSE`}
+                  </button>
+                  {threadSenseRolls[injury.senseType]?.error && <p role="alert" className="text-destructive">{threadSenseRolls[injury.senseType]?.error}</p>}
+                  {threadSenseRolls[injury.senseType]?.roll && (() => {
+                    const roll = threadSenseRolls[injury.senseType!].roll!;
+                    return <p aria-live="polite">Confirmed · {roll.title} · {roll.mode} · d20 {roll.d1}{roll.d2 === undefined ? "" : `, d20 ${roll.d2}`} {roll.modifier >= 0 ? "+" : ""}{roll.modifier} = <strong>{roll.total}</strong> · {roll.outcome}</p>;
+                  })()}
+                </div>
+              )}
+              {injury.name === "The Shakes" && <p>Applied: Thread Checks roll with Discord.</p>}
+            </div>
+          ))}
+        </section>
+      )}
+      <fieldset disabled={castInProgress || pendingCastRequests.length > 0 || hasPendingLostThread} aria-busy={castInProgress} className="border-0 p-0 m-0 min-w-0 w-full">
+      {hasPendingLostThread && <p className="mb-3 border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-500">Resolve the Lost Thread choice above before casting.</p>}
       {/* ===== HEADER ===== */}
       <div className="tc-top">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1030,6 +1467,7 @@ ${([
               </div>
             )}
             {strainMessage && <p role="status" className="mt-2 text-[11px] text-amber-500 font-mono">{strainMessage}</p>}
+            {strainResult && <CastAftermathDisplay result={{ ...strainResult.aftermath, saveConfirmed: true, damageSaved: true }} />}
           </div>
         </div>
 
@@ -1082,7 +1520,7 @@ ${([
         {/* Quick Stats Row */}
         <div className="tc-readouts font-mono text-xs">
           <QuickStat label={<GameTerm term="guard rating">GUARD</GameTerm>} value={localData.guardRating ?? guardRating} />
-          <QuickStat label={<GameTerm term="ward rating">WARD</GameTerm>} value={localData.wardRating ?? wardRating} />
+          <QuickStat label={<GameTerm term="ward rating">WARD</GameTerm>} value={wardRating} />
           <QuickStat label={<GameTerm term="refinement bonus">RB</GameTerm>} value={`+${rb}`} highlight />
           <QuickStat label="RECOVERY DICE" value={`${recoveryDiceCurrent}/${maxRecoveryDice}`} />
           <QuickStat label={<GameTerm term="corruption">CORRUPTION</GameTerm>} value={`${corruption}/10`} warning={corruption >= 6} />
@@ -1118,7 +1556,7 @@ ${([
                   const baseScore = baseAttrs[attr.key] || 10;
                   const bonus = asiAttrBonuses[attr.key] || 0;
                   const score = attrs[attr.key] || 10;
-                  const mod = calcMod(score);
+                  const mod = calcMod(score) - (attr.key === "ctr" ? nerveDamageCount : 0);
                   return (
                     <div key={attr.key} className="tc-attribute" data-testid={`card-attribute-${attr.key}`}>
                       <GameTerm term={attr.key} className="tc-card-label">{attr.abbr}</GameTerm>
@@ -1374,7 +1812,7 @@ ${([
             <tbody>
               {ALL_SKILLS.map(skill => {
                 const attrScore = attrs[skill.attr] || 10;
-                const mod = calcMod(attrScore);
+                const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
                 const isAttuned = attunedSkills.includes(skill.name);
                 const isFeatAttuned = attunementFeatSkills.includes(skill.name);
                 const isExpert = expertiseSkills.includes(skill.name);
@@ -1468,7 +1906,9 @@ ${([
                 characterName={character.name}
                 characterId={character.id}
                 availableTension={availableTension}
-                castingConditions={localData.castingConditions || []}
+                castingConditions={castingConditionsWithInjuries}
+                ctrModifierPenalty={checkAttrKey === "ctr" ? nerveDamageCount : 0}
+                lostThread={lostStringNames.has(sName.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, ""))}
                 burnout={burnout}
                 onBeginCast={beginCastRequest}
                 onCast={finishCast}
@@ -1548,8 +1988,10 @@ ${([
                 patch={patch}
                 safePowerLevel={safePowerLevel}
                 ctrScore={attrs.ctr || 10}
+                ctrModifierPenalty={nerveDamageCount}
                 availableTension={availableTension}
-                castingConditions={localData.castingConditions || []}
+                castingConditions={castingConditionsWithInjuries}
+                lostStrings={[...lostStringNames]}
                 burnout={burnout}
                 hasPrecisionWeave={feats.includes("Precision Weave")}
                 precisionWeaveChargeAvailable={isFeatAvailable("Precision Weave")}
@@ -1585,7 +2027,7 @@ ${([
               </div>
             )}
             {supporting && supportCheck && <p className={cn("font-mono text-xs", supportCheck.total < 12 ? "text-destructive" : "text-chart-2")}>
-              CTR: {supportCheck.die} {fmtMod(calcMod(attrs.ctr || 10))} = {supportCheck.total} vs DC 12 —
+              CTR: {supportCheck.mode === "DISCORD" ? `Discord d20 ${supportCheck.d1}, d20 ${supportCheck.d2}` : `d20 ${supportCheck.d1}`} {fmtMod(calcMod(attrs.ctr || 10) - nerveDamageCount)} = {supportCheck.total} vs DC 12 —
               {supportCheck.total >= 12 ? " connection maintained." : " failed! Tell the Lead to make a Strain Check vs DC 15 immediately."}
             </p>}
             {supportError && <p role="alert" className="text-xs text-destructive">Support check not saved: {supportError}</p>}
@@ -2271,17 +2713,18 @@ function EditableField({ label, value, onChange, placeholder }: { label: string;
 // ===== WEAVE CAST ROW =====
 function WeaveCastRow({
   weave, wi, characterId, maxStrings, localData, patch,
-  safePowerLevel, ctrScore, availableTension, castingConditions, burnout,
+  safePowerLevel, ctrScore, ctrModifierPenalty, availableTension, castingConditions, burnout, lostStrings,
   hasPrecisionWeave, precisionWeaveChargeAvailable, onBeginCast, onCast,
 }: {
   weave: WeavingEntry; wi: number; characterId: number; maxStrings: number;
   localData: any; patch: (p: any) => void;
-  safePowerLevel: number; ctrScore: number; availableTension: number; castingConditions: string[]; burnout: number;
+  safePowerLevel: number; ctrScore: number; ctrModifierPenalty: number; availableTension: number; castingConditions: string[]; burnout: number;
+  lostStrings: string[];
   hasPrecisionWeave: boolean; precisionWeaveChargeAvailable: boolean;
   onBeginCast: () => (() => void) | null;
   onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
 }) {
-  const mod = calcMod(ctrScore) - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
+  const mod = calcMod(ctrScore) - ctrModifierPenalty - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
   const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
   const recordRoll = useGameplayRoll();
   const requestLock = useRef(false);
@@ -2326,7 +2769,8 @@ function WeaveCastRow({
     return Math.max(...dcs) + (weave.numStrings - 2) * 2;
   })();
 
-  const availableStrings: string[] = Array.isArray(localData.strings) ? localData.strings : [];
+  const availableStrings: string[] = (Array.isArray(localData.strings) ? localData.strings : []).filter((name: string) =>
+    !lostStrings.includes(name.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, "")));
   const isConfigured = Number.isInteger(weave.numStrings) && weave.numStrings >= 2 && weave.numStrings <= maxStrings &&
     Array.from({ length: weave.numStrings }).every((_, si) => {
       const selectedString = weave.strings?.[si];
@@ -2532,16 +2976,16 @@ interface CastResult { d1: number; d2?: number; finalDie: number; total: number;
 
 function CastStringPanel({
   str, attrScore, characterName, characterId, availableTension, onCast,
-  onBeginCast, castingConditions, burnout,
+  onBeginCast, castingConditions, burnout, ctrModifierPenalty, lostThread,
   primaryMode, secondaryModes, tertiaryModes, level, safePowerLevel, custom,
 }: {
   str: any; attrScore: number; characterName: string; characterId: number; availableTension: number; onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
   onBeginCast: () => (() => void) | null;
-  castingConditions: string[]; burnout: number;
+  castingConditions: string[]; burnout: number; ctrModifierPenalty: number; lostThread: boolean;
   primaryMode: string; secondaryModes: string[]; tertiaryModes: string[]; level: number;
   safePowerLevel: number; custom: boolean;
 }) {
-  const mod = calcMod(attrScore) - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
+  const mod = calcMod(attrScore) - ctrModifierPenalty - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
   const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
   const recordRoll = useGameplayRoll();
   const requestLock = useRef(false);
@@ -2579,7 +3023,7 @@ function CastStringPanel({
   });
 
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
-    if (animDice) return;
+    if (animDice || lostThread) return;
     setCastPL({ pl, cost, dc, effect });
     setCastIntent("");
     setSelectedMode(null);
@@ -2600,7 +3044,7 @@ function CastStringPanel({
   }
 
   async function doRoll() {
-    if (!selectedMode || !castPL || !castIntent.trim() || dicePreferencesLoading || requestLock.current) return;
+    if (lostThread || !selectedMode || !castPL || !castIntent.trim() || dicePreferencesLoading || requestLock.current) return;
     const release = onBeginCast();
     if (!release) {
       setRollError("Another cast for this character is still resolving. Wait for it to finish before rolling.");
@@ -2674,6 +3118,7 @@ function CastStringPanel({
       {expanded && (
         <div className="px-4 pb-4 border-t border-border/30">
           <p className="text-xs font-mono text-muted-foreground my-3 leading-relaxed">{str.flavor}</p>
+          {lostThread && <p className="mb-3 border border-destructive/40 bg-destructive/5 p-2 font-mono text-[10px] text-destructive">This String was lost permanently and cannot be used for casting.</p>}
           <p className="text-[10px] font-mono text-muted-foreground mb-3">{custom ? "Core PL cost / DC for this custom String." : "PL effects below are examples, not a spell list. Their listed cost / DC are used as the starting values for a cast."} Describe your own effect when casting.</p>
 
           {/* Cast Overlay */}
@@ -2873,7 +3318,7 @@ function CastStringPanel({
                   <td className="py-1.5 text-right">
                     <button
                       onClick={() => initiateCast(lvl.pl, lvl.cost, lvl.dc, lvl.effect)}
-                      disabled={!!animDice}
+                      disabled={!!animDice || lostThread}
                       className="px-2 py-0.5 text-[10px] border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors font-mono"
                     >
                       CAST

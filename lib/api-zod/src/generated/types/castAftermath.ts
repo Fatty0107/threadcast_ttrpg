@@ -7,7 +7,7 @@
  */
 import type { CastAftermathAdditionalTable } from './castAftermathAdditionalTable';
 import type { CastAftermathStrain } from './castAftermathStrain';
-import type { CastAftermathTable } from './castAftermathTable';
+import type { CastTableOutcome } from './castTableOutcome';
 
 export interface CastAftermath {
   tension: number;
@@ -15,7 +15,7 @@ export interface CastAftermath {
   safeLimit: number;
   cost: number;
   overflow: boolean;
-  table?: CastAftermathTable;
+  table?: CastTableOutcome;
   additionalTable?: CastAftermathAdditionalTable;
   damage?: number;
   strain?: CastAftermathStrain;

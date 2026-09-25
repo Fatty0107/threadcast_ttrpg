@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { db, charactersTable, rollsTable } from "@workspace/db";
+import { calcMod, guildAttributeBonus } from "@workspace/casting-rules";
 import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, ListRollsResponse } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
@@ -30,6 +31,26 @@ function responseRoll(roll: SavedRoll) {
     isBreak: !!roll.isBreak, isMisfire: !!roll.isMisfire, createdAt: roll.createdAt.toISOString() };
 }
 
+function getAttributeScore(data: any, key: "pot" | "ctr" | "res" | "ths"): number {
+  const base = data?.attributes?.[key] || 10;
+  if (!Number.isFinite(base)) return 10;
+  let asiBonus = 0;
+  const feats: string[] = Array.isArray(data?.feats) ? data.feats : [];
+  feats.forEach((feat, index) => {
+    if (feat !== "Attribute Score Improvement") return;
+    const choice = data?.featChoices?.[String(index)];
+    if (choice?.mode === "one" && choice.attrs?.[0] === key) asiBonus += 2;
+    if (choice?.mode === "two" && Array.isArray(choice.attrs)) {
+      asiBonus += choice.attrs.filter((attribute: string) => attribute === key).length;
+    }
+  });
+  return base + asiBonus + guildAttributeBonus(data?.guild, data?.guildRank, key);
+}
+
+function senseKey(value: string): string {
+  return value.trim().toLocaleLowerCase();
+}
+
 async function sendToDiscord(roll: SavedRoll, url: string, log: { warn: (data: object, message: string) => void }) {
   let status = "failed";
   try {
@@ -55,17 +76,24 @@ router.get("/rolls", async (_req, res): Promise<void> => {
 router.post("/rolls", async (req, res): Promise<void> => {
   const parsed = CreateRollBody.safeParse(req.body);
   if (!parsed.success || !req.body || Object.keys(req.body).some(key =>
-    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc"].includes(key))) {
+    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "threadSenseType"].includes(key))) {
     res.status(400).json({ error: "Invalid roll request" });
     return;
   }
   const input = parsed.data;
+  const typedThreadSense = input.threadSenseType !== undefined;
+  const threadSenseType = input.threadSenseType?.trim();
+  if (typedThreadSense && (!threadSenseType || input.category !== "check" || input.characterId === undefined)) {
+    res.status(400).json({ error: "threadSenseType requires a character-backed check" });
+    return;
+  }
   const isMend = input.category === "mend";
   const isDamage = input.category === "damage";
   const isTable = input.category === "table";
-  if (!input.title.trim() ||
-      ![input.characterId, input.modifier, input.diceSides, input.diceCount, input.bonusDiceSides, input.bonusDiceCount, input.multiplier, input.dc]
-        .every(value => value === undefined || Number.isInteger(value)) || (isDamage
+  const invalidDiceConfiguration = typedThreadSense
+    ? input.diceSides !== 20 || input.multiplier !== 1 ||
+      input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
+    : isDamage
     ? input.mode !== "NORMAL" || input.multiplier !== 1 || input.dc !== undefined ||
       (input.diceSides === 0 ? input.diceCount !== 0 || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
         : ![4, 6, 8, 10, 12].includes(input.diceSides) || input.diceCount < 1 ||
@@ -78,14 +106,18 @@ router.post("/rolls", async (req, res): Promise<void> => {
       input.modifier !== 0 || input.multiplier !== 1 || input.dc !== undefined ||
       input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined
     : input.diceSides !== 20 || input.multiplier !== 1 || input.bonusDiceSides !== undefined || input.bonusDiceCount !== undefined ||
-      input.diceCount !== (input.mode === "NORMAL" ? 1 : 2))) {
+      input.diceCount !== (input.mode === "NORMAL" ? 1 : 2);
+  if ((!typedThreadSense && !input.title.trim()) ||
+      ![input.characterId, input.modifier, input.diceSides, input.diceCount, input.bonusDiceSides, input.bonusDiceCount, input.multiplier, input.dc]
+        .every(value => value === undefined || Number.isInteger(value)) || invalidDiceConfiguration) {
     res.status(400).json({ error: "Invalid dice configuration" });
     return;
   }
   const user = (req as any).user;
   let characterName = user.displayName as string;
+  let characterData: any;
   if (input.characterId !== undefined) {
-    const [character] = await db.select({ name: charactersTable.name })
+    const [character] = await db.select({ name: charactersTable.name, data: charactersTable.data })
       .from(charactersTable)
       .where(user.role === "weavekeeper"
         ? eq(charactersTable.id, input.characterId)
@@ -96,9 +128,29 @@ router.post("/rolls", async (req, res): Promise<void> => {
       return;
     }
     characterName = character.name;
+    characterData = character.data;
   } else if (input.category !== "check") {
     res.status(400).json({ error: "Character required for sheet rolls" });
     return;
+  }
+  let title = input.title.trim();
+  let mode = input.mode;
+  let modifier = input.modifier;
+  let diceCount = input.diceCount;
+  if (typedThreadSense) {
+    const injuries = Array.isArray(characterData?.permanentInjuries) ? characterData.permanentInjuries : [];
+    const matchingMisread = injuries.some((injury: any) =>
+      injury?.name === "Leyline Misread" && typeof injury.senseType === "string" &&
+      senseKey(injury.senseType) === senseKey(threadSenseType!));
+    const hasShakes = injuries.some((injury: any) => injury?.name === "The Shakes");
+    const conditions: string[] = Array.isArray(characterData?.castingConditions) ? characterData.castingConditions : [];
+    const forcedDiscord = matchingMisread || hasShakes || (Number(characterData?.burnout) || 0) >= 1 ||
+      conditions.includes("Discord on Thread Checks until Mend") || conditions.includes("Shaking Hands");
+    mode = forcedDiscord ? "DISCORD" : "NORMAL";
+    diceCount = mode === "NORMAL" ? 1 : 2;
+    modifier = calcMod(getAttributeScore(characterData, "ths")) -
+      (conditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
+    title = `Thread Sense · ${threadSenseType}`;
   }
   const [previous] = await db.select().from(rollsTable)
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
@@ -108,14 +160,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
   }
 
   const d1 = input.diceSides === 0 ? 1 : randomInt(1, input.diceSides + 1);
-  const d2 = input.diceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
+  const d2 = diceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
   const extraDice = Array.from({ length: input.bonusDiceCount ?? 0 }, () => ({
     sides: input.bonusDiceSides!, value: randomInt(1, input.bonusDiceSides! + 1),
   }));
   const finalDie = isDamage ? d1 + (d2 ?? 0) + extraDice.reduce((sum, die) => sum + die.value, 0)
     : isMend ? d1 + d2! : d2 === null ? d1
-    : input.mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
-  const total = isDamage ? Math.max(1, finalDie + input.modifier) : finalDie * input.multiplier + input.modifier;
+    : mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
+  const total = isDamage ? Math.max(1, finalDie + modifier) : finalDie * input.multiplier + modifier;
   const isBreak = !isTable && !isMend && !isDamage && finalDie === 20;
   const isMisfire = !isTable && !isMend && !isDamage && finalDie === 1;
   const outcome = isDamage ? "Damage" : isMend ? "Mend" : isTable ? "Rolled" : isBreak ? "Thread Break" : isMisfire ? "Misfire"
@@ -125,9 +177,9 @@ router.post("/rolls", async (req, res): Promise<void> => {
   const url = webhookUrl();
   const [created] = await db.insert(rollsTable).values({
     userId: user.id, requestId: input.requestId, characterId: input.characterId ?? null,
-    playerName: user.displayName, characterName, title: input.title.trim(),
-    category: input.category, mode: input.mode, diceSides: input.diceSides,
-    d1, d2, extraDice, modifier: input.modifier, multiplier: input.multiplier, finalDie, total,
+    playerName: user.displayName, characterName, title,
+    category: input.category, mode, diceSides: input.diceSides,
+    d1, d2, extraDice, modifier, multiplier: input.multiplier, finalDie, total,
     dc: input.dc ?? null, isBreak: Number(isBreak), isMisfire: Number(isMisfire),
     outcome, diceName: style?.name ?? "Standard Issue", diceColor: style?.edgeColor ?? "#C48650",
     deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",

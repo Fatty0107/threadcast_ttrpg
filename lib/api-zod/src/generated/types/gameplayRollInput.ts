@@ -48,4 +48,10 @@ export interface GameplayRollInput {
      * @maximum 40
      */
   dc?: number;
+  /**
+     * Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.
+     * @minLength 1
+     * @maxLength 120
+     */
+  threadSenseType?: string;
 }

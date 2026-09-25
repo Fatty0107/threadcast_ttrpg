@@ -87,6 +87,12 @@ export interface GameplayRollInput {
      * @maximum 40
      */
   dc?: number;
+  /**
+     * Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.
+     * @minLength 1
+     * @maxLength 120
+     */
+  threadSenseType?: string;
 }
 
 export type GameplayRollCategory = typeof GameplayRollCategory[keyof typeof GameplayRollCategory];
@@ -183,6 +189,41 @@ export interface CastInput {
   components: CastComponent[];
 }
 
+export interface CastStrainInput {
+  requestId: string;
+  /** @minimum 1 */
+  characterId: number;
+}
+
+export interface CastConsequenceChoice {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  choice: string;
+}
+
+export interface CastDirection {
+  id: string;
+  /**
+     * @minimum 1
+     * @maximum 8
+     */
+  die: number;
+  name: string;
+}
+
+export interface PermanentInjuryResult {
+  id: string;
+  /**
+     * @minimum 1
+     * @maximum 6
+     */
+  die: number;
+  name: string;
+  description: string;
+}
+
 export type CastTableEffectDamageSides = typeof CastTableEffectDamageSides[keyof typeof CastTableEffectDamageSides];
 
 
@@ -212,19 +253,22 @@ export interface CastTableEffect {
   condition?: string;
 }
 
-export type CastAftermathTableKind = typeof CastAftermathTableKind[keyof typeof CastAftermathTableKind];
+export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
 
-export const CastAftermathTableKind = {
+export const CastTableOutcomeKind = {
   Mishap: 'Mishap',
   Snapback: 'Snapback',
 } as const;
 
-export type CastAftermathTable = {
-  kind: CastAftermathTableKind;
+export interface CastTableOutcome {
+  kind: CastTableOutcomeKind;
   die: number;
   effect: CastTableEffect;
-};
+  damage?: number;
+  direction?: CastDirection;
+  permanentInjury?: PermanentInjuryResult;
+}
 
 export type CastAftermathAdditionalTableKind = typeof CastAftermathAdditionalTableKind[keyof typeof CastAftermathAdditionalTableKind];
 
@@ -238,6 +282,8 @@ export type CastAftermathAdditionalTable = {
   die: number;
   effect: CastTableEffect;
   damage?: number;
+  direction?: CastDirection;
+  permanentInjury?: PermanentInjuryResult;
 };
 
 export type CastAftermathStrain = {
@@ -253,7 +299,7 @@ export interface CastAftermath {
   safeLimit: number;
   cost: number;
   overflow: boolean;
-  table?: CastAftermathTable;
+  table?: CastTableOutcome;
   additionalTable?: CastAftermathAdditionalTable;
   damage?: number;
   strain?: CastAftermathStrain;

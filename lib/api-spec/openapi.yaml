@@ -235,6 +235,7 @@ paths:
       operationId: createRoll
       tags: [rolls]
       summary: Generate and record a gameplay roll
+      description: A check may include threadSenseType to derive its title, THS modifier, and Discord mode from the saved character.
       security:
         - sessionCookie: []
       requestBody:
@@ -284,6 +285,71 @@ paths:
           description: Not authenticated
         "403":
           description: Character unavailable to this player
+  /casts/strain:
+    post:
+      operationId: createCastStrainCheck
+      tags: [casts]
+      summary: Resolve a strain check and any resulting Snapback atomically
+      description: Derives the check from saved Tension and RES, and replays the completed check by request ID.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastStrainInput"
+      responses:
+        "201":
+          description: Server-resolved strain check and aftermath
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CastResult"
+        "400":
+          description: Invalid strain check request
+        "401":
+          description: Not authenticated
+        "403":
+          description: Character unavailable to this player
+        "409":
+          description: Request ID is already used for a different request
+  /casts/consequences/{id}:
+    post:
+      operationId: resolveCastConsequence
+      tags: [casts]
+      summary: Resolve a pending cast consequence choice
+      description: Records a target, String, or sense choice exactly once against its logged table roll ID.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{1,20}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastConsequenceChoice"
+      responses:
+        "200":
+          description: Updated character with the persisted choice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Character"
+        "400":
+          description: Invalid consequence choice
+        "401":
+          description: Not authenticated
+        "404":
+          description: Pending consequence not found
+        "409":
+          description: Consequence already resolved with a different choice
 
 
   /rolls/discord/status:
@@ -327,6 +393,11 @@ components:
         bonusDiceCount: { type: integer, minimum: 1, maximum: 2 }
         multiplier: { type: integer, minimum: 1, maximum: 20 }
         dc: { type: integer, minimum: 1, maximum: 40 }
+        threadSenseType:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.
     GameplayRoll:
       type: object
       required: [id, playerName, characterName, title, category, mode, diceSides, d1, extraDice, modifier, multiplier, finalDie, total, isBreak, isMisfire, outcome, diceName, diceColor, createdAt]
@@ -382,6 +453,34 @@ components:
         string: { type: string, minLength: 1, maxLength: 100 }
         powerLevel: { type: integer, minimum: 1, maximum: 5 }
         mode: { type: string, minLength: 1, maxLength: 40 }
+    CastStrainInput:
+      type: object
+      additionalProperties: false
+      required: [requestId, characterId]
+      properties:
+        requestId: { type: string, format: uuid }
+        characterId: { type: integer, minimum: 1 }
+    CastConsequenceChoice:
+      type: object
+      additionalProperties: false
+      required: [choice]
+      properties:
+        choice: { type: string, minLength: 1, maxLength: 120 }
+    CastDirection:
+      type: object
+      required: [id, die, name]
+      properties:
+        id: { type: string }
+        die: { type: integer, minimum: 1, maximum: 8 }
+        name: { type: string }
+    PermanentInjuryResult:
+      type: object
+      required: [id, die, name, description]
+      properties:
+        id: { type: string }
+        die: { type: integer, minimum: 1, maximum: 6 }
+        name: { type: string }
+        description: { type: string }
     CastTableEffect:
       type: object
       required: [name, description]
@@ -397,6 +496,16 @@ components:
         burnout: { type: integer }
         resetTension: { type: boolean }
         condition: { type: string }
+    CastTableOutcome:
+      type: object
+      required: [kind, die, effect]
+      properties:
+        kind: { type: string, enum: [Mishap, Snapback] }
+        die: { type: integer }
+        effect: { $ref: "#/components/schemas/CastTableEffect" }
+        damage: { type: integer }
+        direction: { $ref: "#/components/schemas/CastDirection" }
+        permanentInjury: { $ref: "#/components/schemas/PermanentInjuryResult" }
     CastAftermath:
       type: object
       required: [tension, pool, safeLimit, cost, overflow]
@@ -407,12 +516,7 @@ components:
         cost: { type: integer }
         overflow: { type: boolean }
         table:
-          type: object
-          required: [kind, die, effect]
-          properties:
-            kind: { type: string, enum: [Mishap, Snapback] }
-            die: { type: integer }
-            effect: { $ref: "#/components/schemas/CastTableEffect" }
+          $ref: "#/components/schemas/CastTableOutcome"
         additionalTable:
           type: object
           required: [kind, die, effect]
@@ -421,6 +525,8 @@ components:
             die: { type: integer }
             effect: { $ref: "#/components/schemas/CastTableEffect" }
             damage: { type: integer }
+            direction: { $ref: "#/components/schemas/CastDirection" }
+            permanentInjury: { $ref: "#/components/schemas/PermanentInjuryResult" }
         damage: { type: integer }
         strain:
           type: object

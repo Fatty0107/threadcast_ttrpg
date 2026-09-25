@@ -262,6 +262,7 @@ export const ListRollsResponse = zod.array(ListRollsResponseItem)
 
 
 /**
+ * A check may include threadSenseType to derive its title, THS modifier, and Discord mode from the saved character.
  * @summary Generate and record a gameplay roll
  */
 
@@ -279,6 +280,8 @@ export const createRollBodyMultiplierMax = 20;
 
 export const createRollBodyDcMax = 40;
 
+export const createRollBodyThreadSenseTypeMax = 120;
+
 
 
 export const CreateRollBody = zod.object({
@@ -293,7 +296,8 @@ export const CreateRollBody = zod.object({
   "bonusDiceSides": zod.union([zod.literal(4),zod.literal(6),zod.literal(8),zod.literal(10),zod.literal(12)]).optional(),
   "bonusDiceCount": zod.number().min(1).max(createRollBodyBonusDiceCountMax).optional(),
   "multiplier": zod.number().min(1).max(createRollBodyMultiplierMax),
-  "dc": zod.number().min(1).max(createRollBodyDcMax).optional()
+  "dc": zod.number().min(1).max(createRollBodyDcMax).optional(),
+  "threadSenseType": zod.string().min(1).max(createRollBodyThreadSenseTypeMax).optional().describe('Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.')
 })
 
 
@@ -324,6 +328,57 @@ export const CreateCastBody = zod.object({
   "powerLevel": zod.number().min(1).max(createCastBodyComponentsItemPowerLevelMax),
   "mode": zod.string().min(1).max(createCastBodyComponentsItemModeMax)
 })).min(1).max(createCastBodyComponentsMax)
+})
+
+
+/**
+ * Derives the check from saved Tension and RES, and replays the completed check by request ID.
+ * @summary Resolve a strain check and any resulting Snapback atomically
+ */
+
+
+
+export const CreateCastStrainCheckBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "characterId": zod.number().min(1)
+})
+
+
+/**
+ * Records a target, String, or sense choice exactly once against its logged table roll ID.
+ * @summary Resolve a pending cast consequence choice
+ */
+export const resolveCastConsequencePathIdRegExp = new RegExp('^\\d{1,20}$');
+
+
+export const ResolveCastConsequenceParams = zod.object({
+  "id": zod.coerce.string().regex(resolveCastConsequencePathIdRegExp)
+})
+
+export const resolveCastConsequenceBodyChoiceMax = 120;
+
+
+
+export const ResolveCastConsequenceBody = zod.object({
+  "choice": zod.string().min(1).max(resolveCastConsequenceBodyChoiceMax)
+})
+
+export const resolveCastConsequenceResponseVersionMin = 0;
+
+
+
+export const ResolveCastConsequenceResponse = zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "name": zod.string(),
+  "level": zod.number(),
+  "affinity": zod.string().nullish(),
+  "mode": zod.string().nullish(),
+  "data": zod.record(zod.string(), zod.unknown()).describe('Full character sheet data as JSONB'),
+  "isDraft": zod.boolean(),
+  "version": zod.number().min(resolveCastConsequenceResponseVersionMin),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
 })
 
 

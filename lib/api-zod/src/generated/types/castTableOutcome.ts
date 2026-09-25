@@ -5,16 +5,16 @@
  * THREADCAST TTRPG API
  * OpenAPI spec version: 0.1.0
  */
-import type { CastAftermathAdditionalTableKind } from './castAftermathAdditionalTableKind';
 import type { CastDirection } from './castDirection';
 import type { CastTableEffect } from './castTableEffect';
+import type { CastTableOutcomeKind } from './castTableOutcomeKind';
 import type { PermanentInjuryResult } from './permanentInjuryResult';
 
-export type CastAftermathAdditionalTable = {
-  kind: CastAftermathAdditionalTableKind;
+export interface CastTableOutcome {
+  kind: CastTableOutcomeKind;
   die: number;
   effect: CastTableEffect;
   damage?: number;
   direction?: CastDirection;
   permanentInjury?: PermanentInjuryResult;
-};
+}

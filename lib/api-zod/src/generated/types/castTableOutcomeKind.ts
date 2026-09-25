@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CastAftermathTableKind = typeof CastAftermathTableKind[keyof typeof CastAftermathTableKind];
+export type CastTableOutcomeKind = typeof CastTableOutcomeKind[keyof typeof CastTableOutcomeKind];
 
 
-export const CastAftermathTableKind = {
+export const CastTableOutcomeKind = {
   Mishap: 'Mishap',
   Snapback: 'Snapback',
 } as const;

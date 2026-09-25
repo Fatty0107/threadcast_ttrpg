@@ -17,7 +17,7 @@ export function weaveMultiplier(stringCount: number): number {
 export type CastTableResult = {
   name: string;
   description: string;
-  damage?: { sides: 4 | 6 | 8 | 10 | 12; count: 1 | 2 | 3 | 4 };
+  damage?: { sides: 4 | 6 | 8 | 10 | 12; count: number };
   burnout?: number;
   resetTension?: boolean;
   condition?: string;
@@ -29,8 +29,22 @@ export type CastAftermath = {
   safeLimit: number;
   cost: number;
   overflow: boolean;
-  table?: { kind: "Mishap" | "Snapback"; die: number; effect: CastTableResult };
-  additionalTable?: { kind: "Snapback"; die: number; effect: CastTableResult; damage?: number };
+  table?: {
+    kind: "Mishap" | "Snapback";
+    die: number;
+    effect: CastTableResult;
+    damage?: number;
+    direction?: { id: string; die: number; name: string };
+    permanentInjury?: { id: string; die: number; name: string; description: string };
+  };
+  additionalTable?: {
+    kind: "Snapback";
+    die: number;
+    effect: CastTableResult;
+    damage?: number;
+    direction?: { id: string; die: number; name: string };
+    permanentInjury?: { id: string; die: number; name: string; description: string };
+  };
   damage?: number;
   strain?: { die: number; total: number; dc: number; failed: boolean };
   warning?: string;

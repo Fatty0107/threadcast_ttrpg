@@ -21,8 +21,10 @@ import type {
 
 import type {
   AuthUser,
+  CastConsequenceChoice,
   CastInput,
   CastResult,
+  CastStrainInput,
   Character,
   CharacterInput,
   CharacterUpdate,
@@ -943,6 +945,7 @@ export const getCreateRollUrl = () => {
 }
 
 /**
+ * A check may include threadSenseType to derive its title, THS modifier, and Discord mode from the saved character.
  * @summary Generate and record a gameplay roll
  */
 export const createRoll = async (gameplayRollInput: GameplayRollInput, options?: RequestInit): Promise<GameplayRoll> => {
@@ -1075,6 +1078,151 @@ export const useCreateCast = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateCastMutationOptions(options));
+    }
+
+export const getCreateCastStrainCheckUrl = () => {
+
+
+
+
+  return `/api/casts/strain`
+}
+
+/**
+ * Derives the check from saved Tension and RES, and replays the completed check by request ID.
+ * @summary Resolve a strain check and any resulting Snapback atomically
+ */
+export const createCastStrainCheck = async (castStrainInput: CastStrainInput, options?: RequestInit): Promise<CastResult> => {
+
+  return customFetch<CastResult>(getCreateCastStrainCheckUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      castStrainInput,)
+  }
+);}
+
+
+
+
+export const getCreateCastStrainCheckMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCastStrainCheck>>, TError,{data: BodyType<CastStrainInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCastStrainCheck>>, TError,{data: BodyType<CastStrainInput>}, TContext> => {
+
+const mutationKey = ['createCastStrainCheck'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCastStrainCheck>>, {data: BodyType<CastStrainInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCastStrainCheck(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCastStrainCheckMutationResult = NonNullable<Awaited<ReturnType<typeof createCastStrainCheck>>>
+    export type CreateCastStrainCheckMutationBody = BodyType<CastStrainInput>
+    export type CreateCastStrainCheckMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve a strain check and any resulting Snapback atomically
+ */
+export const useCreateCastStrainCheck = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCastStrainCheck>>, TError,{data: BodyType<CastStrainInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCastStrainCheck>>,
+        TError,
+        {data: BodyType<CastStrainInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCastStrainCheckMutationOptions(options));
+    }
+
+export const getResolveCastConsequenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/casts/consequences/${id}`
+}
+
+/**
+ * Records a target, String, or sense choice exactly once against its logged table roll ID.
+ * @summary Resolve a pending cast consequence choice
+ */
+export const resolveCastConsequence = async (id: string,
+    castConsequenceChoice: CastConsequenceChoice, options?: RequestInit): Promise<Character> => {
+
+  return customFetch<Character>(getResolveCastConsequenceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      castConsequenceChoice,)
+  }
+);}
+
+
+
+
+export const getResolveCastConsequenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCastConsequence>>, TError,{id: string;data: BodyType<CastConsequenceChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveCastConsequence>>, TError,{id: string;data: BodyType<CastConsequenceChoice>}, TContext> => {
+
+const mutationKey = ['resolveCastConsequence'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveCastConsequence>>, {id: string;data: BodyType<CastConsequenceChoice>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resolveCastConsequence(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveCastConsequenceMutationResult = NonNullable<Awaited<ReturnType<typeof resolveCastConsequence>>>
+    export type ResolveCastConsequenceMutationBody = BodyType<CastConsequenceChoice>
+    export type ResolveCastConsequenceMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve a pending cast consequence choice
+ */
+export const useResolveCastConsequence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCastConsequence>>, TError,{id: string;data: BodyType<CastConsequenceChoice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveCastConsequence>>,
+        TError,
+        {id: string;data: BodyType<CastConsequenceChoice>},
+        TContext
+      > => {
+      return useMutation(getResolveCastConsequenceMutationOptions(options));
     }
 
 export const getGetRollDiscordStatusUrl = () => {
