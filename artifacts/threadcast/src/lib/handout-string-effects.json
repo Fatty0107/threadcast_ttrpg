@@ -1,0 +1,604 @@
+{
+  "Luck": {
+    "First Hand String": [
+      "Gain +1 on one check to play a game of chance she is actually taking part in. A visible opponent takes −1 on one check to read or bluff her in that game; RES save negates it.",
+      "Gain +2 on one game check involving a real draw, deal, or toss. One opponent takes −2 on one such game check; RES save negates it.",
+      "Give +2 to one willing participant's game check, including Aeolus's, while she observes the same table. Up to two visible participants each take −1 on their next game check; each gets a RES save.",
+      "Give +3 to one participant's next game check in a contest with an uncertain outcome. Up to two opponents each take −2 on their next game check; each gets a RES save.",
+      "Give +3 to up to three willing players at the same table, for one check each during the next minute. Up to three opponents at that table each take −3 on one check during the next minute; each gets a RES save."
+    ],
+    "Tell String": [
+      "After watching a person for a minute, notice one visible habit relevant to their next action. Point out that habit to one ally; they gain +1 on one check to notice that person's next physical feint.",
+      "Gain +2 on one check to identify a bluff or sleight of hand from someone she can observe. One ally gains +1 on their next attack against an opponent Aeolus watched act this round.",
+      "Identify which of two visible choices a watched person appears to favor; they can still change their mind. Up to two allies each gain +1 on their next attack against that watched opponent.",
+      "Gain +3 on one check to detect a watched person's deception; this does not reveal the truth behind it. One ally gains +2 on their next attack against a watched opponent, before Aeolus's next turn.",
+      "For 1 minute of concentration, track the observable tells of up to three people in the scene; each Up to three allies each gain +2 on one attack against watched opponents before her next turn. of Aeolus's checks to read them gains +2."
+    ],
+    "Nudge String": [
+      "Give herself +1 on one nonmagical skill check. One visible creature takes −1 on its next nonmagical skill check; RES save negates it.",
+      "Give herself or one willing ally +2 on one nonmagical skill check. One target takes −2 on its next such check; RES save negates it.",
+      "Give one willing ally +2 on one attack roll or nonmagical skill check. One target takes −2 on its next attack roll or nonmagical skill check; RES save negates it.",
+      "Give one willing ally +3 on one attack roll or nonmagical skill check. One target takes −3 on its next attack roll or nonmagical skill check; RES save negates it.",
+      "Give two willing allies +3 each on one different roll before her next turn. Two visible targets each take −3 on one roll before her next turn; each gets a RES save."
+    ],
+    "Slip String": [
+      "Reduce the next hit's damage to herself by 1d6 before her next turn. A visible attacker takes −1 on its next attack against her; RES save negates it.",
+      "Reduce one incoming hit to herself or an ally within 10 ft by 2d6. One attacker takes −2 on its next attack against a chosen ally within 10 ft; RES save negates it.",
+      "Reduce one hit to an ally within 30 ft by 3d6. Two visible attackers each take −1 on their next attack against the protected ally; each gets a RES save.",
+      "Give a single ally within 30 ft a 4d6 damage-reduction pool against hits for 3 rounds, while Aeolus concentrates. Two attackers each take −2 on one attack against that ally during the next 3 rounds; each gets a RES save.",
+      "Give up to three allies within 30 ft a shared 6d8 reduction pool for 3 rounds, while concentrating; Up to three attackers each take −3 on their next attack against one of those allies during the next 3 spend it only on actual hits. rounds; each gets a RES save."
+    ],
+    "Opening String": [
+      "One ally's next successful weapon hit before her next turn gains +1d6 damage. One visible opponent takes −1 on its next check to keep its footing or hold a position; RES save negates it.",
+      "A single next successful weapon hit gains +2d6 damage. A visible target takes −2 on its next such positioning check; RES save negates it.",
+      "A single next successful weapon hit gains +3d6 damage. A target takes −2 on its next positioning check and loses 10 ft of movement on its next turn on a failed RES save.",
+      "Divide a 4d6 bonus-damage pool among up to two successful weapon hits before her next turn. Two visible targets each lose 10 ft of movement on their next turn on a failed RES save.",
+      "Divide a 6d6 bonus-damage pool among up to three successful weapon hits before her next turn. Up to three targets each lose 15 ft of movement on their next turn on a failed RES save."
+    ],
+    "Misstep String": [
+      "Gain +1 on one check to cross uneven, slippery, or cluttered ground. One visible moving creature loses 5 ft of its next turn's movement on a failed RES save.",
+      "Give one willing creature +2 on such a traversal check. One target loses 10 ft of its next turn's movement on a failed RES save.",
+      "Give two willing creatures +2 each on one traversal check apiece. One moving target loses 15 ft of movement and falls Prone on a failed RES save, if the terrain makes a fall plausible.",
+      "Give up to three willing creatures +3 each on one traversal check apiece. Two moving targets each lose 15 ft and fall Prone on failed RES saves, where a fall is plausible.",
+      "For 3 rounds, give up to three willing creatures +3 on one traversal check each through the chosen hazardous area, while concentrating. Up to three moving targets each lose 20 ft and fall Prone on failed RES saves, only if their surroundings allow it."
+    ],
+    "Loose Change String": [
+      "Gain +1 on one search check for a mundane object known to be in the immediate area. A target handling a loose object takes −1 on its next check to keep hold of it; RES save negates it.",
+      "Gain +2 on one search check for a mundane object in the current room. A target handling a loose object takes −2 on its next check to hold it; RES save negates it.",
+      "Give +2 to up to two people on one search check each for a specific, present mundane object. On a failed RES save, one target drops one loosely held object at its feet; not a secured or strapped item.",
+      "Gain +3 on one check to find a mundane clue or On failed RES saves, up to two targets each drop one object actually present in a searched area within 30 ft. loosely held object at their feet.",
+      "For 1 minute, grant up to three searchers +3 on one check each to locate a specified, actually present mundane clue. Up to three targets each drop one loosely held object on failed RES saves; no effect on secured gear."
+    ],
+    "Fork String": [
+      "Get a general sense of which of two visible routes looks less physically hazardous right now. An observer pursuing her takes −1 on one check to follow her chosen route; RES save negates it.",
+      "Gain +2 on one check to navigate either of two routes she can inspect. One pursuer takes −2 on one check to track her route; RES save negates it.",
+      "Guide up to two allies, each gaining +2 on one check to traverse the chosen route. Two pursuers each take −2 on one check to track that route; each gets a RES save.",
+      "For 1 minute, guide up to three allies; Two pursuers each take −3 on one each gains +3 on one traversal check along a real route she has observed. tracking check along that route; each gets a RES save.",
+      "For 3 rounds of concentration, guide up to five allies; each gains +3 on one traversal check through a visible, physically passable route. Up to three pursuers each take −3 on one tracking check along that route; each gets a RES save."
+    ],
+    "Wager String": [
+      "Stake 1 VP; Aeolus gains +2 on one nonmagical check. Stake 1 VP; one opponent takes −2 on one nonmagical check on a failed RES save.",
+      "Stake 2 VP; she or an ally gains +3 on one nonmagical check. Stake 2 VP; one opponent takes −3 on one nonmagical check on a failed RES save.",
+      "Stake 3 VP; she or Stake 3 VP; one an ally gains +4 on one attack roll or nonmagical check. opponent takes −4 on one attack roll or nonmagical check on a failed RES save.",
+      "Stake 5 VP; one ally gains +5 on one attack roll or nonmagical check. Stake 5 VP; one opponent takes −5 on one attack roll or nonmagical check on a failed RES save.",
+      "Stake 8 VP; two allies each gain +6 on one different attack roll or nonmagical check. Stake 8 VP; two opponents each take −6 on one attack roll or nonmagical check on failed RES saves."
+    ],
+    "Second Chance String": [
+      "After witnessing a failed nonmagical task, Aeolus gains +1 on her own new attempt at it; the situation must still allow another try. An opponent who just succeeded at a contested nonmagical task takes −1 on a new attempt at the same task; RES save negates it.",
+      "Aeolus or an ally gains +2 on one permitted new attempt at a One opponent takes −2 on a permitted new attempt at a witnessed failed task. witnessed successful task; RES save negates it.",
+      "Up to two allies each gain +2 on one permitted new attempt after a witnessed failure. Two opponents each take −1 on one permitted new attempt after witnessed successes; each gets a RES save.",
+      "Up to two allies each gain +3 on one permitted new attempt after a witnessed failure. Two opponents each take −2 on one permitted new attempt after witnessed successes; each gets a RES save.",
+      "Up to three allies each gain +3 on one permitted new attempt after a witnessed failure. Up to three opponents each take −3 on one permitted new attempt after witnessed successes; each gets a RES save."
+    ],
+    "Narrow Escape String": [
+      "Reduce the next instance of environmental A visible creature in a real environmental damage to herself by 1d6 before her next turn. hazard takes −1 on one check to avoid it; RES save negates it.",
+      "Reduce one environmental hit to herself or an ally within 10 ft by 2d6. One creature in an existing hazard takes −2 on one check to avoid it; RES save negates it.",
+      "Reduce one environmental hit to an ally within 30 ft by 3d6. Two creatures in existing hazards each take −2 on one avoidance check; each gets a RES save.",
+      "Reduce one environmental hit to an ally within 30 ft by 5d6; this cannot prevent an effect with no survivable outcome. Two creatures in existing hazards each take −3 on one avoidance check; each gets a RES save.",
+      "For 3 rounds of concentration, protect up to three allies within 30 ft with a shared 6d8 environmental-da mage reduction pool. Three creatures in real, immediate hazards each take −3 on one avoidance check; each gets a RES save."
+    ],
+    "House Edge String": [
+      "One willing ally within 15 ft gains +1 on one nonmagical check. One opponent within 15 ft takes −1 on one such check on a failed RES save.",
+      "Two allies within 20 ft each gain +1 on one different nonmagical check. Two opponents within 20 ft each take −1 on one such check on failed RES saves.",
+      "Three allies within 30 ft each gain +1 on one different attack roll or nonmagical check. Three opponents within 30 ft each take −1 on one different attack roll or nonmagical check on failed RES saves.",
+      "For 3 rounds of concentration, three allies within 30 ft each gain +2 on one attack or nonmagical check total. Three opponents within 30 ft each take −2 on one attack or nonmagical check total on failed RES saves.",
+      "For 3 rounds of concentration, up to five allies within 30 ft each gain +2 on one attack or nonmagical check total. Up to five opponents within 30 ft each take −2 on one attack or nonmagical check total on failed RES saves."
+    ]
+  },
+  "Leyline Energy Conversion": {
+    "Counterpull String": [
+      "When an active cast would affect Melody, contest it. On success, either reduce its damage to her by 1d6, or suspend one non-damaging magical influence it would impose on her until the start of her next turn. Suspending an influence is not ending the caster’s ongoing String; it may resume if still maintained afterward.",
+      "When an active cast would affect Melody or one adjacent creature, contest it. On success, reduce its damage to that one creature by 2d6, or prevent one non-damaging magical influence from taking hold on that creature until the start of Melody’s next turn.",
+      "Contest an active cast affecting one creature within 10 ft. On success, reduce that creature’s damage by 3d6. Alternatively, prevent one condition imposed by that cast on that creature; any immediate damage still occurs. Other targets are unaffected.",
+      "Contest a cast as it is released against one creature within 20 ft. On success, negate that cast’s damage and conditions for that one creature. Alternatively, prevent its effect on that creature and vent the excess: Melody, the opposing caster, and every other creature within 5 ft of either of them each take 1d6 bludgeoning damage on a failed RES save, or half on a success. A creature within both areas is hit only once. Melody cannot exempt herself or allies from a vent.",
+      "Contest one cast being released within 30 ft. On success, negate its effects on up to three chosen creatures Melody can see. Alternatively, negate it on one creature and vent contested energy in 10-ft radii around Melody and the opposing caster: creatures in either area, including both casters, take 2d6 bludgeoning damage on a failed RES save, or half on a success. A creature is affected once. The original spell still affects any of its other targets."
+    ],
+    "Impulse String": [
+      "Deliver one hand, elbow, knee, or held-object strike for 1d6 bludgeoning damage.",
+      "Strike for 2d6 bludgeoning damage. On a failed RES save, push the target 5 ft directly away from Melody.",
+      "Strike for 3d6 bludgeoning damage. On a failed RES save, choose to push the target 10 ft or knock it Prone. Choose before the save; it cannot suffer both.",
+      "Strike one target for 4d8 bludgeoning damage. Alternatively, divide 4d6 damage between up to two targets both within melee reach. The divided strikes have no push or Prone rider.",
+      "Release the impact through a 15-ft cone for 5d8 bludgeoning damage. Creatures that fail RES saves are pushed 15 ft away from Melody. This is a broad release; she cannot exempt a creature standing inside the cone."
+    ],
+    "Spring String": [
+      "Gain 10 ft of additional movement this turn. Obstacles and reactions apply normally.",
+      "Gain 15 ft of additional movement this turn. She can clear one ordinary gap or obstacle up to 5 ft across or high if there is a safe landing space.",
+      "Move up to 20 ft along an unobstructed route as part of the cast. Choose one creature she can see; this movement does not trigger that creature’s reaction. It may still trigger reactions from others.",
+      "Move up to 30 ft, then deliver one 2d6 bludgeoning close strike against a creature within reach at the end of that movement. This is one Spring cast, not a free Impulse cast.",
+      "Move up to 40 ft, changing direction once. She may clear one gap up to 10 ft across with a safe landing. During that movement, make one 3d6 bludgeoning strike against a creature she passes within melee reach. Reactions apply except from the creature she strikes."
+    ],
+    "Pressure String": [
+      "Push one unattended object weighing no more than 10 lb up to 5 ft within 15 ft. It moves along an open path and cannot deal damage with this use.",
+      "Send force at one visible creature within 20 ft for 1d6 bludgeoning damage. On a failed RES save, push it 5 ft.",
+      "Hit one creature within 25 ft for 2d6 bludgeoning damage and push it 10 ft on a failed RES save. Alternatively, move one unattended object weighing up to 100 lb by 10 ft along an open path, without dealing damage.",
+      "Send a wave through a 10-ft cone for 3d6 bludgeoning damage. Creatures that fail RES saves are pushed 10 ft. Loose unattended objects in the cone may also be displaced, but do not become additional attacks.",
+      "Send a wave through a 15-ft cone for 4d8 bludgeoning damage. Creatures that fail RES saves are pushed 15 ft and knocked Prone. A successful save halves damage and prevents both riders."
+    ],
+    "Vector String": [
+      "Apply a sideways impulse to one loose, unattended moving object of 5 lb or less within 15 ft, shifting its landing point by up to 5 ft. It cannot be aimed to damage a creature.",
+      "Reaction to a visible physical projectile aimed at Melody or an adjacent creature. Apply counterforce, reducing that projectile’s damage by 2d6. It lands nearby rather than becoming an attack on a second target.",
+      "Reaction to a visible physical projectile aimed at a creature within 15 ft. Reduce its damage by 3d6. If reduced to zero, Melody can send it to an unoccupied point she sees within 15 ft of its original target.",
+      "Reaction to a visible traveling magical projectile aimed at a creature within 20 ft. Contest its active cast. On success, its trajectory misses that creature and lands at an unoccupied point within 15 ft of the original target. It is still the original magic and may affect something at its landing point.",
+      "Reaction to one visible projectile or narrow traveling line within 30 ft. Contest an active cast if it is magical. On success, apply enough sideways force to alter its path by up to 30 degrees from the point of intervention. Resolve anything in its new path normally. Melody does not get to choose a guaranteed second victim."
+    ],
+    "Overtone String": [
+      "Add +1 to the caster’s pending Thread Check; or add 1d4 to one eligible roll; or add up to 5 ft to one eligible movement.",
+      "Add +2 to the pending Thread Check; or add 1d6 to one eligible roll; or add up to 10 ft to one eligible movement.",
+      "Add +3 to the pending Thread Check; or add 2d6 to one eligible roll; or add up to 15 ft to one eligible movement.",
+      "Add +4 to the pending Thread Check; or add 3d6 to one eligible roll; or add up to 20 ft to one eligible movement.",
+      "Add +5 to the pending Thread Check; or add 4d6 to one eligible roll; or add up to 25 ft to one eligible movement."
+    ],
+    "Calibration String": [
+      "Study one active thread. Learn whether its energy is building, sustained, or being released. Melody does not learn the String’s name or intended target.",
+      "Study one active thread. Learn its general direction of release and whether its energy is being applied to one creature, an object, or an area. This does not reveal a target concealed behind a solid barrier.",
+      "Compare up to two perceptible active threads within 30 ft. Learn which is under greater strain. Gain +1 to one Counterpull or Ground Thread Check against either of those casts before the end of Melody’s next turn.",
+      "Follow one active thread through smoke, a crowd, or similar ordinary visual concealment, but not a solid wall. Recognize its release point and gain +2 to one Counterpull or Ground Thread Check against it before Melody’s next turn ends.",
+      "For 1 minute while concentrating, track up to three active threads within 60 ft and distinguish which caster is maintaining each and which release is approaching first. Once during the duration, gain +2 to one Counterpull or Ground check against a tracked cast. A thread that stops being used ceases to be visible to this String."
+    ],
+    "Ground String": [
+      "Contest an active damaging cast as it affects Melody. On success, reduce its damage to her by 1d6, venting that amount into a nearby surface. Its other effects still occur.",
+      "Contest a cast affecting Melody or one adjacent creature. On success, reduce its damage to one of them by 2d6.",
+      "Contest an active cast that deals damage to a creature within 10 ft. On success, reduce that creature’s damage by 3d6. Melody must still meet Ground’s surface requirement.",
+      "Contest one active cast affecting creatures within 15 ft. On success, roll 4d8 once and divide that total damage reduction among up to two of those creatures. Conditions and damage to others resolve normally.",
+      "Contest one active cast affecting creatures within 20 ft. On success, roll a 6d8 total reduction pool and divide it among up to three affected creatures. If the surface cannot withstand the vented force, the GM may describe cracking or debris; it does not create free extra damage or cover."
+    ],
+    "Reserve String": [
+      "Reduce magical damage to Melody by 1d6. She can vent what she captured harmlessly before the end of her next turn; it cannot deal damage.",
+      "Reduce damage by 2d6. On her next turn, spend a Major Action to strike a creature within melee reach for up to 1d6 bludgeoning damage, capped by the recorded reserve. The reserve is then spent.",
+      "Reduce damage by 3d6. Before the end of her next turn, spend a Major Action either to deal up to 2d6 bludgeoning damage to one creature within 15 ft, or to gain 10 ft of movement that turn. A damaging release is capped by the reserve; either choice expends it.",
+      "Reduce damage by 4d6. Before the end of her next turn, spend a Major Action to deal up to 3d6 bludgeoning damage to one creature within 20 ft, or use a Reaction to reduce one later hit against Melody by up to 2d6. Either amount is capped by her recorded reserve and expends it.",
+      "Reduce damage by 5d8. Before the end of her next turn, spend a Major Action to deal up to 4d8 bludgeoning damage to one creature within 20 ft, or use a Reaction to reduce one hit against an ally within 10 ft by up to 4d8. Cap the chosen effect by the reserve and expend it."
+    ],
+    "Shelter String": [
+      "Place a brief force cushion around one adjacent ally. Reduce the next hit against them by 1d6 damage before Melody’s next turn; the effect then ends.",
+      "Protect one ally within 10 ft. Reduce their next incoming hit by 2d6 damage before Melody’s next turn.",
+      "Protect one ally within 15 ft for 3 rounds while concentrating. Reduce the first damaging hit against them each round by 1d6. The effect ends if they leave Melody’s range.",
+      "Protect up to two allies within 15 ft for 3 rounds while concentrating. Roll a 4d8 shared damage-reduction pool on casting. Melody allocates points from it as those allies take hits; spent points are gone.",
+      "Protect up to three allies within 20 ft for 3 rounds while concentrating. Roll a 6d8 shared reduction pool. Allocate it among incoming hits while the allies remain in range. When the pool is spent, Shelter ends."
+    ],
+    "Interpose String": [
+      "Protect one adjacent ally from an active magical release, reducing their damage by up to 1d6 and taking the corresponding recoil.",
+      "Protect one ally within 10 ft, reducing their damage by up to 2d6 and taking recoil.",
+      "Protect one ally within 15 ft, reducing their damage by up to 3d6 and taking recoil.",
+      "Protect one ally within 20 ft, reducing their damage by up to 4d8 and taking recoil. If the attacking caster is within 20 ft of Melody, she may vent part of the remaining converted energy as 1d6 bludgeoning damage to that caster; this does not refund her VP.",
+      "Protect up to two allies within 20 ft from the same active magical release. Divide a 6d8 total damage-reduction pool between them. Melody takes recoil equal to half the total damage actually prevented, rounded up. This is one Reaction against one cast, not protection from every attack that round."
+    ],
+    "Circuit String": [
+      "Apply two small physical pushes at once: move two unattended objects, each weighing no more than 5 lb, up to 5 ft each within 15 ft. Neither movement deals damage.",
+      "Convert one draw into two sequential outputs during the cast: move up to 10 ft along a traversable route and deliver one 1d6 bludgeoning close strike at any point during that movement. This uses one Major Action.",
+      "Divide 3d6 bludgeoning damage among up to two creatures within 15 ft. Alternatively, replace one die of that damage with a controlled push moving one willing ally within 15 ft up to 5 ft to an unoccupied space. Choose the allocation before saves.",
+      "For 3 rounds while concentrating, roll a 4d8 conversion pool. Melody may spend from it once as part of this cast and once on each later round: spend a Major Action to deal a chosen number of its remaining points as bludgeoning damage to one creature within 20 ft, or use a Reaction to reduce one hit against an ally within 20 ft by that many points. Points are spent once, not both ways.",
+      "For 3 rounds while concentrating, roll a 7d8 conversion pool. Spend from it once as part of this cast and at most once per later round. A Major Action deals chosen remaining points as bludgeoning damage to one creature within 30 ft; a Reaction reduces one hit against an ally within 30 ft; or a Major Action spends 8 points to move one willing ally within 30 ft up to 10 ft along a safe, open path. A single damage or protection use cannot spend more than half the original pool, rounded up."
+    ]
+  },
+  "Emotion": {
+    "Echo String": [
+      "Sense the strongest immediately felt emotion in one creature within 15 ft. Evander may leave it untouched or amplify it until the start of his next turn. An unwilling target that fails its RES save has Discord on its next check to conceal or maintain composure against that emotion during the duration. Echo gives Evander a feeling, not its cause.",
+      "Identify one emotion present even if it is not dominant in one creature within 30 ft, then amplify it for 3 rounds while concentrating. On a failed save, the target has Discord on its next attack, Thread Check, or social check that directly conflicts with that emotion; the penalty is spent after one roll. Evander names which kind of roll when casting.",
+      "Affect up to two creatures within 30 ft, choosing an emotion separately for each that each actually feels. For 3 rounds while concentrating, each unwilling target that fails its save has Discord on the first relevant attack, Thread Check, or social check it makes each round. The chosen check type must relate to the amplified emotion.",
+      "Affect up to three creatures within 30 ft for 3 rounds while concentrating. Evander can identify one concealed but presently felt emotion in each, without learning the memory or reason behind it. Each failed save applies the PL 3 penalty. A target that succeeds still knows what it feels; Evander simply cannot amplify it.",
+      "Amplify one emotion already shared by up to five creatures within 30 ft for 3 rounds while concentrating. Each unwilling target saves separately. A failed save gives Discord on its first relevant attack or Thread Check each round. If fewer than five creatures actually feel the selected emotion, the effect reaches only those who do. It cannot manufacture panic in an otherwise unafraid crowd."
+    ],
+    "Hush String": [
+      "By touch, lower the intensity of one emotion in Evander or a willing creature for 1 minute. The target remains aware of the feeling and its cause, but has Harmony on its next check to keep composure despite that emotion.",
+      "Affect one creature within 15 ft for 3 rounds while concentrating. A willing target can ignore Discord on one roll caused specifically by mundane fear, anger, or distress during the duration. An unwilling target that fails its save instead finds one emotion muted and has Discord on its next social check that depends on expressing it convincingly.",
+      "Quiet an emotion in up to two creatures within 20 ft for 3 rounds while concentrating. A willing target may immediately make a new RES save against one ongoing emotional magical effect causing that emotion; success suspends that effect’s emotional penalty on them for one round, but does not end its caster’s String.",
+      "Quiet an emotion in up to three creatures within 30 ft for 3 rounds while concentrating. For one willing target, Evander may instead contest an active magical fear, rage, or despair effect and suppress its emotional effects on that target for the duration of Hush. This does not remove non-emotional effects or protect other targets.",
+      "For 1 minute while concentrating, quiet one specified emotion in up to five willing creatures within 30 ft. Each can function through that feeling and ignores the first instance of Discord each round caused solely by that emotion. This does not remove general Discord from injury, exhaustion, or unrelated magic."
+    ],
+    "Dread String": [
+      "Amplify a creature’s existing apprehension within 30 ft for one round. On a failed RES save, it has Discord on its next attack against the thing it fears. It chooses its actions normally.",
+      "Intensify existing fear in one creature within 30 ft for 3 rounds while concentrating. On a failed save, it cannot take reactions while the effect lasts; it remains free to move, attack, or seek cover.",
+      "Affect up to two frightened creatures within 30 ft for 3 rounds while concentrating. Each that fails its save cannot take reactions and has Discord on its first attack each round against the source of its fear. The target may still decide to stand and fight.",
+      "Affect up to three creatures within 30 ft that already fear a recognizable threat. For 3 rounds while concentrating, each failed save imposes the PL 3 effects; in addition, it has Discord on one check each round to maintain a coordinated formation or follow an order that brings it closer to that threat.",
+      "Amplify an existing fear shared by up to five creatures within 40 ft for 3 rounds while concentrating. Failed saves impose PL 4’s effects. An affected creature may retreat if its player or GM judges that appropriate, but Evander does not choose its route or command it to flee."
+    ],
+    "Valor String": [
+      "By touch, strengthen the resolve of Evander or one willing creature for 1 minute. The target gains Harmony on its next check to act despite fear.",
+      "One willing creature within 20 ft gains Harmony on its next RES save against fear before the end of Evander’s next turn. If it is already affected by fear, it may immediately make another RES save against that effect; this does not end the magic on anyone else.",
+      "Up to two willing creatures within 30 ft gain steadied resolve for 3 rounds while Evander concentrates. Once each during the duration, they may ignore Discord caused specifically by fear on one attack or Thread Check.",
+      "Up to three willing creatures within 30 ft gain the PL 3 benefit. Each also gains Harmony on its first save against fear during the duration. Harmony is spent after that save.",
+      "For 1 minute while concentrating, rally up to five willing creatures within 40 ft. Each can ignore one instance of fear-based Discord per round and has Harmony on one RES save against fear during the duration. They still perceive threats and can choose to retreat."
+    ],
+    "Fury String": [
+      "Intensify one creature’s existing anger within 30 ft for one round. On a failed RES save, it has Discord on its next check to speak calmly, de-escalate, or conceal that anger. A willing target may accept the effect without a save.",
+      "For 3 rounds while concentrating, a willing angry target within 20 ft may add 1d6 damage to one attack against a creature it was already opposed to. After that attack, it has Discord on its next check to notice a different threat before its next turn ends. An unwilling target that fails its save receives only that Discord penalty, not the bonus damage.",
+      "Affect up to two angry creatures within 30 ft for 3 rounds while concentrating. A willing target gains the PL 2 attack bonus once during the duration. An unwilling target that fails its save has Discord on its first attack each round against anyone other than the subject of its existing anger. It can still choose whom to attack.",
+      "Affect up to three creatures within 30 ft with an existing source of anger. For 3 rounds while concentrating, a willing target may add 2d6 damage to one attack during the duration, then cannot take reactions until its next turn. An unwilling target that fails its save has Discord on its first attack or composure-related Thread Check each round while acting against that anger.",
+      "Heighten anger already shared by up to five creatures within 40 ft for 3 rounds while concentrating. Each unwilling target saves separately. Failed saves impose PL 4’s Discord effect; willing targets may each use PL 4’s bonus once. Evander cannot use this to specify whom any of them attacks."
+    ],
+    "Sorrow String": [
+      "Sense whether one creature within 15 ft presently carries grief or longing. Evander may amplify that feeling for one round. On a failed RES save, the target has Discord on its next check to maintain cheerful composure or conceal the grief.",
+      "One grieving creature within 30 ft feels the weight of its loss for 3 rounds while Evander concentrates. On a failed save, it has Discord on its next attack or Thread Check made in anger during the duration. Its grief does not tell Evander what happened.",
+      "Affect up to two creatures within 30 ft that are already carrying loss. For 3 rounds while concentrating, each failed save gives Discord on the first attack or Thread Check it makes each round while trying to ignore that loss. This does not stop it from choosing to act.",
+      "Affect up to three grieving creatures within 30 ft for 3 rounds while concentrating. Each failed save imposes the PL 3 penalty. Once during the duration, an affected creature attempting to maintain an emotionally driven magical effect must make a new concentration check under the campaign’s rules; Sorrow does not automatically break it.",
+      "Bring a shared, existing loss to the surface in up to five creatures within 40 ft for 3 rounds while concentrating. Each saves separately against the PL 4 effects. A group with no shared loss cannot be made to grieve together by this cast."
+    ],
+    "Rapture String": [
+      "Strengthen a present spark of joy in Evander or one creature within 15 ft for one round. A willing target gains Harmony on its next check to act despite discouragement. An unwilling target that fails its save has Discord on its next check to remain outwardly composed.",
+      "For 3 rounds while concentrating, strengthen one willing target’s existing excitement within 20 ft. Once during the duration, it gains Harmony on an attack, performance, or movement-related check it chooses. This does not restore VP or suppress an injury’s mechanical effects.",
+      "Affect up to two creatures within 30 ft that already feel joy or anticipation. A willing target gains PL 2’s benefit. An unwilling target that fails its save has Discord on its next check requiring patient observation or restraint during the 3-round concentration duration.",
+      "Affect up to three creatures within 30 ft for 3 rounds while concentrating. Willing targets each gain Harmony on one qualifying roll per round; after using it, each has Discord on its next check requiring caution before the end of its following turn. Unwilling targets that fail saves suffer only that caution penalty once per round, not the benefit.",
+      "Amplify joy or exhilaration already shared by up to five creatures within 40 ft for 3 rounds while concentrating. Each uses PL 4’s effect. Evander cannot make an enemy delight in harming someone or make any target disregard an obvious mortal danger automatically."
+    ],
+    "Shame String": [
+      "Sense whether one creature within 15 ft is presently feeling guilt or embarrassment. If Evander amplifies it, an unwilling target that fails its RES save has Discord on its next check to maintain a confident social presentation before his next turn. He does not learn what it regrets.",
+      "Amplify a real self-conscious feeling in one creature within 30 ft for 3 rounds while concentrating. On a failed save, it has Discord on its next social check to deceive, intimidate, or assert certainty. A truthful, unrepentant person may still be unaffected.",
+      "Affect up to two creatures within 30 ft with existing guilt or shame. Each that fails its save has Discord on its first social check or Thread Check made under public scrutiny each round for 3 rounds while Evander concentrates.",
+      "Affect up to three creatures within 30 ft for 3 rounds while concentrating. Failed saves impose PL 3’s penalty; a target affected while threatening or interrogating someone also cannot take reactions until its next turn as its confidence falters. It is still free to speak or attack.",
+      "Amplify a shared sense of responsibility or embarrassment in up to five creatures within 40 ft for 3 rounds while concentrating. Each failed save imposes PL 4’s effects. The String cannot make an innocent person confess to a crime or force an actual wrongdoer to feel remorse they do not possess."
+    ],
+    "Veil String": [
+      "For 1 minute, Evander masks one of his own emotions from passive emotional sensing. An observer still sees ordinary physical signs unless he conceals them himself.",
+      "By touch, mask one specified emotion in Evander or one willing creature for 10 minutes. A magical observer must win the contest above to sense that emotion. Other emotions remain readable.",
+      "Mask the emotional signatures of up to two willing creatures within 15 ft for 10 minutes while concentrating. Choose one emotion per creature. Moving beyond 15 ft ends that creature’s protection.",
+      "For 10 minutes while concentrating, mask up to three willing creatures within 30 ft. For each, Evander may make one strong emotion appear as a different emotion the person genuinely also feels. He cannot fabricate a feeling absent from them. An observer who wins the magical contest detects the masking.",
+      "For 1 hour while concentrating, conceal the emotional signatures of up to five willing creatures within 30 ft from supernatural emotional perception. Observers can still draw ordinary conclusions from speech, behavior, and circumstances; the String is not immunity to being understood."
+    ],
+    "Concord String": [
+      "Link Evander and one willing creature he touches for 1 minute while concentrating. Each can sense whether the other is presently calm, distressed, or encouraged. They learn no reason or thoughts. Either may end their participation.",
+      "Link up to three willing creatures within 15 ft for 3 rounds while concentrating. Once during the duration, one participant may let another participant who is afraid use their steadiness, granting Harmony on that person’s next RES save against fear. The sharing target must genuinely feel some steadiness or resolve.",
+      "Link up to four willing creatures within 20 ft for 3 rounds while concentrating. Once per round, Evander may distribute one participant’s acute fear among the others: that participant ignores one fear-based instance of Discord, while one other willing participant accepts Discord on its next composure-related check. No one can be assigned that burden without consent.",
+      "Link a creature within 30 ft that is already afraid to up to two other creatures within 15 ft of it. Unwilling recipients each make a RES save. Those that fail experience an echo of that existing fear for one round and have Discord on their next attack or Thread Check. The original creature is not relieved of its fear, and no participant receives images or memories.",
+      "For 3 rounds while concentrating, link up to five creatures within 30 ft around one emotion at least one of them already feels. Each unwilling recipient saves. Those who fail share a diluted impression and have Discord on their first check each round directly conflicting with that emotion; willing recipients instead may share one participant’s steadiness for Harmony on one relevant RES save during the duration. Each creature receives only the effect relevant to its participation; the link cannot make them a hive mind."
+    ],
+    "Devotion String": [
+      "By touching two willing creatures, Evander can sense whether a genuine bond of care presently exists between them, without identifying its nature or strength. If it does, one gains Harmony on its next check to protect or comfort the other within 1 minute.",
+      "Strengthen an existing bond between two willing creatures within 15 ft for 3 rounds while concentrating. Once during the duration, either gains Harmony on a RES save against an effect that would make it abandon or harm the other against its wishes. This does not make either incapable of disagreeing.",
+      "Strengthen the bond between two willing creatures within 20 ft for 3 rounds while concentrating. Once per round, one may use a Reaction to move up to 5 ft along an open path toward the other when the other is threatened. This movement does not prevent the threat or ignore reactions from enemies.",
+      "Affect up to three willing creatures within 30 ft who each have an authentic bond with at least one other participant. For 3 rounds while concentrating, each gains Harmony on one RES save against coercion, fear of losing a participant, or magical pressure to betray a participant. Each may use that benefit once.",
+      "For 1 minute while concentrating, strengthen an existing network of care among up to five willing creatures within 30 ft. Each may use Harmony once per round on a check to protect, reach, or remain true to another participant. Devotion cannot compel one participant to sacrifice themselves, and leaving the String’s range ends their benefit."
+    ],
+    "Catharsis String": [
+      "By touch, help Evander or one willing creature acknowledge one overwhelming present emotion for 1 minute without trying to suppress it. The target gains Harmony on its next check to remain composed while expressing that feeling honestly. It chooses what, if anything, to say.",
+      "Help one willing creature within 15 ft release the immediate intensity of fear, anger, or grief over 1 minute. It may immediately make a new RES save against one ongoing mundane emotional penalty or magical emotional effect affecting it. Success removes that penalty from the creature for one round; its underlying feeling and the magic’s source remain.",
+      "Help one willing creature within 20 ft confront and release an active magical fear, rage, or despair effect. Contest that active cast. On success, end its emotional effect on that creature. Its non-emotional effects and effects on other creatures remain. Catharsis does not restore VP.",
+      "Help up to two willing creatures within 20 ft face the same ongoing emotional magical effect. Contest the active cast once; on success, end its emotional effects on both. Alternatively, over 10 minutes with one willing creature, help it work through an intense nonmagical emotion enough to gain Harmony on its next check to act without being overwhelmed by that emotion. The person decides what the feeling means afterward.",
+      "For 1 minute while concentrating, guide up to three willing creatures within 30 ft through an overwhelming emotion. Each immediately gains a new RES save against one ongoing emotional magical effect; Evander may contest one active source to end that source’s emotional effect on up to three of them. Once during the minute, each may ignore one instance of Discord caused solely by that emotion. This does not erase grief or prevent it from returning."
+    ]
+  },
+  "Illusions": {
+    "Companion String": [
+      "A single apparent person is visible and audible to Lemon alone for a scene of up to 10 minutes. She can perceive their movements and converse with them. They cannot move objects or physically block anyone. This is the scale of her first incident, though its spontaneous recurrence was not a conscious ten-minute cast.",
+      "She can deliberately present the Companion to one other creature within 20 ft for 3 rounds, or keep the self-perceived version for 1 hour. It can speak in a voice she can imagine, but cannot answer a question using facts she does not possess.",
+      "Up to three observers within 30 ft can perceive the same person for 1 minute. Lemon can direct its position and speech while attending to the scene. If an observer tries to touch it, its apparent body offers no physical resistance.",
+      "The Companion can hold a coherent conversation with up to six observers for 10 minutes while Lemon concentrates. She need not supply every word aloud, but its improvisation still draws on her knowledge, expectations, and characterization—not an independent mind.",
+      "She sustains one fully coordinated Companion across a 60-ft area for 1 hour while concentrating, allowing different observers to see and hear it from their own positions. A proved contradiction or attempted physical interaction can still expose it."
+    ],
+    "Chime String": [
+      "Produces one brief sound—such as a footstep, card tap, or whispered word—within 20 ft. It can draw a glance or reinforce a harmless performance.",
+      "Sustains an apparent sound source within 30 ft for 1 minute. A listener following it has Discord on their next hearing-based check to locate Lemon.",
+      "Places up to three distinct sound sources across a 40-ft area for 3 rounds: approaching boots, a call for help, or a conversation heard through a door. Listeners can still check whether the sounds fit the room.",
+      "Shifts the apparent location of an existing voice or noise for 1 minute while concentrating. One creature relying on it for direction must pass an ACU check or move toward the false source on its next voluntary move. It can choose not to move at all.",
+      "Conducts a layered soundscape over a 60-ft area for 10 minutes. She can guide an evacuation with apparent calls from several positions, or confuse pursuers; a soundscape cannot suppress real speech or her own casting signature."
+    ],
+    "Card String": [
+      "Changes the apparent face of one visible card or similarly small object for 1 minute. Handling it or comparing it against a trusted reference may expose the illusion.",
+      "Displays up to three illusory small objects within 20 ft for 3 rounds. They can look like cards, coins, or keys, but nothing can be taken from their apparent position.",
+      "Alters the apparent faces or arrangement of a real hand of cards for 10 minutes. This can support a bluff or a demonstration; it does not change the cards, the deal, or the odds.",
+      "Maintains a convincing collection of up to twenty small apparent objects within 30 ft for 10 minutes, accounting for viewing angle and overlap. A searcher trusting the false arrangement has Discord on one check to find a real item among them.",
+      "Gives several observers distinct apparent views of the same small set of objects for 3 rounds—useful for a sophisticated distraction or staged reveal. Once the observers compare notes or physically examine the objects, the contradiction becomes evidence."
+    ],
+    "Glamour String": [
+      "Alters one small visible feature on herself—hair color, an accessory, or a stain—for 10 minutes. Touch or close inspection can reveal the unchanged material.",
+      "Changes the apparent colors and broad style of her outfit for 1 hour. It must fit roughly over what she is actually wearing; a bulky coat cannot convincingly become bare arms at close range.",
+      "Disguises one willing person within 20 ft for 1 hour, matching a plausible build and clothing silhouette. Impersonating a specific person still requires knowledge of their mannerisms and voice.",
+      "Glamours up to three willing people for 1 hour, maintaining consistent appearances as they move together. Once each may gain Harmony on a check to pass at a glance; a conversation or physical inspection remains a real test.",
+      "Maintains a detailed appearance on herself or one willing person for 8 hours while awake, responding to ordinary lighting and movement. The wearer does not acquire the identity, credentials, or memories of whoever they resemble."
+    ],
+    "Sensation String": [
+      "Gives herself a brief harmless impression of warmth, a breeze, or a surface texture. She can use it to study how convincing a projected sensation feels.",
+      "Gives one willing creature within 10 ft a brief impression of touch or temperature. This can reinforce a performance or soothe a tense moment, but does not change the actual temperature.",
+      "Projects a harmless sensory impression to one unwilling creature within 20 ft. On a failed ACU check, the surprise gives it Discord on its next concentration or perception check. It does not force a decision.",
+      "Coordinates sight, sound, and apparent texture for up to three creatures for 3 rounds. A false wall might seem cold at first contact, but someone leaning on it still passes through.",
+      "Maintains a coherent set of benign sensory impressions throughout a 20-ft area for 1 minute while concentrating. People can perceive a place as warmer, quieter, or softer than it is; they remain exposed to its real hazards."
+    ],
+    "Reflection String": [
+      "Leaves a stationary afterimage of Lemon for 1 round. One observer has Discord on its next sight-based attempt to follow her movement.",
+      "Creates one moving double within 10 ft for 3 rounds. It mirrors her general movement; its feet cannot press grass or open a door.",
+      "Creates up to two doubles within 20 ft for 3 rounds. The first attacker each round who relies on sight must pass an ACU check or target a double instead; that attack reveals that particular double.",
+      "Reflects one willing ally rather than herself, or divides a group’s apparent movements among up to three doubles for 3 rounds. Observers can still track real sounds and physical interactions.",
+      "Sustains a shifting set of up to five afterimages across 30 ft for 1 minute while concentrating. Once a round, one sight-dependent attack against a protected ally has Discord; the effect does not stop an area attack."
+    ],
+    "Curtain String": [
+      "Makes one small stationary object blend into its background for 1 minute. Someone searching that exact spot at arm’s length may notice the mismatch.",
+      "Conceals a willing, still person against nearby scenery for 3 rounds. They have Harmony on one check to avoid visual notice until they move or speak.",
+      "Hides a doorway, cache, or two still people across a 10-ft area for 10 minutes while concentrating. It changes the visible scene; the actual doorway remains passable.",
+      "Keeps up with one willing moving person for 3 rounds. Sight-based attacks against them have Discord until the observer locates them through movement, sound, or other evidence.",
+      "Covers a 20-ft area and its occupants for 1 minute, maintaining plausible scenery as people move through it. It can protect an evacuation from distant eyes, but cannot hide a crowd’s footsteps or the chimes of Lemon casting."
+    ],
+    "Stage String": [
+      "Changes the appearance of one 5-ft surface for 10 minutes: a painted sign, plain wall, or different view through a window. The actual surface stays where it is.",
+      "Alters the appearance of a 10-ft section of a room for 3 rounds, furnishing it with stationary details. An observer moving through can reveal where apparent furniture is absent.",
+      "Stages a 20-ft room or passage for 10 minutes while concentrating, including appropriate light and broad ambient sound. She must know the real obstacles well enough not to send allies into them.",
+      "Presents a coherent 40-ft scene to up to six observers for 10 minutes, adjusting its perspective as they move. Physical interaction and observations made outside the staged area remain independent evidence.",
+      "Stages a 60-ft area for 1 hour while concentrating, complete with moving background details. It can convincingly host a meeting or conceal an operation, but cannot make a nonexistent staircase bear weight."
+    ],
+    "Misdirection String": [
+      "Draws one observer’s eye toward an apparent flicker within 15 ft. On a failed ACU check, it has Discord on its next check to notice a different visible detail before Lemon’s next turn.",
+      "Combines an apparent movement and sound within 20 ft. One observer that fails an ACU check loses its Reaction until its next turn while it checks the wrong position.",
+      "Draws the attention of up to three observers toward a chosen point within 30 ft for 1 round. It creates an opening for an ally to move; the ally still needs a possible physical route.",
+      "Sustains a shifting distraction across a 20-ft area for 3 rounds. Once each round, one affected creature has Discord on a sight-based attack or search check of Lemon’s choice.",
+      "Orchestrates a convincing diversion for up to ten observers within 40 ft for 3 rounds. Each can test the illusion when its details conflict with reality; a direct warning from an unaffected observer grants Harmony on that test."
+    ],
+    "Labyrinth String": [
+      "Makes one turn in a visible passage appear slightly earlier or later for 1 round. A hurried pursuer failing an ACU check loses 5 ft of movement correcting course.",
+      "Presents a false continuation or obscures one real turn within 20 ft for 3 rounds. A creature relying on sight must check or spend its next movement approaching the wrong route. It stops at a real wall.",
+      "Reframes paths across a 30-ft area for 1 minute. Lemon may leave one clearly marked true route visible to chosen observers while pursuers see a plausible detour.",
+      "Maintains a shifting apparent route across a 60-ft area for 3 rounds. A creature failing its ACU check has its movement halved as it repeatedly corrects course; nothing physically restrains it.",
+      "Guides a group through a 120-ft mapped area for 10 minutes, presenting a true route to allies and false turns to pursuers. Lemon must actually know a traversable route. Labyrinth cannot lead someone through solid stone."
+    ],
+    "Seam String": [
+      "Identifies the edge and extent of one illusion she is presently controlling. She can end it cleanly without leaving an accidental afterimage.",
+      "Studies a suspected illusion within 20 ft for 1 round. Gain Harmony on one ACU or THS check to identify its sensory inconsistency or magical weave.",
+      "Points out a discovered seam to up to three allies, giving them Harmony on their first check against that particular illusion. She may also end several of her own minor illusions at once.",
+      "Contests one visible Illusion String of PL 4 or lower within 30 ft with an opposed Thread Check. Success exposes or suppresses it for 1 round; it does not dispel unrelated magic.",
+      "Holds a 20-ft clarity field for 3 rounds while concentrating. Allies within it have Harmony on checks against sensory illusions; on a successful opposed check Lemon can end one Illusion effect crossing the field."
+    ],
+    "Horizon String": [
+      "Presents herself with a brief, immersive view of another place she knows or can imagine for 1 round. She remains aware of her actual location if she casts deliberately.",
+      "Shares a simple scene with one willing person for 1 minute: what a room could look like, the route she intends to take, or a story she wants to show. It conveys an image, not a memory proven true.",
+      "Shares a coordinated sight-and-sound scene with up to three willing people within 20 ft for 3 rounds. This can rehearse a rescue or communicate a plan when ordinary explanation is too slow.",
+      "Overlays a detailed alternate scene on a 30-ft area for 1 minute while concentrating. Unwilling observers can test it; willing observers may use its marked real route to gain Harmony on one coordinated movement check.",
+      "Holds a coherent, multisensory apparent world across a 40-ft area for up to 10 minutes, presented to up to ten people. Lemon can guide their attention or tell a story within it. She cannot transport them, remove their real injuries, or prevent them from choosing to leave."
+    ]
+  },
+  "Fire": {
+    "Corona String": [
+      "Flame gathers at his hand and traces a ring up to 5 ft in radius on a surface he can see. It lasts until his next turn. A creature crossing the ring takes 1d6 fire damage on a failed RES save. This is the form that manifested around him at seven.",
+      "Extends the ring to 10 ft, lasting 3 rounds. He can direct most of its heat outward, sheltering people in its center from the ring itself. Fuel touching its outside can still ignite.",
+      "Makes an irregular corona up to 20 ft across for 1 minute while concentrating. It can enclose a group or block an approach; crossing its edge deals 3d6 fire damage on a failed RES save.",
+      "Maintains two smaller coronas or one 30-ft corona for 3 rounds. Once each turn he can open and close one safe passage through an edge.",
+      "Compresses the outer edge until it flashes blue-white, then expands it across a 30-ft area. Creatures caught on the moving edge take 6d6 radiant/fire damage on a failed RES save. He may leave chosen spaces in the center untouched."
+    ],
+    "Starheart String": [
+      "Holds a warm, palm-sized point of light for 1 hour. It can illuminate a room, warm hands, or heat a small meal gradually without a spreading flame.",
+      "Maintains a stable source of warmth in a 10-ft area for 1 hour, or releases its stored heat in one 2d6 fire-damage strike within 15 ft. Releasing it ends the warmth.",
+      "Keeps a 20-ft shelter warm and lit for 8 hours, or forms a compact radiant point that deals 3d6 radiant/fire damage to one target. It still consumes air when used to maintain ordinary burning.",
+      "Splits one stable center into up to three smaller lights, each independently dimmed or warmed, for 1 hour. In combat, he can collapse them into a single 4d8 radiant/fire strike.",
+      "Sustains a brilliant, controlled center that can light a district landmark or keep a sizable shelter warm for 8 hours. If deliberately discharged, it deals 6d8 radiant/fire damage to one target; the sustained effect ends."
+    ],
+    "Spectrum String": [
+      "Changes the color of one magical light or flame he controls for 10 minutes. He can distinguish details that ordinary orange firelight washes out, gaining Harmony on one visual examination.",
+      "Splits light across a reflective surface into a visible spectrum. For 1 minute, he can pick out fresh disturbances—dust, heat traces, or a recently handled surface—if there is enough light to inspect them.",
+      "Sends a narrow beam of concentrated radiance up to 30 ft for 3d6 radiant damage, or uses it for 1 minute to inspect markings and materials under different bands of light. It cannot read an erased memory or see through a wall.",
+      "Bends several bands independently across a 15-ft area. He can expose a visually concealed object whose camouflage depends on ordinary light, or dazzle creatures in the area; on a failed RES save, they are Blinded for 1 round.",
+      "Compresses the spectrum into a brief blue-white beam for 6d8 radiant damage to one target, or spreads it across a 30-ft area to reveal light-based disguises and false images for 1 minute. It does not reveal every form of magic."
+    ],
+    "Orbit String": [
+      "Circles a mote of light or one tiny unattended object around his hand for 1 minute. It can illuminate several angles of a small mechanism while he works.",
+      "Keeps up to three motes circling himself or an adjacent ally for 3 rounds. The first incoming projectile is knocked off course, reducing its damage by 1d6.",
+      "Establishes a moving orbit up to 10 ft across for 1 minute while concentrating. He can move small loose objects safely around a central obstacle or reduce one visible projectile hit per round by 2d6.",
+      "Places protective orbits around up to three allies within 20 ft for 3 rounds. Each orbit reduces its first projectile hit by 2d6; a spent orbit goes dark.",
+      "Redirects the path of one visible, externally traveling physical attack or String of PL 5 or lower around a chosen center. Reduce its damage by 5d8; if reduced to zero, he can send its remaining momentum harmlessly into terrain rather than automatically striking someone else."
+    ],
+    "Constellation String": [
+      "Places up to three faint points of light on surfaces he touches. For 1 hour, he can recognize their direction from within 60 ft, making a simple route back through confusing streets.",
+      "Links up to three willing people or marked positions within 30 ft for 10 minutes. Each can see the direction of the other linked points while in range; it does not transmit speech or thoughts.",
+      "Maps up to six marked points across a 120-ft area for 1 hour, noticing if one moves or goes out of range. In combat, linked allies gain Harmony on one coordinated movement check.",
+      "Creates a temporary route of lights across a 300-ft area for 1 hour. Willing people he has linked can follow it even through smoke or poor visibility, provided the physical route remains passable.",
+      "Holds a living map of up to ten willing linked allies or marked locations within 500 ft for 10 minutes while concentrating. Once each round, he can guide one linked ally to move 10 ft without provoking a reaction from a creature that cannot see the link."
+    ],
+    "Vacuum String": [
+      "Protects a tiny flame in a pocket of air for a few seconds, even beneath water. It goes out when the pocket empties. He can also snuff a candle by denying it air.",
+      "Keeps a fist-sized object dry or an ember lit beneath water for 1 minute while concentrating. It does not provide enough air for a person to breathe.",
+      "Creates a 5-ft pocket for 3 rounds that pushes aside smoke, spray, or loose dust. It makes a temporary clear working space but supplies no fresh air to an enclosed room.",
+      "Separates a 10-ft area from surrounding smoke or water for 3 rounds. It can protect a brief passage or suppress ordinary flame crossing its edge. An unwilling creature inside can leave normally; it is not a suffocation attack.",
+      "Maintains a 15-ft protected pocket for 1 minute while concentrating. It can hold back water or hazardous smoke long enough for an evacuation, but pressure on its boundary remains and the pocket fails if he loses control."
+    ],
+    "Meteor String": [
+      "Drops a bright mote onto one visible target within 30 ft for 1d6 bludgeoning + 1d6 fire damage.",
+      "Directs a mote around one ordinary obstacle before impact for 2d6 bludgeoning + 1d6 fire damage. It still needs a plausible visible path.",
+      "Calls a denser falling point onto a 5-ft area for 3d6 bludgeoning + 2d6 fire damage on a failed RES save. Loose objects may scatter.",
+      "Sends up to three smaller impacts into a 20-ft area. Divide 6d6 combined bludgeoning/fire damage among targets there; no one target can receive more than half the pool.",
+      "Strikes a 15-ft-radius area with a controlled meteor-like descent for 8d6 combined bludgeoning/fire damage on a failed RES save. The impact can damage ordinary structures; Saiph must account for what is below them."
+    ],
+    "Stellar Wind String": [
+      "Pushes loose ash, smoke, or a lightweight object 5 ft, or gives a willing adjacent person a small nudge out of danger.",
+      "Sends a bright current down a 15-ft line. Creatures failing a POT save are pushed 10 ft and take 1d6 radiant damage.",
+      "Carries Saiph or a willing adjacent ally up to 20 ft in a straight burst with a safe landing place, or pushes enemies in a 15-ft cone for 2d6 radiant damage and 10 ft of movement.",
+      "Directs several flowing ribbons across a 20-ft area for 3 rounds. Allies moving with them gain Harmony on one movement check each round; enemies crossing against them make a POT save or are pushed 15 ft.",
+      "Releases a luminous current in a 30-ft cone for 5d8 radiant damage and a 20-ft push on a failed POT save. He can instead shape the current to carry up to three willing allies across a 30-ft gap."
+    ],
+    "Gravity String": [
+      "Makes a small unattended object feel unusually light or heavy for 1 minute, helping him lift or hold it in place.",
+      "Shifts the weight of one visible creature for 1 round. On a failed POT save, it has Discord on its next balance or movement check and its speed changes by 10 ft in Saiph’s chosen direction.",
+      "Establishes a localized pull in a 10-ft area for 3 rounds. Creatures failing a POT save are drawn 10 ft toward its center when it forms; loose objects follow.",
+      "Lightens a willing ally for one controlled leap of up to 30 ft, or makes an enemy within 30 ft heavy enough to be Restrained for 1 round on a failed POT save.",
+      "Holds a 20-ft gravitational well for 3 rounds while concentrating. Enemies entering it make a POT save or are pulled 15 ft toward its center and have their speed halved there. Allies can cross if Saiph shapes a route, but unsecured objects still move."
+    ],
+    "Eclipse String": [
+      "Dims one light he controls for 10 minutes, leaving just enough illumination for him to work nearby.",
+      "Places a moving patch of shade up to 5 ft across for 3 rounds, useful for obscuring a light source or protecting someone from glare.",
+      "Darkens a 15-ft area for 3 rounds while concentrating. Ordinary sight-based attacks into it have Discord unless the attacker has another way to locate the target.",
+      "Eclipses a visible magical light effect of PL 4 or lower for 1 round on an opposed Thread Check. He suppresses its illumination, not its unrelated effects.",
+      "Creates a controlled 20-ft eclipse for 3 rounds. Saiph can leave a narrow halo at its edge to guide allies while enemies within rely on other senses. The shade does not stop sound or grant automatic invisibility."
+    ],
+    "Nebula String": [
+      "Suspends a small cloud of glowing dust or smoke for 1 minute. Its drift reveals airflow and moving bodies nearby.",
+      "Spreads a 10-ft cloud for 3 rounds. It lightly obscures those within and makes a useful visible signal, but also gives away its position.",
+      "Forms a 15-ft cloud for 1 minute while concentrating. Saiph can open one clear viewing lane through it each turn; other sightlines remain obscured.",
+      "Compresses the cloud into several luminous shapes or expands it across a 20-ft area for 3 rounds. Creatures entering an intensely heated portion take 3d6 radiant/fire damage on a failed RES save.",
+      "Holds a 30-ft nebula for 1 minute, dividing it into bright, dim, and obscured regions as he concentrates. Once during its duration he may collapse one bright region for 5d8 radiant damage to creatures within 10 ft of it."
+    ],
+    "Nova String": [
+      "Releases a compact flash from a light he already controls. It deals 1d6 radiant damage to one creature within 15 ft or serves as a brilliant one-second signal.",
+      "Compresses light for one round, then releases it in a 5-ft burst for 2d6 radiant + 1d6 fire damage on a failed RES save. The delay is visible and audible.",
+      "Releases a 10-ft burst for 4d6 radiant/fire damage. Before casting, Saiph must designate an unoccupied safe direction in which excess force escapes; without one, the Thread Check has Discord.",
+      "Forms a controlled 15-ft burst for 6d6 radiant/fire damage on a failed RES save. Saiph can spare a 5-ft space he can see, but cannot assume fragile surroundings will survive.",
+      "Compresses and releases a blue-white 20-ft burst for 8d8 radiant/fire damage on a failed RES save. Afterward Saiph gains Shaking Hands until his next Mend. It is powerful, visible, audible, and far smaller than the unexplained cove event."
+    ]
+  },
+  "Mirror": {
+    "Facet String": [
+      "After speaking with someone briefly, he picks up one clear expectation—such as be quiet, be agreeable, or act confident. For 10 minutes, he can mirror the expected tone and posture with unusual ease. He gains Harmony on one social check made to fit that expectation. He does not learn what the person is secretly thinking.",
+      "Maintains a convincing social manner for 1 hour with one person or a small group sharing the same expectations. In a confrontation, he can appear to yield or hesitate convincingly; one creature that fails a RES save misreads his immediate intent and cannot take a reaction against his next movement this round.",
+      "Adapts as an interaction changes, recognizing when the expected role shifts. For 1 hour, he can move between two familiar manners without the change seeming abrupt. Once during that time, he gains Harmony on a check to defuse a confrontation or conceal an immediate plan.",
+      "Holds a coherent role before a larger group for 2 hours, even when different people expect slightly different things of him. An observer gets a RES save if Florian’s actions directly contradict something they personally know about him; magic cannot make an impossible lie plausible.",
+      "Chooses and sustains a complex public persona for a day, adjusting its manner without losing control of the performance. Once during an encounter, he may deliberately drop the persona at a decisive moment: creatures relying on their read of him fail to anticipate his next action unless they succeed on a RES save."
+    ],
+    "Glimmer String": [
+      "Gives a touched object a temporary reflective sheen for 10 minutes. It can serve as a small mirror or catch a light source. In combat, he can flash available light toward one creature within 15 ft; on a failed RES save, it has Discord on its next sight-based check before his next turn.",
+      "Tilts the apparent reflection on a surface up to 3 ft across for 10 minutes: enough to conceal a detail, show a misleading angle, or look around a nearby corner. It fails under close physical inspection.",
+      "Produces a moving reflected image across a surface up to 10 ft across for 1 minute while concentrating. It can suggest motion elsewhere in a room. One creature that fails a RES save looks toward the false movement, giving Florian or an ally Harmony on one attempt to move unseen.",
+      "Coordinates reflections across up to three surfaces within 30 ft for 3 rounds. Florian can obscure a group’s exact positions from viewers relying on sight; attacks against the obscured group have Discord until an attacker gets a clear, unreflected view.",
+      "Maintains a convincing reflected scene across a 20-ft area for 1 minute. The scene responds to changes in viewing angle, but it remains an image: touch, sound, or an observer approaching from outside the affected angles can expose it."
+    ],
+    "Echo String": [
+      "Repeats a brief sound or a few words he heard in the past hour. The sound comes from his position and lasts at most 5 seconds.",
+      "Reproduces a familiar voice for up to 1 minute, speaking words Florian chooses in a language he knows. A close friend of the original speaker gets a RES save to notice something is off. In combat, a voice from an unexpected direction can distract one target that fails a RES save, costing it its reaction this round.",
+      "Places a copied sound at a point within 30 ft for up to 3 rounds while concentrating. It can be footsteps, a tool at work, or a short exchange in voices he knows. An observer can investigate and test the illusion normally.",
+      "Layers several previously heard sounds into a convincing soundscape for 1 minute—for example, a workshop still operating while he works elsewhere. In combat, creatures within 10 ft of its source that fail a RES save have Discord on their next hearing-based check or coordinated response.",
+      "Maintains a responsive vocal performance for 1 hour in a voice he knows well. He can sustain conversation, but must supply every answer himself. Someone asking about private facts he does not know can still expose him immediately."
+    ],
+    "Counterstep String": [
+      "After watching a creature move, Florian mirrors its stance and gains Harmony on one check to keep his footing, follow it, or avoid a simple strike before his next turn.",
+      "Matches an opponent’s timing for 1 round, reducing damage from its next physical hit against him by 1d6. If the hit misses, he may move 5 ft without provoking a reaction from that opponent.",
+      "Studies one creature he can see for a round. For the next 3 rounds, the first time each round it attacks him, Florian can reduce damage by 2d6. This benefit ends if he loses sight of it or it changes tactics substantially.",
+      "Turns a mirrored defense into one counter-movement: reduce an observed physical hit by 3d6, then make a 2d6 bludgeoning counterstrike or reposition the attacker 5 ft on a failed POT save.",
+      "For 3 rounds while concentrating, Florian can read the movements of up to three visible opponents. Once each round he reduces one physical hit by 4d6 and may move up to 10 ft afterward. He cannot respond to an attacker he did not perceive."
+    ],
+    "Mask String": [
+      "Alters one minor visible feature—hair shade, facial contour, or apparent age by a small amount—for 10 minutes. Touch reveals ordinary living flesh, not an illusion.",
+      "Changes several facial features for 1 hour. He can look broadly like another person if he has studied them, but close acquaintances get a RES save to notice differences. Echo is needed to copy their voice reliably.",
+      "Takes the convincing appearance of one humanoid he has observed closely for 1 hour, within his general range of height and build. Clothes and possessions do not change with him. An observer who knows the person well can test the disguise with a RES save.",
+      "Adjusts height, build, and facial details more substantially for 2 hours, while remaining a plausible humanoid body. During a fight, he may change shape suddenly; one attacker that fails a RES save has Discord on its next attack against him.",
+      "Sustains a carefully studied humanoid form for a day, including subtle habits of expression. He can return to his usual form voluntarily. This grants no copied strength, ancestry traits, magical signature, Affinity, or Strings."
+    ],
+    "Afterimage String": [
+      "Leaves a faint image in the space he just left until his next turn. One observer that fails a RES save has Discord on its next attempt to follow his exact movement.",
+      "Creates one clear double within 5 ft for 1 round. The first attack aimed at him during that time has Discord. The double disappears if touched or hit.",
+      "Creates up to two doubles within 15 ft for 3 rounds while concentrating. They can move as he directs but cannot touch, attack, open a door, or make noise without Echo. Each vanishes when struck.",
+      "Produces three doubles that plausibly follow separate paths through a 30-ft area for 3 rounds. Enemies who cannot identify the real Florian have Discord on their first attack against him each round.",
+      "Maintains up to four responsive doubles for 1 minute. He can see from his own position only; the images do not scout or act independently. Once an observer has confirmed the real Florian through touch or another reliable sense, they are no longer fooled by the doubles that cast."
+    ],
+    "Looking Glass String": [
+      "Looks through a touched reflective surface from an angle he could not physically occupy, such as around the corner of a mirror, for 1 minute. He cannot see what that surface does not reflect.",
+      "Links two reflective surfaces he can see within 30 ft for 3 rounds. He sees through the second from its position, but cannot hear through it or cast from it.",
+      "Views through a reflective surface he touched within the past hour, provided it remains within 60 ft. The view lasts 1 minute and ends if the surface is covered, broken, or turned away.",
+      "Maintains views through up to three known surfaces within 120 ft for 1 minute, switching between them. Watching several places divides his attention: he has Discord on checks concerning his immediate surroundings while doing so.",
+      "Returns to the view of a specific surface he deliberately marked within the past day, provided it is within 500 ft and still reflective. He can watch for up to 10 minutes while concentrating. It transmits sight only, not sound, movement, or spells."
+    ],
+    "Symmetry String": [
+      "By handling a simple broken object, identifies how its intact side or matching part should align. Gains Harmony on one ordinary repair check involving it.",
+      "Holds a small mechanism in its proper alignment for 10 minutes while he repairs it. In a fight, he can temporarily restore a jammed mundane tool or weapon for one use, provided its essential parts are still present.",
+      "Uses a surviving half, plan, or matching component as a pattern while repairing a moderately complex device. The work takes normal time but does not require trial-and-error to discover its original alignment. In combat, he can brace a damaged device for 3 rounds.",
+      "Temporarily reconstructs the function of a missing mundane component for 1 minute using suitable spare material already on hand. The improvised part fails when the magic ends unless he makes a lasting repair.",
+      "Over 1 hour, guides the full repair of a complex mundane machine from surviving plans, corresponding parts, and adequate materials. He can also keep one damaged machine operating for 10 minutes under pressure. It cannot outperform what that machine could originally do."
+    ],
+    "Borrowed Hand String": [
+      "Repeats a simple manual motion he just watched—such as a knot, grip, or tool adjustment—once with Harmony on the attempt, if he has the required tools.",
+      "Holds a short sequence of observed movements for 10 minutes: enough to repeat a demonstrated basic repair or fighting stance. He must have watched clearly and cannot explain principles he does not understand.",
+      "Copies one practiced mundane maneuver he has seen in the past day for 3 rounds. It might be a disarm, a defensive footwork pattern, or a tool operation. It uses Florian’s own attributes and equipment.",
+      "Reproduces a complex observed sequence for 1 minute while concentrating, adapting it when circumstances change slightly. A technique requiring greater strength, flexibility, or specialized equipment than he has simply fails at that point.",
+      "Retains one carefully studied mundane technique for a day, using it as though he had practiced its movements. This does not grant broad training in its discipline, the original user’s expertise, or access to any String woven into the demonstration."
+    ],
+    "Angle String": [
+      "Tilts an incoming, visible small projectile or beam just enough to reduce damage from one hit by 1d6. He must notice it before it lands.",
+      "Redirects one visible, externally travelling attack, reducing damage by 2d6. If he reduces it to zero, it strikes harmless terrain within 10 ft instead.",
+      "Turns one visible attack aside, reducing damage by 3d6. If reduced to zero, he may direct it toward an unoccupied point within 20 ft; he cannot automatically turn it into a hit against another creature.",
+      "Redirects one physical projectile or a single-target, externally directed String of PL 4 or lower, reducing its damage by 4d8. If that negates it, he may aim the remainder at a second target within 30 ft, which gets the original effect’s normal defense or save.",
+      "Meets a visible, externally directed attack or String of PL 5 or lower with a reflective plane. Reduce its damage by 6d8; if entirely negated, he can return it toward its source, which receives its normal defense or save. He can do this once per round, not against every attack in an area."
+    ],
+    "Mirrorwalk String": [
+      "Slips from one side of a reflective surface to the other, moving up to 5 ft to a visible, unoccupied space. It can help him escape a narrow angle but not pass through a solid wall.",
+      "Steps between two visible reflective surfaces up to 15 ft apart. He must fit safely at the destination. In combat, this movement does not provoke a reaction from one creature whose sightline he leaves.",
+      "Crosses up to 30 ft between two reflections he can see, carrying ordinary equipment. He can use a polished tool as one endpoint, but cannot arrive inside a creature or object.",
+      "Crosses up to 60 ft between visible reflections and may bring one willing adjacent ally. If either destination is obstructed, the cast fails rather than forcing a body into the obstruction.",
+      "Uses a chain of up to three visible reflections to move himself and one willing ally a total of 120 ft during one cast. He must see each successive destination from a prior point in the chain; he cannot name an unseen mirror and appear there."
+    ],
+    "Trueglass String": [
+      "By concentrating for a moment, Florian can tell whether his own current appearance or manner is being maintained by one of his Mirror Strings. He may dismiss that effect voluntarily.",
+      "Identifies a magical distortion in one reflection or visible disguise within 15 ft, though he does not automatically learn what is underneath it.",
+      "Holds his chosen current form steady for 1 minute against an outside attempt to alter his appearance. The opposing caster must exceed his Thread Check to change it. He can still voluntarily use or dismiss Mask.",
+      "Reveals the boundary of magical disguise, decoy, or false reflection affecting up to three visible targets within 30 ft for 3 rounds. Allies can see which image is false, though a real concealed person may still need to be found.",
+      "For 1 minute while concentrating, establishes an area of clarity within 20 ft: Florian and willing allies can distinguish real bodies from magical reflected images and resist forced appearance changes with Harmony on their saves. It does not dispel all illusions, prevent ordinary lies, or tell anyone who they “really are.”"
+    ]
+  },
+  "Healing": {
+    "Holdfast String": [
+      "Healing: Stops one ordinary external bleed on a creature she touches for 1 minute. It does not restore VP or close a deep wound; the patient still needs treatment. Blood: Raises a small blood shield around herself or an adjacent ally. It reduces the next incoming hit by 1d6 damage before her next turn.",
+      "Healing: Holds a serious bleeding wound closed for 3 rounds, preventing damage or deterioration specifically caused by that bleed. Moving the patient does not break the hold. Blood: Extends a blood ribbon to an ally within 10 ft. It catches one attack, reducing its damage by 2d6, then collapses.",
+      "Healing: Stabilizes one living creature at 0 VP, bringing them to 1 VP, and holds one severe bleed closed for 1 minute. This does not repair the injury that caused it. Blood: Raises a wall up to 10 ft long until the start of her next turn. It provides full cover from one direction. The first creature to force its way through takes 2d6 slashing damage.",
+      "Healing: Stabilizes two creatures within reach, or sustains one critically bleeding patient for 10 minutes while someone treats them. It cannot sustain a patient left unattended indefinitely. Blood: Creates a 15-ft defensive arc for 3 rounds while she concentrates. Allies behind it have cover; a creature crossing it takes 3d6 slashing damage once per round.",
+      "Healing: Holds one still-living patient on the edge of death for 3 rounds, even if several wounds are failing at once. This buys a narrow chance to intervene; it does not reverse an immediately fatal injury. Blood: Forms a 20-ft-wide protective enclosure for 3 rounds. It provides cover, and once each round Hycinthia can turn part of it against an attacker for 4d6 slashing damage."
+    ],
+    "Trace String": [
+      "Healing: By touch, identifies the location and general severity of one injury: for example, a surface cut versus deeper damage. Blood: A bead of blood marks one visible creature until the end of her next turn. Hycinthia can follow its movement within 30 ft, even through smoke or a crowd, but not through a solid wall.",
+      "Healing: Locates a hidden bleed or identifies which of several visible wounds is most urgent. Blood: A thin blood line follows a marked creature for 3 rounds within 30 ft. Hycinthia ignores ordinary visual concealment when aiming her next Blood String at it.",
+      "Healing: Distinguishes physical trauma from signs of poison, infection, or illness in one patient. It identifies the kind of problem, not automatically its exact cause. Blood: Marks two creatures for 1 minute. While within 60 ft, she knows their direction and can tell which one is visibly injured.",
+      "Healing: Examines up to three touched patients in succession and learns who will deteriorate first without immediate care. Blood: Blood markers anticipate a marked creature’s movement. Her next Blood String against one marked target deals +1d6 damage and ignores ordinary visual concealment. The marker then ends.",
+      "Healing: Maps complex, interacting injuries in one living patient, identifying what must be treated first and what an attempted repair might worsen. Blood: Maintains up to four blood markers for 1 minute. She can direct a Blood String at a marked target she can reach around ordinary visual obstruction, but still cannot cast through a solid barrier or beyond the String’s range."
+    ],
+    "Seam String": [
+      "Healing: Closes a minor cut and restores 1d8 VP to a touched creature injured by torn soft tissue. i Blood: Sends a fine filament up to 15 ft for 1d6 slashing damage.",
+      "Healing: Closes a deeper cut, stops its ordinary bleeding, and restores 2d8 VP. It does not remove infection or repair a broken bone. Blood: Deals 2d6 slashing damage. On a failed POT save, the filament also catches a hand or weapon, preventing that hand from being used until the end of the target’s next turn.",
+      "Healing: Repairs a significant tear in muscle or skin and restores 3d8 VP. The patient may still need rest before using the injured area normally. Blood: Deals 3d6 slashing damage. On a failed POT save, Hycinthia may pull a held object free or pin one limb until the start of her next turn.",
+      "Healing: Joins extensive fresh soft-tissue damage and restores 4d8 VP. It cannot replace tissue that is missing. Blood: Deals 4d6 slashing damage and, on a failed POT save, Restrains one target for 1 round. The binding can be cut or broken normally.",
+      "Healing: Over 10 minutes, rejoins freshly separated tissue when the original tissue is present and viable; restores 5d8 VP. It cannot grow a replacement limb. Blood: Splits into several cutting seams. Divide 6d6 slashing damage among up to three targets within 30 ft; one target that fails a POT save is Restrained for 1 round."
+    ],
+    "Set String": [
+      "Healing: Supports a sprain or unstable joint for 1 hour, allowing careful movement without worsening it. This is support, not a completed repair. Blood: Hardens blood around her forearm. She reduces the next physical hit by 1d6 damage, or makes one short strike for 1d6 bludgeoning damage.",
+      "Healing: Aligns a straightforward fracture and restores 1d8 VP. The bone remains fragile and needs ordinary recovery time. Blood: Forms a sturdier guard for 1 round, reducing one hit by 2d6, or a hardened strike dealing 2d6 bludgeoning damage.",
+      "Healing: Sets a complex break and stabilizes nearby damaged tissue; restores 2d8 VP. The patient cannot immediately use the limb at full strength. Blood: A hardened blood limb strikes for 3d6 bludgeoning damage. A target that fails a POT save is knocked Prone.",
+      "Healing: Over 10 minutes, repairs a badly fractured bone well enough for cautious use and restores 3d8 VP. Severe surrounding injuries still need other Strings. Blood: Maintains a blood brace for 3 rounds while concentrating. It reduces the first physical hit against her each round by 2d6, and she can make one 3d6 bludgeoning strike during that time.",
+      "Healing: Over 1 hour, rebuilds a shattered but still-present bone and restores 4d8 VP. Recovery afterward is still necessary. Blood: Raises a rigid 10-ft barricade for 3 rounds, or collapses that structure into one 5d8 bludgeoning strike. She cannot keep the barricade after using it to strike."
+    ],
+    "Ease String": [
+      "Healing: Dulls pain from one touched injury until the end of the patient’s next turn. The patient can still tell that they are hurt. Blood: A blood wrap absorbs 1d6 damage from the next blow against Hycinthia before her next turn.",
+      "Healing: Reduces pain and muscle spasm for 1 minute, allowing examination or simple treatment without the patient fighting the pain. Blood: Wraps one target’s limb for 1d6 bludgeoning damage. On a failed POT save, its speed is reduced by 10 ft for 1 round.",
+      "Healing: Keeps a conscious patient steady through a painful procedure or injury for 10 minutes. It suppresses a penalty caused specifically by pain, not one caused by damaged anatomy. Blood: Deals 2d6 bludgeoning damage through a tightening strand. On a failed POT save, the target cannot take reactions until its next turn.",
+      "Healing: Eases pain and physical shock in up to three touched patients for 3 rounds. They can communicate and follow treatment instructions despite their injuries. t Blood: Sends wraps around up to three targets within 30 ft. Divide 4d6 bludgeoning damage among them; targets that fail a POT save have their speed halved for 1 round.",
+      "Healing: Keeps one injured, living patient functional through extreme pain for 1 minute. It does not restore VP, and any untreated injury remains when the effect ends. Blood: Concentrates crushing pressure on one target for 4d8 bludgeoning damage. On a failed POT save, it is Restrained until the end of its next turn."
+    ],
+    "Pulse String": [
+      "Healing: Helps a touched, living patient maintain a steady breath for 1 minute while the cause of their difficulty is addressed. Blood: A short blood pulse deals 1d6 bludgeoning damage and pushes a target 5 ft on a failed RES save.",
+      "Healing: Steadies a dangerously racing or weak pulse for 3 rounds. It cannot overcome an untreated fatal wound on its own. t Blood: A stronger pulse deals 2d6 bludgeoning damage and pushes a target 10 ft on a failed RES save.",
+      "Healing: Sustains a living patient’s breathing and circulation for 3 rounds, buying time for Holdfast, Seam, or ordinary treatment. Blood: Sends a pulse down a 15-ft line for 3d6 bludgeoning damage to creatures in it. Those that fail a RES save are knocked Prone.",
+      "Healing: Restores breathing to a living patient who has just stopped and maintains it for 1 minute, provided the underlying injury can be treated. t Blood: A broad pulse in a 15-ft cone deals 4d6 bludgeoning damage and pushes creatures 15 ft on a failed RES save.",
+      "Healing: While Hycinthia remains in contact and concentrates, sustains the vital functions of one critically injured living patient for up to 1 minute. It is emergency support, not resurrection. Blood: Releases a focused, 30-ft blood surge for 6d8 bludgeoning damage to one target, pushing it up to 20 ft on a failed RES save."
+    ],
+    "Cleanse String": [
+      "Healing: Clears a mundane irritant from a fresh wound and makes it safer to treat. It does not cure an established disease. Blood: Forms a fine blood needle that deals 1d6 piercing damage. It has no poisonous effect without a real toxin.",
+      "Healing: Suppresses the effects of one poison in a touched patient for 1 minute, buying time for treatment but not removing it. Blood: A needle deals 1d6 piercing damage. If she has contained an extracted toxin, a target failing a RES save is also Poisoned for 1 round.",
+      "Healing: Removes one ordinary poison or treats a straightforward infection in a living patient. Recovery from damage already done still takes time. Blood: Fires a contained blood needle for 2d6 piercing damage. With an actual extracted toxin, add 1d6 poison damage; the toxin is then spent.",
+      "Healing: Over 10 minutes, treats a severe infection or complicated poison, provided she can identify what she is drawing out. Blood: A blood spray in a 15-ft cone deals 3d6 piercing damage. If carrying an actual extracted toxin, creatures failing a RES save are Poisoned for 2 rounds; the toxin is spent.",
+      "Healing: Over 1 hour, purges a deadly toxin or serious disease from one living patient. It does not restore tissue the condition has already destroyed. Blood: A directed blood strike deals 5d6 piercing damage. If she has contained a potent, real toxin, one target also suffers that toxin’s agreed effect on a failed RES save; the toxin is spent."
+    ],
+    "Renewal String": [
+      "Healing: Helps a resting, touched patient recover from ordinary exertion. Their next period of rest is more effective, but the String does not replace rest. Blood: Moves a blood strand with sudden speed. Hycinthia gains +10 ft movement this turn and makes one 1d6 slashing strike.",
+      "Healing: Over 1 minute of care, restores 1d8 VP to a living patient recovering from recent injury. Blood: Gains +10 ft movement this turn; one blood strike deals 2d6 slashing damage.",
+      "Healing: Over 10 minutes, restores 2d8 VP and eases ordinary physical fatigue. It does not remove magical Burnout. Blood: Sweeps blood through two quick arcs. Divide 3d6 slashing damage between up to two targets within 15 ft.",
+      "Healing: Over 10 minutes, restores 3d8 VP and allows the patient to recover from substantial exertion without worsening their injuries. Blood: Hycinthia moves up to 20 ft as her blood lashes along her path. Divide 4d8 slashing damage among up to three targets she passes.",
+      "Healing: Over 1 hour, restores 5d8 VP and supports recovery from severe but nonmagical exhaustion. It cannot erase Burnout or replace prolonged convalescence. Blood: Her blood becomes a brief, fast-moving storm. Divide 6d8 slashing damage among up to three targets within 30 ft. Afterward, she suffers Shaking Hands until her next Mend."
+    ],
+    "Cradle String": [
+      "Healing: A golden lattice supports an injured, touched ally until Hycinthia’s next turn, reducing the next damage they take by 1d6. Blood: Interposes a small blood screen, reducing one incoming hit against herself or an adjacent ally by 1d6.",
+      "Healing: Holds one patient steady during movement for 1 minute, preventing that movement from aggravating an ordinary wound. Blood: A blood screen reduces one hit by 2d6 and can be positioned between an ally within 10 ft and an attacker.",
+      "Healing: Supports two touched injured allies for 3 rounds. Each has the next hit against them reduced by 2d6. Blood: Forms a 10-ft wall that provides cover until the start of Hycinthia’s next turn.",
+      "Healing: Wraps one living patient in a lattice for 3 rounds. It has a shared pool of 3d8 damage reduction and keeps their injuries from worsening during transport. Blood: A jagged 15-ft wall lasts 3 rounds while she concentrates. A creature forcing through takes 3d6 slashing damage once per round.",
+      "Healing: Shelters up to three allies within reach for 1 minute with a shared 5d8 damage-reduction pool. Hycinthia chooses which protected hit spends from the pool. Blood: Raises a 20-ft defensive dome for 3 rounds. It provides cover; once each round, a creature striking or crossing it takes 4d8 slashing damage."
+    ],
+    "Burden String": [
+      "Healing: A touched ally regains up to 2 VP; Hycinthia loses the same amount. She can sense their pain clearly for a moment afterward. Blood: Shapes exposed blood into a reflexive 1d6 slashing counterstrike against a creature within 10 ft.",
+      "Healing: Transfers up to 4 VP of an ally’s recent injury to herself. It restores VP but does not remove a condition such as poison or a broken bone. Blood: A blood ribbon intercepts a blow against an ally within 10 ft, reducing it by 1d6, then strikes the attacker for 2d6 slashing damage.",
+      "Healing: Transfers up to 6 VP of injury from a willing ally within 10 ft. Hycinthia experiences the strain immediately. Blood: A blood lash reaches 30 ft and deals 3d6 slashing damage. If she has taken damage protecting an ally since her last turn, it deals +1d6.",
+      "Healing: Transfers up to 10 VP from a willing ally within 15 ft. She cannot pass that loss on again through Burden. Blood: Interposes blood between an ally and an attack, reducing damage by 2d6, then releases a 4d8 slashing counterstrike.",
+      "Healing: Transfers up to 15 VP from one willing ally, potentially keeping them in the fight at great risk to herself. It cannot take on an injury she could not survive. f Blood: Protects one ally within 20 ft from a hit, reducing damage by 3d8, and sends the blood outward for 6d8 slashing damage against one attacker."
+    ],
+    "Reweave String": [
+      "Healing: Over 10 minutes, guides a fresh wound toward cleaner healing, reducing avoidable scarring. It does not restore VP immediately. Blood: Shapes a fine blood tool or hook that can manipulate a small object within 15 ft, or strike for 1d6 piercing damage.",
+      "Healing: Over 1 hour, repairs minor lingering muscle damage in a living patient and restores 1d8 VP. Blood: Forms an articulated hook dealing 2d6 piercing damage. On a failed POT save, it holds a hand or object in place until Hycinthia’s next turn.",
+      "Healing: Over 1 hour, reconnects a recently damaged tendon or nerve when the living tissue remains available; restores 2d8 VP. Full function may return gradually. Blood: Several precise blood filaments deal 3d6 piercing damage. On a failed POT save, they disarm the target or bind one limb for 1 round.",
+      "Healing: Over several hours of uninterrupted work, repairs serious damage to a living organ or complex tissue and restores 3d8 VP. Trace may be needed first to understand the injury. Blood: Creates a multi-part construct for 3 rounds while concentrating. It can guard one adjacent ally or strike a target within 30 ft for 4d8 piercing damage once during its duration.",
+      "Healing: Over days of treatment, reconstructs severe but survivable tissue damage, restoring 5d8 VP across the treatment. It requires living tissue and does not resurrect or automatically resolve supernatural wounds. f Blood: Weaves a complex blood construct for 1 minute while concentrating. Once per round it can guard an ally or make a 3d8 piercing strike; it is not alive or independently intelligent."
+    ],
+    "Loom String": [
+      "Healing: Assesses two touched patients in quick succession and identifies which needs immediate help first. Blood: Splits blood into two short strands. Divide 1d6 slashing damage between up to two targets within 15 ft.",
+      "Healing: Divides 2d8 VP of healing between up to two touched allies in any amounts she chooses. Blood: Controls two strands within 30 ft. Divide 2d6 slashing damage between up to two targets, or use one strand to catch an object instead of dealing its share.",
+      "Healing: Divides 4d8 VP of healing among up to three allies within reach and stabilizes any of them who were at 0 VP before distributing the pool. Blood: Controls three strands for one cast. Divide 3d6 slashing damage among up to three targets; one target failing a POT save also loses its reaction until its next turn.",
+      "Healing: Divides 6d8 VP of healing among up to four touched allies. She may instead spend one die from the pool to stop one ally’s ordinary bleeding. Blood: Controls four strands within 30 ft. Divide 5d6 slashing damage among up to four targets; alternatively, sacrifice 2d6 from the pool to give an ally cover until her next turn.",
+      "Healing: Over 1 minute, divides 8d8 VP of healing among up to five living allies she can reach and touch. She may stabilize them first, but cannot restore anyone already dead. Blood: Weaves a battlefield network for 3 rounds while concentrating. It has a total 8d6 slashing-damage pool to spend across those rounds and can protect up to two allies with cover. Once the pool is spent, the network fades."
+    ]
+  }
+}

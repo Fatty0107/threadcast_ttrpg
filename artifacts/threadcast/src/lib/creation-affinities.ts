@@ -1,5 +1,8 @@
 import type { AffinityString } from "./affinity-data";
 import { canonicalAffinity, getHandoutStringLevel } from "@workspace/casting-rules";
+import handoutEffects from "./handout-string-effects.json";
+
+const effectsByAffinity: Record<string, Record<string, string[]>> = handoutEffects;
 
 export type CreationString = Pick<AffinityString, "id" | "shortName" | "flavor" | "checkAttr">;
 
@@ -153,11 +156,17 @@ export function getHandoutString(affinity: string, name: string): AffinityString
   const entry = getCreationAffinity(affinity)?.strings.find(string =>
     string.shortName.toLowerCase() === name.trim().toLowerCase().replace(/^the\s+/, ""));
   if (!entry) return undefined;
+  const effects = effectsByAffinity[canonicalAffinity(affinity)]?.[entry.shortName];
+  if (!effects || effects.length !== 5) {
+    throw new Error(`Missing handout effects for ${affinity} / ${entry.shortName}`);
+  }
   const levels = Array.from({ length: 5 }, (_, index) => {
     const pl = index + 1;
     const level = getHandoutStringLevel(affinity, entry.shortName, pl);
     if (!level) throw new Error(`Missing handout table for ${affinity} / ${entry.shortName} / PL ${pl}`);
-    return { pl, cost: level.cost, dc: level.dc, effect: `See the ${canonicalAffinity(affinity)} handout for this String's PL ${pl} effect.` };
+    const effect = effects[index];
+    if (!effect) throw new Error(`Missing handout effect for ${affinity} / ${entry.shortName} / PL ${pl}`);
+    return { pl, cost: level.cost, dc: level.dc, effect };
   });
   return {
     ...entry,

@@ -8,3 +8,5 @@ The seven character affinity handouts are used for affinity and String selection
 **Why:** The earlier request covered only creation selection. A later explicit request asked for each handout's PL/TP/DC to replace generic values and for distinct String scopes to appear on character sheets, superseding that earlier limitation.
 
 **How to apply:** Keep server-authoritative costs and DCs in sync with the sheet and weave previews. For any further effect mechanics, use the actual per-PL PDF rows instead of interpreting a scope summary as a specific effect.
+
+The Healing handout prints separate Healing and Blood expressions in parallel columns; flattening page text merges their sentences incorrectly. One leyline handout also places part of a table after the next String's heading in text extraction order. **Why:** PDF reading order does not always match the visible table structure. **How to apply:** Extract Healing by table cell and associate other effect rows by PL sequence, then inspect generated descriptions before presenting them as rules.
