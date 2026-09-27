@@ -14,6 +14,7 @@ import { StartingEquipmentStep } from "@/components/character/StartingEquipmentS
 import { useHomebrew } from "@/contexts/HomebrewContext";
 import { CREATION_AFFINITIES, getCreationAffinity } from "@/lib/creation-affinities";
 import { canonicalAffinity } from "@workspace/casting-rules";
+import { STARTING_BACKGROUND_CINDERS, formatCompactCr, type StartingBackground } from "@workspace/currency";
 import { rollDie } from "@/lib/dice-style";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -749,6 +750,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                       ))}
                     </div>
                     {b.startingBurnout && <div className="mt-2 text-[10px] font-mono text-destructive">⚠ Starts with Burnout 1</div>}
+                    <div className="mt-2 text-[10px] font-mono text-primary">Starting funds · {formatCompactCr(STARTING_BACKGROUND_CINDERS[b.name as StartingBackground])}</div>
                     <div className="mt-2 text-[10px] font-mono text-primary">Equipment · {getStartingPacks(b.name, "")[0]?.title}</div>
                   </button>
                 ))}
@@ -1415,6 +1417,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                 {build.guildRank && <ReviewRow label="Guild Rank" value={build.guildRank} />}
                 {build.guildFeatChoice && <ReviewRow label="Guild Feat" value={build.guildFeatChoice} />}
                 <ReviewRow label="Background" value={build.background} />
+                <ReviewRow label="Crown Standard" value={charId
+                  ? (Number.isSafeInteger((existingChar?.data as any)?.currencyCinders)
+                      ? formatCompactCr((existingChar!.data as any).currencyCinders)
+                      : "Unrecorded — set on character sheet")
+                  : formatCompactCr(STARTING_BACKGROUND_CINDERS[build.background as StartingBackground])} />
                 <ReviewRow label="Inventory" value={`${startingInventory.length} entries from packs and personal equipment`} />
                 {startingInventory.length > 0 && (
                   <div className="max-h-48 overflow-y-auto border border-border/40 p-2 space-y-1">

@@ -172,6 +172,9 @@ importers:
       '@workspace/casting-rules':
         specifier: workspace:*
         version: link:../../lib/casting-rules
+      '@workspace/currency':
+        specifier: workspace:*
+        version: link:../../lib/currency
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
@@ -530,6 +533,9 @@ importers:
       '@workspace/casting-rules':
         specifier: workspace:*
         version: link:../../lib/casting-rules
+      '@workspace/currency':
+        specifier: workspace:*
+        version: link:../../lib/currency
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -628,6 +634,8 @@ importers:
         version: 3.25.76
 
   lib/casting-rules: {}
+
+  lib/currency: {}
 
   lib/db:
     dependencies:

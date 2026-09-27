@@ -3,6 +3,7 @@ import { db, charactersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { UpdateWeavekeeperAdditionsBody } from "@workspace/api-zod";
 import { canonicalAffinity } from "@workspace/casting-rules";
+import { STARTING_BACKGROUND_CINDERS, type StartingBackground } from "@workspace/currency";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -17,6 +18,17 @@ function presentCharacter<T extends { affinity: string | null }>(character: T): 
   return character.affinity === "Cosmic"
     ? { ...character, affinity: canonicalAffinity(character.affinity) }
     : character;
+}
+
+function validCurrencyCinders(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function startingFunds(background: unknown): number | undefined {
+  return typeof background === "string" &&
+    Object.prototype.hasOwnProperty.call(STARTING_BACKGROUND_CINDERS, background)
+    ? STARTING_BACKGROUND_CINDERS[background as StartingBackground]
+    : undefined;
 }
 
 router.get("/", async (req, res) => {
@@ -39,8 +51,13 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: "Invalid character data" });
     return;
   }
+  if (Object.prototype.hasOwnProperty.call(data, "currencyCinders")) {
+    res.status(400).json({ error: "Starting funds are assigned from the chosen background" });
+    return;
+  }
   // Character creation cannot write fields reserved for the Weavekeeper.
   const { weavekeeperAdditions: _ignored, ...playerData } = data;
+  const currencyCinders = startingFunds(playerData.background);
 
   const [character] = await db
     .insert(charactersTable)
@@ -50,7 +67,7 @@ router.post("/", async (req, res) => {
       level,
       affinity: typeof affinity === "string" ? canonicalAffinity(affinity) : affinity || null,
       mode: mode || null,
-      data: playerData,
+      data: { ...playerData, ...(currencyCinders === undefined ? {} : { currencyCinders }) },
       isDraft,
     })
     .returning();
@@ -166,9 +183,17 @@ router.patch("/:id", async (req, res) => {
         if (!data || typeof data !== "object" || Array.isArray(data)) {
           return { kind: "invalid" as const };
         }
+        if (Object.prototype.hasOwnProperty.call(data, "currencyCinders") &&
+            !validCurrencyCinders(data.currencyCinders)) {
+          return { kind: "invalid" as const };
+        }
         const prior = existing.data && typeof existing.data === "object" && !Array.isArray(existing.data)
           ? existing.data as Record<string, unknown> : {};
         const playerData = { ...data };
+        // Older clients and builder edits must not erase or regrant a recorded balance.
+        if (prior.currencyCinders !== undefined && playerData.currencyCinders === undefined) {
+          playerData.currencyCinders = prior.currencyCinders;
+        }
         // All full-sheet writes retain WK additions, including older builder saves.
         if (prior.weavekeeperAdditions !== undefined) playerData.weavekeeperAdditions = prior.weavekeeperAdditions;
         else delete playerData.weavekeeperAdditions;

@@ -17,6 +17,7 @@ import { findString } from "@/lib/affinity-data";
 import { getCreationAffinity, getHandoutString } from "@/lib/creation-affinities";
 import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, strainDC, type CastAftermath } from "@/lib/casting-rules";
 import { guildBonusAlreadyInAttributes } from "@workspace/casting-rules";
+import { formatCompactCr, formatDenominationBreakdown, parseCr } from "@workspace/currency";
 import { CastAftermath as CastAftermathView } from "./CastAftermath";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
@@ -100,6 +101,7 @@ interface SheetData {
   techniques?: { name: string; mode?: string; description?: string }[];
   feats?: string[];
   inventory?: InventoryEntry[];
+  currencyCinders?: number;
   signature?: string;
   woundsNotes?: string;
   notes?: string;
@@ -190,6 +192,11 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const [showFeatPicker, setShowFeatPicker] = useState(false);
   const [showInventoryPicker, setShowInventoryPicker] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
+  const [currencyDraft, setCurrencyDraft] = useState(() => {
+    const amount = (character.data as SheetData)?.currencyCinders;
+    return Number.isSafeInteger(amount) && amount! >= 0 ? formatCompactCr(amount!).replace(" CR", "") : "";
+  });
+  const [currencyError, setCurrencyError] = useState("");
   const [catalogCategory, setCatalogCategory] = useState("all");
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
@@ -286,6 +293,13 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     setSupportError("");
     setThreadSenseRolls({});
   }, [character.id]);
+
+  useEffect(() => {
+    const amount = localData.currencyCinders;
+    setCurrencyDraft(Number.isSafeInteger(amount) && amount! >= 0
+      ? formatCompactCr(amount!).replace(" CR", "") : "");
+    setCurrencyError("");
+  }, [character.id, localData.currencyCinders]);
 
   useEffect(() => {
     refreshPendingCastRequests();
@@ -465,6 +479,18 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const safePowerLevel = maximumSafePowerLevel(level, attrs.pot || 10);
   const rb = getRefinementBonus(level);
   const inventory = localData.inventory || [];
+  const currencyCinders = localData.currencyCinders;
+  const hasRecordedCurrency = Number.isSafeInteger(currencyCinders) && currencyCinders! >= 0;
+  function saveCurrency(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const amount = parseCr(currencyDraft);
+      patch({ currencyCinders: amount });
+      setCurrencyError("");
+    } catch {
+      setCurrencyError("Enter a non-negative CR amount with at most one decimal place (for Cinders).");
+    }
+  }
   // WK additions come from the latest server character, not the player's unsaved sheet draft.
   const wkAdditions = (character.data as SheetData)?.weavekeeperAdditions ?? localData.weavekeeperAdditions;
   const wkAttunements = wkAdditions?.attunements ?? [];
@@ -1228,6 +1254,8 @@ ${feats.length > 0 ? `<h2>Feats (${feats.length}/${Math.floor(level/2)} slots)</
 <div class="g2">${feats.map((featName,fi) => {const feat=FEATS.find(f=>f.name===featName);if(!feat)return`<div class="feat-block"><span class="feat-nm">${featName}</span></div>`;const fc=(localData.featChoices as Record<string,any>||{})[String(fi)];let choiceHtml="";if(featName==="Attribute Score Improvement"&&fc){if(fc.mode==="one"&&fc.attrs?.[0]){const a=ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0]);choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+2 ${a?.abbr||fc.attrs[0]} (${(baseAttrs[fc.attrs[0]]||10)} → ${(baseAttrs[fc.attrs[0]]||10)+2})</div>`;}else if(fc.mode==="two"&&fc.attrs?.length>=2){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">+1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[0])?.abbr||fc.attrs[0]} · +1 ${ATTRIBUTE_DEFS.find(a=>a.key===fc.attrs[1])?.abbr||fc.attrs[1]}</div>`;}}else if(featName==="Attunement (Skilled)"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Attuned: ${fc.skill} (+${rb})</div>`;}else if(featName==="Expertise"&&fc?.skill){choiceHtml=`<div style="font-family:monospace;font-size:7pt;color:#2a6030;border:1px solid #2a6030;padding:1px 5px;margin-top:3px;display:inline-block">Expertise: ${fc.skill} (RB = +${rb*2})</div>`;}return`<div class="feat-block"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;flex-wrap:wrap;gap:3px"><span class="feat-nm">${feat.name}</span><div style="display:flex;align-items:center;gap:4px"><span class="feat-cat">${feat.category.toUpperCase()} · LV${feat.minLevel}</span>${restBadge(feat)}${feat.passiveBonus?`<span class="passive-badge">PASSIVE</span>`:""}</div></div><div class="feat-desc">${feat.desc}</div><div class="feat-mech">${feat.mechanical}</div>${choiceHtml}</div>`;}).join("")}</div>` : ""}
 ${wkFeats.length > 0 ? `<h2>Weavekeeper-granted feats</h2>${wkFeats.map(feat => `<div class="feat-block"><strong>${printEscape(feat.name)}</strong>${feat.description ? `<div class="feat-desc">${printEscape(feat.description)}</div>` : ""}</div>`).join("")}` : ""}
 
+<h2>Crown Standard</h2>
+<p style="font-family:monospace;font-size:9pt">${hasRecordedCurrency ? `${formatCompactCr(currencyCinders!)} — ${formatDenominationBreakdown(currencyCinders!)}` : "Balance unrecorded (existing character; no funds assigned automatically)"}</p>
 <h2>Inventory (${inventory.length + wkItems.length} items)</h2>
  ${inventory.length > 0 ? `<table><thead><tr><th>Item</th><th>Rarity</th><th>Qty</th><th>Status</th><th>Source / Notes</th></tr></thead><tbody>
 ${inventory.map(item => {
@@ -2389,6 +2417,24 @@ ${([
 
         {/* ===== INVENTORY ===== */}
         <TabsContent value="inventory" className="tc-panel m-0">
+          <div className="mb-5 border border-primary/30 bg-primary/5 p-4">
+            <h3 className="font-[family-name:'Cinzel',serif] text-sm text-foreground mb-1">Crown Standard</h3>
+            <p className="font-mono text-lg text-primary" data-testid="text-currency-balance">
+              {hasRecordedCurrency ? formatCompactCr(currencyCinders!) : "Balance unrecorded"}
+            </p>
+            {hasRecordedCurrency && <p className="text-xs font-mono text-muted-foreground mt-1">{formatDenominationBreakdown(currencyCinders!)}</p>}
+            {!hasRecordedCurrency && <p className="text-xs font-mono text-muted-foreground mt-1">This existing character has no recorded funds. Set an opening balance; no old money was converted or assumed.</p>}
+            <form className="flex flex-wrap items-end gap-2 mt-3" onSubmit={saveCurrency}>
+              <label className="text-xs font-mono text-muted-foreground" htmlFor="currency-cr">
+                Balance in CR
+                <input id="currency-cr" inputMode="decimal" value={currencyDraft} onChange={event => { setCurrencyDraft(event.target.value); setCurrencyError(""); }}
+                  placeholder="e.g. 37 or 0.1" className="block mt-1 w-36 bg-background border border-border px-2 py-1.5 font-mono text-sm text-foreground focus:outline-none focus:border-primary" />
+              </label>
+              <button type="submit" className="px-3 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10">SAVE BALANCE</button>
+            </form>
+            {currencyError && <p role="alert" className="mt-2 text-xs font-mono text-destructive">{currencyError}</p>}
+            <p className="text-[10px] font-mono text-muted-foreground mt-2">Record rewards and spending here. Catalog additions do not charge funds or guarantee an item is available.</p>
+          </div>
           <div className="flex justify-between items-center mb-4">
             <span className="font-mono text-xs text-muted-foreground">{inventory.length + wkItems.length} items carried</span>
             <div className="flex gap-2">

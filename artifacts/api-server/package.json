@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@workspace/casting-rules": "workspace:*",
+    "@workspace/currency": "workspace:*",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, BookOpen, Zap, Shield, Star, Eye } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, Zap, Shield, Star, Eye, Crown } from "lucide-react";
+import CurrencyReference from "./CurrencyReference";
 
 function Section({ id, title, icon, children }: { id: string; title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -316,6 +317,11 @@ export default function Compendium() {
               </div>
             </div>
           </div>
+        </Section>
+
+        {/* Crown Standard reference */}
+        <Section id="crown-standard" title="Crown Standard" icon={<Crown className="w-4 h-4" />}>
+          <CurrencyReference />
         </Section>
 
       </div>

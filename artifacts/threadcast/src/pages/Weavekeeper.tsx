@@ -590,7 +590,7 @@ function ItemWizard({ onClose, onSave }: { onClose: () => void; onSave: () => vo
           </div>
           <div>
             <FieldLabel>Cost / Market Availability</FieldLabel>
-            <input className="input-field" value={draft.cost} onChange={e => setDraft({...draft, cost: e.target.value})} placeholder="e.g., 200 Gold, Guild vendor only, quest reward..." />
+            <input className="input-field" value={draft.cost} onChange={e => setDraft({...draft, cost: e.target.value})} placeholder="e.g., 200 CR, guild vendor only, quest reward..." />
           </div>
         </div>
       )}
@@ -789,7 +789,7 @@ function BackgroundWizard({ onClose, onSave }: { onClose: () => void; onSave: ()
           </div>
           <div>
             <FieldLabel>Mechanical Benefit — in-game advantage or rule exception</FieldLabel>
-            <textarea className="input-field min-h-[70px] resize-none" value={draft.benefit} onChange={e => setDraft({...draft, benefit: e.target.value})} placeholder="e.g., May spend TP as if it were gold (2 TP = 1 GP) when bribing city officials..." />
+            <textarea className="input-field min-h-[70px] resize-none" value={draft.benefit} onChange={e => setDraft({...draft, benefit: e.target.value})} placeholder="e.g., Receives guild lodging and access to restricted archives..." />
           </div>
           <div>
             <FieldLabel>Penalty / Complication (optional) — drawback for balance</FieldLabel>

@@ -20,3 +20,4 @@
 - [Shared rules test imports](shared-rules-test-imports.md) — rebuild TypeScript reference declarations after new shared exports; Node strip-types tests need direct file imports.
 - [Starting equipment edit safety](starting-equipment-edit-safety.md) — editing an existing character must not silently regrant or remove acquired pack gear.
 - [Fire affinity rename](fire-affinity-rename.md) — Fire is the renamed handout catalog; retain a Cosmic compatibility alias and older generic Fire casting behavior.
+- [Crown Standard legacy balances](crown-standard-legacy-balances.md) — do not infer funds for old characters; only new creations get background starting funds.
