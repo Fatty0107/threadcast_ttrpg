@@ -17,7 +17,8 @@ import { findString } from "@/lib/affinity-data";
 import { getCreationAffinity, getHandoutString } from "@/lib/creation-affinities";
 import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, strainDC, type CastAftermath } from "@/lib/casting-rules";
 import { guildBonusAlreadyInAttributes } from "@workspace/casting-rules";
-import { formatCompactCr, formatDenominationBreakdown, parseCr } from "@workspace/currency";
+import { formatCompactCr, formatDenominationBreakdown } from "@workspace/currency";
+import { CurrencyWallet } from "./CurrencyWallet";
 import { CastAftermath as CastAftermathView } from "./CastAftermath";
 import { TensionGauge } from "@/components/shared/TensionGauge";
 import { BurnoutTrack } from "@/components/shared/BurnoutTrack";
@@ -192,11 +193,6 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const [showFeatPicker, setShowFeatPicker] = useState(false);
   const [showInventoryPicker, setShowInventoryPicker] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
-  const [currencyDraft, setCurrencyDraft] = useState(() => {
-    const amount = (character.data as SheetData)?.currencyCinders;
-    return Number.isSafeInteger(amount) && amount! >= 0 ? formatCompactCr(amount!).replace(" CR", "") : "";
-  });
-  const [currencyError, setCurrencyError] = useState("");
   const [catalogCategory, setCatalogCategory] = useState("all");
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
@@ -293,13 +289,6 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     setSupportError("");
     setThreadSenseRolls({});
   }, [character.id]);
-
-  useEffect(() => {
-    const amount = localData.currencyCinders;
-    setCurrencyDraft(Number.isSafeInteger(amount) && amount! >= 0
-      ? formatCompactCr(amount!).replace(" CR", "") : "");
-    setCurrencyError("");
-  }, [character.id, localData.currencyCinders]);
 
   useEffect(() => {
     refreshPendingCastRequests();
@@ -481,16 +470,6 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const inventory = localData.inventory || [];
   const currencyCinders = localData.currencyCinders;
   const hasRecordedCurrency = Number.isSafeInteger(currencyCinders) && currencyCinders! >= 0;
-  function saveCurrency(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      const amount = parseCr(currencyDraft);
-      patch({ currencyCinders: amount });
-      setCurrencyError("");
-    } catch {
-      setCurrencyError("Enter a non-negative CR amount with at most one decimal place (for Cinders).");
-    }
-  }
   // WK additions come from the latest server character, not the player's unsaved sheet draft.
   const wkAdditions = (character.data as SheetData)?.weavekeeperAdditions ?? localData.weavekeeperAdditions;
   const wkAttunements = wkAdditions?.attunements ?? [];
@@ -2417,24 +2396,7 @@ ${([
 
         {/* ===== INVENTORY ===== */}
         <TabsContent value="inventory" className="tc-panel m-0">
-          <div className="mb-5 border border-primary/30 bg-primary/5 p-4">
-            <h3 className="font-[family-name:'Cinzel',serif] text-sm text-foreground mb-1">Crown Standard</h3>
-            <p className="font-mono text-lg text-primary" data-testid="text-currency-balance">
-              {hasRecordedCurrency ? formatCompactCr(currencyCinders!) : "Balance unrecorded"}
-            </p>
-            {hasRecordedCurrency && <p className="text-xs font-mono text-muted-foreground mt-1">{formatDenominationBreakdown(currencyCinders!)}</p>}
-            {!hasRecordedCurrency && <p className="text-xs font-mono text-muted-foreground mt-1">This existing character has no recorded funds. Set an opening balance; no old money was converted or assumed.</p>}
-            <form className="flex flex-wrap items-end gap-2 mt-3" onSubmit={saveCurrency}>
-              <label className="text-xs font-mono text-muted-foreground" htmlFor="currency-cr">
-                Balance in CR
-                <input id="currency-cr" inputMode="decimal" value={currencyDraft} onChange={event => { setCurrencyDraft(event.target.value); setCurrencyError(""); }}
-                  placeholder="e.g. 37 or 0.1" className="block mt-1 w-36 bg-background border border-border px-2 py-1.5 font-mono text-sm text-foreground focus:outline-none focus:border-primary" />
-              </label>
-              <button type="submit" className="px-3 py-1.5 text-xs font-mono border border-primary/50 text-primary hover:bg-primary/10">SAVE BALANCE</button>
-            </form>
-            {currencyError && <p role="alert" className="mt-2 text-xs font-mono text-destructive">{currencyError}</p>}
-            <p className="text-[10px] font-mono text-muted-foreground mt-2">Record rewards and spending here. Catalog additions do not charge funds or guarantee an item is available.</p>
-          </div>
+          <CurrencyWallet balance={currencyCinders} onChange={amount => patch({ currencyCinders: amount })} />
           <div className="flex justify-between items-center mb-4">
             <span className="font-mono text-xs text-muted-foreground">{inventory.length + wkItems.length} items carried</span>
             <div className="flex gap-2">

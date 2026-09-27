@@ -21,3 +21,4 @@
 - [Starting equipment edit safety](starting-equipment-edit-safety.md) — editing an existing character must not silently regrant or remove acquired pack gear.
 - [Fire affinity rename](fire-affinity-rename.md) — Fire is the renamed handout catalog; retain a Cosmic compatibility alias and older generic Fire casting behavior.
 - [Crown Standard legacy balances](crown-standard-legacy-balances.md) — do not infer funds for old characters; only new creations get background starting funds.
+- [Crown Standard inventory intent](crown-standard-inventory-intent.md) — manage money where gear lives; equivalent coin counts must not imply physical holdings.

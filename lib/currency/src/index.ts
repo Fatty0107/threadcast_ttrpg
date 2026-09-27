@@ -129,6 +129,28 @@ export function parseCr(text: string): number {
   return Number(cinders);
 }
 
+/** Applies a denomination-based wallet change to the single integer balance. */
+export function adjustCurrencyCinders(
+  current: number | undefined,
+  valueCinders: number,
+  quantity: number,
+  operation: "add" | "remove",
+): number {
+  if (current === undefined && operation === "remove") {
+    throw new RangeError("Record an opening balance before spending funds.");
+  }
+  validateCinders(current ?? 0);
+  if (!Number.isSafeInteger(valueCinders) || valueCinders <= 0 ||
+      !Number.isSafeInteger(quantity) || quantity <= 0) {
+    throw new TypeError("Denomination value and quantity must be positive safe integers.");
+  }
+  const change = BigInt(valueCinders) * BigInt(quantity);
+  const next = BigInt(current ?? 0) + (operation === "add" ? change : -change);
+  if (next < 0n) throw new RangeError("Not enough funds for this change.");
+  if (next > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError("Balance exceeds the safe integer range.");
+  return Number(next);
+}
+
 /** Returns the starting balance for one of the seven supported backgrounds. */
 export function startingBackgroundCinders(background: StartingBackground): number {
   return STARTING_BACKGROUND_CINDERS[background];
