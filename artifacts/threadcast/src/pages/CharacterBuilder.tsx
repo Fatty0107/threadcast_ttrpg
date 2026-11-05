@@ -127,7 +127,7 @@ const ATTR_ICONS: Record<AttrKey, React.ReactNode> = {
 // ---- Small helper components ----
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-6">
+    <div className="tc-builder-section bg-card border border-border space-y-6">
       <div className="border-b border-border pb-4">
         <h2 className="text-2xl font-[family-name:'Cinzel',serif] text-foreground">{title}</h2>
         {subtitle && <p className="text-xs font-mono text-muted-foreground mt-1 leading-relaxed">{subtitle}</p>}
@@ -536,14 +536,16 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   }
 
   return (
-    <div className="tc-page bg-background">
+    <div className="tc-page tc-builder bg-background">
       {/* Progress Header */}
-      <div className="border-b border-border bg-card/95 sticky top-[calc(4rem+51px)] md:top-16 z-30 backdrop-blur">
+      <div className="tc-builder-progress border-b border-border bg-card/95 sticky top-[calc(4rem+51px)] md:top-16 z-30 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex items-center gap-0 overflow-x-auto py-2.5" aria-label="Character creation progress">
             {STEPS.map((s, i) => (
               <div key={s.id} className="flex items-center flex-shrink-0">
                 <button
+                  aria-current={i === step ? "step" : undefined}
+                  aria-label={`Step ${i + 1}: ${s.label}`}
                   onClick={() => i < step && setStep(i)}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 font-mono text-xs transition-all",
@@ -569,6 +571,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
         </div>
       </div>
 
+      <div className="tc-builder-heading">
+        <div className="tc-journal-kicker">Character journal · {step + 1} of {STEPS.length}</div>
+        <h1>{charId ? "Continue your story." : "Every thread begins with you."}</h1>
+        <p>{STEPS[step].label} · Your character takes shape one choice at a time.</p>
+      </div>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
 

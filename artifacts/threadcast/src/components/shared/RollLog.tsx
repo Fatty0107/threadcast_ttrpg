@@ -30,7 +30,7 @@ export function RollLog() {
       <button
         onClick={() => setOpen(v => !v)}
         className={cn(
-          "fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3 py-2 font-mono text-xs border shadow-lg transition-all",
+          "tc-roll-log-toggle fixed bottom-5 right-5 z-40 flex items-center gap-2 px-4 py-2 font-sans text-xs border shadow-lg transition-all",
           open
             ? "bg-primary text-primary-foreground border-primary"
             : "bg-card border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
@@ -40,7 +40,7 @@ export function RollLog() {
         title="Toggle Roll Log"
       >
         <span>⬡</span>
-        <span>ROLL LOG</span>
+        <span>Roll journal</span>
         {rolls.length > 0 && (
           <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
             open ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground")}>

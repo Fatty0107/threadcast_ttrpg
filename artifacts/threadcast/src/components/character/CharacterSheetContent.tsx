@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { BookOpen, Swords, Fingerprint, Sparkles, Award, Backpack, ScrollText, Feather, Heart, Moon, Download, Search, Dice5, Orbit } from "lucide-react";
 import {
   Character, getCharacter, useCreateCast, useCreateCastStrainCheck, useResolveCastConsequence,
   getListRollsQueryKey, type GameplayRoll, type CastInput, type CastStrainInput, type CastResult as ApiCastResult,
@@ -194,6 +195,8 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const [showFeatPicker, setShowFeatPicker] = useState(false);
   const [showInventoryPicker, setShowInventoryPicker] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
+  const [skillSearch, setSkillSearch] = useState("");
+  const [attunedOnly, setAttunedOnly] = useState(false);
   const [catalogCategory, setCatalogCategory] = useState("all");
   const [expandedCatalogItem, setExpandedCatalogItem] = useState<string | null>(null);
   const [showMendPanel, setShowMendPanel] = useState(false);
@@ -1401,7 +1404,8 @@ ${([
       {hasPendingLostThread && <p className="mb-3 border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-500">Resolve the Lost Thread choice above before casting.</p>}
       {/* ===== HEADER ===== */}
       <div className="tc-top">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="tc-journal-heading"><span>World of Aethros</span><span className="tc-journal-rule" aria-hidden="true" /><span>Character journal</span><Sparkles size={14} aria-hidden="true" /></div>
+        <div className="tc-hero-row">
           <div className="tc-identity flex-1">
             {/* Avatar */}
             {localData.avatarDataUrl ? (
@@ -1415,7 +1419,7 @@ ${([
             )}
             {/* Name & Identity */}
             <div className="flex-1 min-w-0">
-              <div className="tc-eyebrow mb-1">Aethros / Weaver dossier <span className="text-muted-foreground">· LV {level.toString().padStart(2, "0")}</span></div>
+              <div className="tc-eyebrow mb-1">A thread of your own <span className="tc-level-seal">Level {level.toString().padStart(2, "0")}</span></div>
               <input
                 className="tc-name"
                 aria-label="Character name"
@@ -1443,7 +1447,7 @@ ${([
               aria-controls="tc-mend-panel"
               data-testid="button-mend"
             >
-              Mend <span aria-hidden="true">↗</span>
+              <Heart size={16} aria-hidden="true" /> Mend
             </button>
             <button
               onClick={doLongRest}
@@ -1452,14 +1456,14 @@ ${([
               aria-label="Take a long rest and restore vitality, tension and recovery dice"
               data-testid="button-long-rest"
             >
-              Long rest
+              <Moon size={16} aria-hidden="true" /> Long rest
             </button>
             <button
               onClick={handleExportPDF}
               className="tc-command tc-command--quiet"
               data-testid="button-export-pdf"
             >
-              Export PDF
+              <Download size={16} aria-hidden="true" /> Export PDF
             </button>
           </div>
         </div>
@@ -1468,7 +1472,7 @@ ${([
           <div className="tc-vital-card">
             <div className="tc-card-head">
               <div>
-                <GameTerm term="vitality points" className="tc-card-label">01 / Vitality points</GameTerm>
+                <GameTerm term="vitality points" className="tc-card-label"><Heart size={14} aria-hidden="true" /> Vitality points</GameTerm>
                 <div className={cn("tc-card-number mt-2", vpPercent <= 25 && "text-destructive")} data-testid="text-vitality">
                   {vp.current} <small>/ {vp.max || maxVP} VP</small>
                 </div>
@@ -1481,11 +1485,12 @@ ${([
             <div className="tc-meter" role="progressbar" aria-label="Vitality points" aria-valuenow={vp.current} aria-valuemin={0} aria-valuemax={vp.max || maxVP}>
               <div className={cn("tc-meter-fill", vpPercent <= 25 ? "bg-destructive" : vpPercent <= 50 ? "bg-primary" : "bg-chart-2")} style={{ width: `${vpPercent}%` }} />
             </div>
+            <p className="tc-resource-caption">{vpPercent <= 25 ? "Running low. Every thread matters." : vpPercent < 100 ? "Wounded, but your story continues." : "Ready for what comes next."}</p>
           </div>
           <div className="tc-tension-card">
             <div className="tc-card-head">
               <div>
-                <GameTerm term="tension" className="tc-card-label">02 / Thread tension</GameTerm>
+                <GameTerm term="tension" className="tc-card-label"><Orbit size={14} aria-hidden="true" /> Thread tension</GameTerm>
                  <div className="tc-card-number mt-2" data-testid="text-tension">{tension.current} <small>/ {threadPool} T</small></div>
               </div>
               <div className="tc-stepper">
@@ -1495,11 +1500,11 @@ ${([
             </div>
             <div className="tc-tension-details">
                <span>Safe limit <strong>{safeLimit}</strong></span>
-               <span>{tension.current > safeLimit ? "OVER SAFE LIMIT" : "WITHIN SAFE LIMIT"}</span>
+               <span className="tc-tension-status" data-danger={tension.current > safeLimit}>{tension.current > safeLimit ? "Above safe limit" : "Within safe limit"}</span>
             </div>
             <button type="button" className="tc-command mt-3" disabled={tension.current === 0 || safeLimit === 0}
               onClick={() => patchNested("tension", "current", Math.max(0, tension.current - safeLimit))}>
-              RELEASE TENSION · MINOR ACTION (UP TO {safeLimit}T)
+              Release tension <span className="tc-button-detail">Minor action · up to {safeLimit}T</span>
             </button>
             {tension.current > safeLimit && (
               <div className="mt-3 border-t border-border/50 pt-3 font-mono text-[11px]">
@@ -1510,9 +1515,9 @@ ${([
             {strainMessage && <p role="status" className="mt-2 text-[11px] text-amber-500 font-mono">{strainMessage}</p>}
             {strainResult && <CastAftermathDisplay result={{ ...strainResult.aftermath, saveConfirmed: true, damageSaved: true }} />}
           </div>
-          <section className="tc-inspiration-card" aria-label="Inspiration tracker">
+          <section className="tc-inspiration-card" data-ready={Boolean(localData.inspiration)} aria-label="Inspiration tracker">
             <div className="tc-inspiration-head">
-              <span className="tc-inspiration-icon" aria-hidden="true">✦</span>
+              <span className="tc-inspiration-icon" aria-hidden="true"><Sparkles size={24} /></span>
               <div>
                 <div className="tc-card-label">Inspiration</div>
                 <div className="tc-inspiration-state" data-ready={Boolean(localData.inspiration)} aria-live="polite">
@@ -1521,7 +1526,7 @@ ${([
               </div>
             </div>
             <p className="tc-inspiration-help">
-              Spend before a d20 attack, check, or save for advantage.
+              A little courage, at just the right moment. Track the Inspiration your GM awards you here.
             </p>
             <button
               type="button"
@@ -1533,7 +1538,7 @@ ${([
             >
               {localData.inspiration ? "Spend Inspiration" : "Mark as available"}
             </button>
-            <span className="tc-inspiration-note">Awarded by your GM · clear it after use</span>
+            <span className="tc-inspiration-note">Manual tracker · choose your roll mode separately</span>
           </section>
         </div>
 
@@ -1596,27 +1601,35 @@ ${([
 
       {/* ===== TABS ===== */}
       <Tabs defaultValue="overview" className="w-full tc-workspace">
-        <TabsList className="tc-tabs h-auto">
-          {["overview","actions","skills","strings","feats","inventory","background","notes"].map(tab => (
+        <TabsList className="tc-tabs h-auto" aria-label="Character sheet sections">
+          {[
+            { key: "overview", label: "Overview", icon: BookOpen },
+            { key: "actions", label: "Actions", icon: Swords },
+            { key: "skills", label: "Skills", icon: Fingerprint },
+            { key: "strings", label: "Strings", icon: Sparkles },
+            { key: "feats", label: "Feats", icon: Award },
+            { key: "inventory", label: "Inventory", icon: Backpack },
+            { key: "background", label: "Background", icon: ScrollText },
+            { key: "notes", label: "Notes", icon: Feather },
+          ].map(({ key: tab, label, icon: Icon }) => (
             <TabsTrigger
               key={tab}
               value={tab}
               className="tc-tab"
             >
-              {tab === "feats" && featSlotsRemaining > 0
-                ? <span className="flex items-center gap-1">{tab} <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center">{featSlotsRemaining}</span></span>
-                : tab
-              }
+              <Icon size={16} strokeWidth={1.6} aria-hidden="true" /><span>{label}</span>
+              {tab === "feats" && featSlotsRemaining > 0 && <span className="tc-tab-count" aria-label={`${featSlotsRemaining} available feat slots`}>{featSlotsRemaining}</span>}
             </TabsTrigger>
           ))}
         </TabsList>
 
         {/* ===== OVERVIEW ===== */}
         <TabsContent value="overview" className="tc-panel m-0">
+          <div className="tc-panel-intro"><div><div className="tc-eyebrow">The adventurer at a glance</div><h2>Your living thread</h2></div><p>Roll from a modifier. Adjust your resources as the story unfolds.</p></div>
           <div className="tc-overview-grid">
             {/* Attributes column */}
             <div className="tc-surface">
-              <h3 className="tc-section-title">Attributes <small>Tap modifier to roll</small></h3>
+              <h3 className="tc-section-title"><Fingerprint size={20} aria-hidden="true" /> Attributes <small>Tap to roll</small></h3>
               <div className="tc-attribute-grid">
                 {ATTRIBUTE_DEFS.map(attr => {
                   const baseScore = baseAttrs[attr.key] || 10;
@@ -1644,7 +1657,7 @@ ${([
                           aria-label={`Roll ${attr.label} check with ${fmtMod(mod)} modifier`}
                           data-testid={`button-roll-attribute-${attr.key}`}
                           onClick={() => openRoll(`${attr.label} Check`, mod, character.name, character.id)}
-                        >{fmtMod(mod)}</button>
+                        ><Dice5 size={14} aria-hidden="true" />{fmtMod(mod)}</button>
                       </div>
                       {(score !== baseScore) && <div className="text-[10px] font-mono text-chart-2 mt-1" title="Total includes feat and guild bonuses">Total {score}{bonus > 0 ? ` · feat +${bonus}` : ""}</div>}
                     </div>
@@ -1698,7 +1711,7 @@ ${([
 
             {/* Tension + Burnout column */}
             <div className="tc-surface">
-              <h3 className="tc-section-title">The thread <small>Tension & burnout</small></h3>
+              <h3 className="tc-section-title"><Orbit size={20} aria-hidden="true" /> The thread <small>Tension & burnout</small></h3>
               <div className="tc-gauge-surface">
               <TensionGauge
                 current={tension.current}
@@ -1881,6 +1894,10 @@ ${([
             <span><GameTerm term="refinement bonus">Refinement Bonus</GameTerm>: <strong className="text-primary">+{rb}</strong></span>
             <span>Attuned: {attunedSkills.length}/{ALL_SKILLS.length}</span>
           </div>
+          <div className="tc-skill-tools">
+            <label className="tc-skill-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Find a skill</span><input type="search" value={skillSearch} onChange={event => setSkillSearch(event.target.value)} placeholder="Find a skill or attribute…" /></label>
+            <button type="button" className="tc-command" aria-pressed={attunedOnly} onClick={() => setAttunedOnly(value => !value)}><Fingerprint size={16} aria-hidden="true" />Attuned only</button>
+          </div>
           <div className="tc-skills-wrap tc-surface !p-0">
           <table className="tc-skills-table">
             <thead>
@@ -1893,7 +1910,7 @@ ${([
               </tr>
             </thead>
             <tbody>
-              {ALL_SKILLS.map(skill => {
+              {ALL_SKILLS.filter(skill => (!attunedOnly || attunedSkills.includes(skill.name)) && `${skill.name} ${skill.attr} ${ATTRIBUTE_DEFS.find(attr => attr.key === skill.attr)?.label || ""}`.toLowerCase().includes(skillSearch.trim().toLowerCase())).map(skill => {
                 const attrScore = attrs[skill.attr] || 10;
                 const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
                 const isAttuned = attunedSkills.includes(skill.name);
@@ -1939,7 +1956,7 @@ ${([
                         aria-label={`Roll ${skill.name} check with ${fmtMod(total)} modifier`}
                         onClick={() => openRoll(`${skill.name} Check`, total, character.name, character.id)}
                       >
-                        {fmtMod(total)}
+                        <Dice5 size={14} aria-hidden="true" />{fmtMod(total)}
                       </button>
                     </td>
                   </tr>
@@ -1947,6 +1964,7 @@ ${([
               })}
             </tbody>
           </table>
+          {!ALL_SKILLS.some(skill => (!attunedOnly || attunedSkills.includes(skill.name)) && `${skill.name} ${skill.attr} ${ATTRIBUTE_DEFS.find(attr => attr.key === skill.attr)?.label || ""}`.toLowerCase().includes(skillSearch.trim().toLowerCase())) && <div className="tc-skill-empty"><Search size={24} aria-hidden="true" /><p>No skills match your search.</p><button type="button" className="tc-command" onClick={() => { setSkillSearch(""); setAttunedOnly(false); }}>Show all skills</button></div>}
           </div>
         </TabsContent>
 
@@ -2674,6 +2692,7 @@ ${([
 
         {/* ===== BACKGROUND ===== */}
         <TabsContent value="background" className="tc-panel m-0">
+          <div className="tc-panel-intro"><div><div className="tc-eyebrow">Origins & identity</div><h2>Before the first thread</h2></div><p>Your background, guild, and the marks you leave on the world.</p></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-sm">
             <div className="space-y-4">
               <EditableField label="Background" value={localData.background || ""} onChange={v => patch({ background: v })} placeholder="Guild-Raised, Self-Taught..." />
@@ -2745,6 +2764,7 @@ ${([
 
         {/* ===== NOTES ===== */}
         <TabsContent value="notes" className="tc-panel m-0">
+          <div className="tc-panel-intro"><div><div className="tc-eyebrow">The story so far</div><h2>Between the lines</h2></div><p>Keep the people, promises, and moments that make this character yours.</p></div>
           {wkNotes.length > 0 && (
             <div className="space-y-2 mb-5">
               <h3 className="text-xs font-mono uppercase tracking-widest text-chart-2">Weavekeeper notes &amp; additions</h3>

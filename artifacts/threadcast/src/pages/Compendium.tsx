@@ -6,10 +6,11 @@ import CurrencyReference from "./CurrencyReference";
 function Section({ id, title, icon, children }: { id: string; title: string; icon?: React.ReactNode; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="tc-panel-surface overflow-hidden">
+    <div id={`reference-${id}`} className="tc-reference-section tc-panel-surface overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
+        aria-controls={`compendium-${id}`}
         className="w-full min-h-16 flex items-center justify-between p-5 text-left hover:bg-primary/5 transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -29,7 +30,7 @@ function Section({ id, title, icon, children }: { id: string; title: string; ico
 
 function Rule({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-1 sm:gap-3 py-2.5 border-b border-border/40 last:border-0">
+    <div className="tc-reference-rule border-b border-border/40 last:border-0">
       <span className="text-primary font-mono text-xs pt-0.5 flex-shrink-0 sm:min-w-[160px]">{label}</span>
       <span className="text-sm font-mono text-muted-foreground leading-relaxed">{children}</span>
     </div>
@@ -40,7 +41,7 @@ function Attr({ abbr, name, desc, analogy, example }: { abbr: string; name: stri
   const [open, setOpen] = useState(false);
   return (
     <div className={cn("border border-border/60 p-3 transition-all cursor-pointer", open && "border-primary/30 bg-primary/3")}>
-      <button className="w-full text-left" onClick={() => setOpen(o => !o)}>
+      <button className="w-full text-left" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs font-bold text-primary border border-primary/30 px-2 py-0.5 min-w-[40px] text-center">{abbr}</span>
@@ -78,7 +79,7 @@ function Skill({ name, attr, analogy, example }: { name: string; attr: string; a
   };
   return (
     <div className="border border-border/50 hover:border-border transition-colors">
-      <button onClick={() => setOpen(o => !o)} className="w-full text-left p-3 flex items-center gap-3">
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open} className="w-full text-left p-3 flex items-center gap-3">
         <span className={cn("font-mono text-[10px] border px-1.5 py-0.5 flex-shrink-0 min-w-[36px] text-center", attrColors[attr] || "text-muted-foreground border-border")}>{attr}</span>
         <span className="font-mono text-sm text-foreground flex-1">{name}</span>
         {open ? <ChevronDown className="w-3 h-3 text-muted-foreground/40" /> : <ChevronRight className="w-3 h-3 text-muted-foreground/40" />}
@@ -142,12 +143,18 @@ const MODES = [
 
 export default function Compendium() {
   return (
-    <div className="tc-page bg-background">
+    <div className="tc-page tc-reference bg-background">
       <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 space-y-4">
         <div className="tc-page-intro mb-8">
+          <div className="tc-journal-kicker">The Aethros archives</div>
           <h1 className="tc-page-title text-3xl sm:text-4xl text-foreground mb-2">Compendium</h1>
-          <p className="text-xs font-mono text-muted-foreground">The complete reference for World of Aethros mechanics. Click any section header to collapse.</p>
+          <p className="text-muted-foreground">A field guide to the threads that bind the world. Find a rule below, or open a chapter to explore.</p>
         </div>
+        <nav className="tc-reference-nav" aria-label="Compendium chapters">
+          {[["core", "Core rules"], ["attributes", "Attributes"], ["skills", "Skills"], ["tension", "Tension"], ["modes", "Modes"], ["strings", "Strings"], ["crown-standard", "Currency"]].map(([id, label], i) => (
+            <a key={id} href={`#reference-${id}`}><span>{String(i + 1).padStart(2, "0")}</span>{label}</a>
+          ))}
+        </nav>
 
         {/* Core Mechanics */}
         <Section id="core" title="Core Mechanics" icon={<BookOpen className="w-4 h-4" />}>

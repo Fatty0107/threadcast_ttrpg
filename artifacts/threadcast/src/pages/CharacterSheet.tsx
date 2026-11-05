@@ -1,4 +1,5 @@
-import { useRoute } from "wouter";
+import { Link, useRoute } from "wouter";
+import { ArrowLeft, ChevronRight, BookOpen } from "lucide-react";
 import { useGetCharacter, useUpdateCharacter, getGetCharacterQueryKey, getListCharactersQueryKey, type Character } from "@workspace/api-client-react";
 import { CharacterSheetContent } from "@/components/character/CharacterSheetContent";
 import { useCallback, useEffect, useRef } from "react";
@@ -57,12 +58,12 @@ export default function CharacterSheet() {
   const onLocalSave = useCallback(() => { dirtyRef.current = false; }, []);
 
   if (isLoading) {
-    return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
+    return <div className="tc-sheet-page"><div className="tc-sheet-placeholder" role="status" aria-label="Loading character sheet"><div className="flex items-center gap-3 text-primary mb-8"><BookOpen size={20} /><span>Opening your character journal…</span></div><Skeleton className="h-24 w-2/3 mb-8" /><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><Skeleton className="h-40" /><Skeleton className="h-40" /><Skeleton className="h-40" /></div><Skeleton className="h-72 mt-8" /></div></div>;
   }
 
   if (!character) {
-    return <div className="p-8 text-center font-mono">Character not found.</div>;
+    return <div className="tc-sheet-page"><div className="tc-sheet-placeholder text-center"><BookOpen className="mx-auto text-primary mb-5" size={32} /><h1 className="font-serif text-3xl mb-3">This journal could not be opened</h1><p className="text-muted-foreground mb-6">The character may be unavailable, or the connection may have been interrupted.</p><Link href="/characters" className="inline-flex items-center gap-2 text-primary"><ArrowLeft size={16} />Back to characters</Link></div></div>;
   }
 
-  return <CharacterSheetContent character={character} onUpdate={handleUpdate} onCastState={onCastState} beforeCast={beforeCast} onLocalEdit={onLocalEdit} onLocalSave={onLocalSave} />;
+  return <div className="tc-sheet-page"><nav className="tc-sheet-breadcrumb" aria-label="Breadcrumb"><Link href="/characters"><ArrowLeft size={14} />Characters</Link><ChevronRight size={12} aria-hidden="true" /><span aria-current="page">{character.name}</span></nav><CharacterSheetContent character={character} onUpdate={handleUpdate} onCastState={onCastState} beforeCast={beforeCast} onLocalEdit={onLocalEdit} onLocalSave={onLocalSave} /></div>;
 }

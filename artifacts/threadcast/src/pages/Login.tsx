@@ -2,90 +2,47 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/components/auth/auth-context";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowRight, Compass, Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react";
+import "@/styles/journal-entry.css";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { setUser } = useAuth();
   const [, setLocation] = useLocation();
   const loginMutation = useLogin();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = (event: React.FormEvent) => {
+    event.preventDefault();
     loginMutation.mutate({ data: { username, password } }, {
-      onSuccess: (data) => {
-        setUser(data);
-        setLocation("/characters");
-      }
+      onSuccess: (data) => { setUser(data); setLocation("/characters"); },
     });
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-background relative overflow-hidden px-4 py-12">
-      <div className="tc-login-decoration absolute inset-0 pointer-events-none" aria-hidden="true" />
-
-      <div className="tc-login-panel relative z-10 w-full max-w-md p-6 sm:p-10 bg-card border border-border">
-        <div className="text-center mb-9">
-          <div className="inline-block mb-2">
-            <span className="text-primary font-mono text-xs tracking-[0.4em] uppercase">⟨ Enter ⟩</span>
-          </div>
-          <h1 className="text-[clamp(2.2rem,9vw,3rem)] font-[family-name:'Cinzel',serif] text-primary mb-2 tracking-wider">
-            THREADCAST
-          </h1>
-          <p className="text-sm font-mono tracking-[0.3em] text-muted-foreground uppercase">World of Aethros</p>
-          <div className="mt-3 flex items-center gap-2 justify-center">
-            <div className="h-px w-12 bg-primary/30" />
-            <div className="w-1 h-1 rounded-full bg-primary/50" />
-            <div className="h-px w-12 bg-primary/30" />
-          </div>
+    <main className="ae-login">
+      <section className="ae-login-world" aria-labelledby="login-world-heading">
+        <div className="ae-login-world-image" aria-hidden="true" />
+        <div className="ae-login-wordmark"><Compass size={29} strokeWidth={1.1} aria-hidden="true" /><span>THREADCAST<small>WORLD OF AETHROS</small></span></div>
+        <div className="ae-login-story"><p className="ae-kicker">A WORLD WOVEN BY YOUR CHOICES</p><h1 id="login-world-heading">The world is waiting.<br /><em>Take up your thread.</em></h1><p>Gather your companions. Shape your magic.<br />Leave your mark on Aethros.</p></div>
+        <div className="ae-login-world-footer"><span>CHARACTERS · MAGIC · STORIES</span><span aria-hidden="true">✦</span></div>
+      </section>
+      <section className="ae-login-form-side" aria-label="Sign in">
+        <div className="ae-login-form-wrap">
+          <div className="ae-login-ornament" aria-hidden="true"><span /><Compass size={31} strokeWidth={1} /><span /></div>
+          <p className="ae-kicker">YOUR NEXT CHAPTER</p>
+          <h2>Welcome to the Weave.</h2>
+          <p className="ae-login-intro">Sign in to return to your characters and your campaign.</p>
+          <form onSubmit={handleLogin} className="ae-login-form">
+            <div className="ae-login-field"><label htmlFor="login-username">Username</label><input id="login-username" type="text" value={username} onChange={event => setUsername(event.target.value)} data-testid="input-username" autoComplete="username" autoCapitalize="none" spellCheck={false} required placeholder="Your username" /></div>
+            <div className="ae-login-field"><label htmlFor="login-password">Passphrase</label><div className="ae-password-field"><input id="login-password" type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} data-testid="input-password" autoComplete="current-password" required placeholder="Your passphrase" /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Hide passphrase" : "Show passphrase"} aria-pressed={showPassword}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
+            {loginMutation.isError && <p role="alert" className="ae-inline-error">We couldn’t sign you in. Check your username and passphrase, then try again.</p>}
+            <button type="submit" className="ae-gold-button ae-login-submit" disabled={loginMutation.isPending} data-testid="button-submit-login">{loginMutation.isPending ? <><LoaderCircle size={18} className="ae-spin" aria-hidden="true" /> Entering the Weave…</> : <>Enter the Weave <ArrowRight size={18} aria-hidden="true" /></>}</button>
+          </form>
+          <p className="ae-login-footnote"><LockKeyhole size={13} aria-hidden="true" /> Your character’s story continues here.</p>
         </div>
-
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="login-username" className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Identifier</Label>
-            <Input
-              id="login-username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="h-11 font-mono bg-background border-border focus:border-primary transition-colors"
-              data-testid="input-username"
-              autoComplete="username"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="login-password" className="font-mono text-muted-foreground text-xs tracking-widest uppercase">Passphrase</Label>
-            <Input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11 font-mono bg-background border-border focus:border-primary transition-colors"
-              data-testid="input-password"
-              autoComplete="current-password"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-11 font-mono tracking-[0.12em] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors uppercase"
-            disabled={loginMutation.isPending}
-            data-testid="button-submit-login"
-          >
-            {loginMutation.isPending ? "Connecting..." : "Enter the Weave"}
-          </Button>
-
-          {loginMutation.isError && (
-            <p role="alert" className="text-sm text-destructive text-center font-mono">
-              Access denied. Check your credentials.
-            </p>
-          )}
-        </form>
-
-      </div>
-    </div>
+        <p className="ae-login-bottom">A companion for the stories you tell together.</p>
+      </section>
+    </main>
   );
 }

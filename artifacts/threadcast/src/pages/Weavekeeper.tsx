@@ -913,7 +913,7 @@ export default function Weavekeeper() {
   const hbBackgrounds = allHomebrew.filter(h => h.type === "background");
 
   return (
-    <div className="tc-page bg-background">
+    <div className="tc-page tc-gm bg-background">
       {affinityWizard && <AffinityWizard onClose={() => setAffinityWizard(false)} onSave={refetch} />}
       {itemWizard && <ItemWizard onClose={() => setItemWizard(false)} onSave={refetch} />}
       {bgWizard && <BackgroundWizard onClose={() => setBgWizard(false)} onSave={refetch} />}
@@ -922,6 +922,7 @@ export default function Weavekeeper() {
         <div className="tc-page-intro flex items-center gap-3 mb-8">
           <ShieldHalf className="w-8 h-8 text-primary" />
           <div>
+            <div className="tc-journal-kicker">Behind the weave</div>
             <h1 className="tc-page-title text-3xl sm:text-4xl text-primary">Weavekeeper</h1>
             <p className="text-xs font-mono text-muted-foreground">Campaign control panel · {user.displayName}</p>
           </div>

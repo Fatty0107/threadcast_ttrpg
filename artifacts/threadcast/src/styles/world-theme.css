@@ -1,0 +1,86 @@
+/* Aethros: a readable, tactile field journal. Game values and rules live elsewhere. */
+html { scroll-padding-top: 150px; }
+body { text-rendering: optimizeLegibility; }
+.tc-page {
+  background-image: radial-gradient(ellipse at 0 0, hsl(var(--chart-2) / .065), transparent 44rem),
+    radial-gradient(ellipse at 100% 15%, hsl(var(--primary) / .045), transparent 40rem);
+}
+.tc-page-title { font-weight: 500; font-size: clamp(2.6rem, 5vw, 4.25rem); }
+.tc-panel-surface { border-radius: 12px; }
+.tc-page-intro { position: relative; }
+.tc-page-intro::after {
+  content: ""; position: absolute; bottom: -3px; left: 0; width: 5px; height: 5px;
+  transform: rotate(45deg); background: hsl(var(--primary));
+}
+.tc-journal-kicker {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  color: hsl(var(--primary)); font: 600 11px/1.5 var(--app-font-sans);
+  letter-spacing: .22em; text-transform: uppercase;
+}
+.tc-journal-kicker::before { content: ""; width: 26px; height: 1px; background: currentColor; }
+.tc-reference .font-mono, .tc-builder .font-mono, .tc-gm .font-mono { font-family: var(--app-font-sans); }
+:is(.tc-reference,.tc-builder,.tc-gm) :is(h1,h2,h3)[class*="Cinzel"] { font-family: var(--app-font-serif); }
+:is(.tc-reference,.tc-builder,.tc-gm) :is(h2,h3)[class*="Cinzel"] { font-size: 1.7rem; line-height: 1.15; }
+:is(.tc-reference,.tc-builder,.tc-gm) [class*="text-[10px]"] { font-size: 12px; line-height: 1.6; }
+:is(.tc-reference,.tc-builder,.tc-gm) [class*="text-muted-foreground/"] { color: hsl(var(--muted-foreground)); }
+:is(.tc-reference,.tc-builder,.tc-gm) button { border-radius: 7px; }
+:is(.tc-reference,.tc-builder,.tc-gm) button:not(:disabled):active { transform: translateY(1px); }
+:is(.tc-reference,.tc-builder,.tc-gm) :is(input,select,textarea) {
+  border-radius: 8px; background-color: hsl(var(--background) / .75);
+  transition: border-color .18s, box-shadow .18s;
+}
+:is(.tc-reference,.tc-builder,.tc-gm) :is(input,select,textarea):focus-visible {
+  box-shadow: 0 0 0 4px hsl(var(--primary) / .1);
+}
+.tc-reference .tc-page-intro { padding-top: 12px; padding-bottom: 30px; }
+.tc-reference .tc-page-intro > p { max-width: 40rem; font-size: 15px; line-height: 1.8; }
+.tc-reference-nav { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 0 18px; }
+.tc-reference-nav a {
+  display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+  border: 1px solid hsl(var(--border)); border-radius: 999px;
+  background: hsl(var(--card)); color: hsl(var(--muted-foreground)); font-size: 12px;
+  transition: background .18s, color .18s, border-color .18s;
+}
+.tc-reference-nav a:hover { color: hsl(var(--primary)); border-color: hsl(var(--primary) / .5); background: hsl(var(--primary) / .05); }
+.tc-reference-nav a span { color: hsl(var(--primary)); font: 10px var(--app-font-mono); }
+.tc-reference-section { scroll-margin-top: 140px; box-shadow: 0 8px 22px hsl(164 30% 2% / .08); }
+.tc-reference-section > button { padding: 22px 26px; }
+.tc-reference-section > button > div > span { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid hsl(var(--primary) / .2); border-radius: 50%; color: hsl(var(--primary)); }
+.tc-reference-section > div { padding: 24px 26px; }
+.tc-reference-section p { line-height: 1.8; }
+.tc-reference-section .border { border-radius: 8px; }
+.tc-reference-section .text-xs { font-size: 13px; }
+.tc-reference-rule { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 20px; padding: 14px 0; }
+.tc-reference-rule > span:first-child { font-weight: 600; }
+.tc-reference-rule > span:last-child { font-size: 14px; line-height: 1.8; }
+.tc-builder-progress { top: var(--tc-nav-height,64px); box-shadow: 0 6px 20px hsl(164 30% 2% / .12); }
+.tc-builder-progress [aria-current="step"] { background: hsl(var(--primary) / .09); }
+.tc-builder-heading { max-width: 1152px; margin: 0 auto; padding: 36px 24px 0; }
+.tc-builder-heading h1 { font: 500 clamp(2.4rem,5vw,3.6rem)/1.1 var(--app-font-serif); margin-bottom: 8px; }
+.tc-builder-heading p { color: hsl(var(--muted-foreground)); font-size: 14px; }
+.tc-builder .input-field { font-family: var(--app-font-sans); min-height: 46px; }
+.tc-builder :is(.bg-card,.bg-card\/50) { border-radius: 12px; }
+.tc-builder [class*="border-primary"] { transition: background .18s, border-color .18s; }
+.tc-builder .tc-builder-section { padding: clamp(20px,3vw,32px); border-radius: 14px; box-shadow: 0 8px 26px hsl(164 30% 2% / .07); }
+.tc-gm [role="tablist"] { gap: 5px; padding: 6px; border-radius: 10px; }
+.tc-gm [role="tab"] { min-height: 42px; padding: 8px 18px; }
+.tc-gm .bg-card.border { border-radius: 12px; box-shadow: 0 6px 24px hsl(164 30% 2% / .07); }
+.tc-gm .tc-page-intro > svg { width: 48px; height: 48px; padding: 12px; border: 1px solid hsl(var(--primary) / .3); border-radius: 50%; }
+.tc-gm .tc-page-intro p { font-size: 14px; }
+[data-radix-popper-content-wrapper] [role="tooltip"] { font-family: var(--app-font-sans); line-height: 1.7; }
+.tc-roll-log-toggle { min-height: 44px; border-radius: 999px; backdrop-filter: blur(16px); box-shadow: 0 8px 28px hsl(164 30% 2% / .3); }
+#shared-roll-log { border-radius: 14px; overflow: hidden; box-shadow: 0 20px 64px hsl(164 30% 2% / .4); }
+#shared-roll-log > div:first-child { padding: 14px 18px; }
+#shared-roll-log > div:first-child button { width: 32px; height: 32px; border-radius: 50%; }
+@media (max-width: 640px) {
+  .tc-reference-nav { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; }
+  .tc-reference-nav a { flex: none; min-height: 44px; }
+  .tc-reference-section > button, .tc-reference-section > div { padding: 18px; }
+  .tc-reference-rule { grid-template-columns: 1fr; gap: 4px; }
+  .tc-builder-heading { padding: 26px 16px 0; }
+  :is(.tc-reference,.tc-builder,.tc-gm) input:not([type="checkbox"]):not([type="radio"]),
+  :is(.tc-reference,.tc-builder,.tc-gm) select, :is(.tc-reference,.tc-builder,.tc-gm) textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

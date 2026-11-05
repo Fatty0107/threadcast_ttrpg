@@ -1,37 +1,44 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useListCharacters, useDeleteCharacter,
-  getListCharactersQueryKey, type Character,
-} from "@workspace/api-client-react";
-import { useLocation } from "wouter";
+import { useListCharacters, useDeleteCharacter, getListCharactersQueryKey, type Character } from "@workspace/api-client-react";
+import { Link, useLocation } from "wouter";
 import { calcMod, calcVPMax, ATTRIBUTE_DEFS } from "@/lib/ttrpg-data";
 import { cn } from "@/lib/utils";
-import { Scroll, Shield, Zap, Flame } from "lucide-react";
+import { ArrowRight, BookOpen, Dices, Feather, Flame, Plus, Search, Shield, Sparkles, Trash2, X } from "lucide-react";
+import "@/styles/journal-entry.css";
 
 export default function Characters() {
-  const { data: characters, isLoading } = useListCharacters();
+  const { data: characters, isLoading, isError, refetch } = useListCharacters();
   const deleteMutation = useDeleteCharacter();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "ready" | "drafts">("all");
+  const [deleteError, setDeleteError] = useState("");
+  const roster = characters ?? [];
+  const readyCount = roster.filter(character => !character.isDraft).length;
+  const visibleCharacters = roster.filter(character => {
+    const data = (character.data as any) || {};
+    const query = search.trim().toLowerCase();
+    const matchesSearch = [character.name, character.affinity, data.primaryMode || character.mode, data.background, data.guild]
+      .some(value => String(value || "").toLowerCase().includes(query));
+    return matchesSearch && (filter === "all" || (filter === "drafts" ? character.isDraft : !character.isDraft));
+  });
 
-  function handleCreate() {
-    setLocation("/build");
-  }
+  function handleCreate() { setLocation("/build"); }
 
   async function handleDelete(charId: number, charName: string) {
     if (confirm(`Burn ${charName}'s thread permanently? This cannot be undone.`)) {
       setDeletingId(charId);
+      setDeleteError("");
       await queryClient.cancelQueries({ queryKey: getListCharactersQueryKey() });
       const snapshot = queryClient.getQueryData<Character[]>(getListCharactersQueryKey());
-      queryClient.setQueryData(
-        getListCharactersQueryKey(),
-        (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? [],
-      );
+      queryClient.setQueryData(getListCharactersQueryKey(), (old: Character[] | undefined) => old?.filter(c => c.id !== charId) ?? []);
       deleteMutation.mutate({ id: charId }, {
         onError: () => {
           queryClient.setQueryData(getListCharactersQueryKey(), snapshot);
+          setDeleteError(`${charName} could not be deleted. Your character is still in the roster.`);
         },
         onSettled: () => {
           setDeletingId(null);
@@ -42,178 +49,71 @@ export default function Characters() {
   }
 
   return (
-    <div className="tc-page bg-background">
-      <div className="container mx-auto max-w-6xl py-8 px-4 sm:px-6">
-        <div className="tc-page-intro flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8">
-          <div>
-            <h1 className="tc-page-title text-3xl sm:text-4xl text-foreground">
-              Character Roster
-            </h1>
-            <p className="font-mono text-xs text-muted-foreground mt-1">Select your thread or weave anew.</p>
+    <main className="ae-roster">
+      <div className="ae-roster-inner">
+        <section className="ae-roster-hero" aria-labelledby="roster-heading">
+          <div className="ae-roster-hero-art" aria-hidden="true" />
+          <div className="ae-roster-hero-copy">
+            <p className="ae-kicker"><span /> THE WORLD OF AETHROS</p>
+            <h1 id="roster-heading">Every thread,<br /><em>a story.</em></h1>
+            <p>Your characters. Their choices. The stories still to be woven.</p>
+            <button onClick={handleCreate} className="ae-gold-button"><Plus size={17} aria-hidden="true" /> Weave a new character <ArrowRight size={16} aria-hidden="true" /></button>
           </div>
-          <button
-            onClick={handleCreate}
-            className="group relative px-5 py-2.5 min-h-11 bg-primary text-primary-foreground font-mono text-xs tracking-wide hover:bg-primary/90 transition-colors overflow-hidden"
-          >
-            <span className="relative z-10">+ WEAVE NEW CHARACTER</span>
-          </button>
+          <div className="ae-hero-caption" aria-hidden="true"><span>THE WEAVE ENDURES</span><span>✦</span></div>
+        </section>
+
+        <div className="ae-roster-heading">
+          <div><p className="ae-kicker">YOUR CHRONICLE</p><h2>Character roster <span>{isLoading ? "—" : roster.length}</span></h2></div>
+          <div className="ae-library-links"><Link href="/compendium"><BookOpen size={15} aria-hidden="true" /> Compendium</Link><Link href="/dice"><Dices size={16} aria-hidden="true" /> Dice Atelier</Link></div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-56 bg-card border border-border animate-pulse" />
-            ))
-          ) : characters?.length === 0 ? (
-            <div className="col-span-full py-16 text-center tc-panel-surface">
-              <div className="inline-flex flex-col items-center gap-4">
-                <div className="w-16 h-16 border border-border flex items-center justify-center text-primary">
-                  <Scroll className="w-8 h-8" />
-                </div>
-                <div className="text-muted-foreground font-mono text-sm">No active threads found.</div>
-                <button onClick={handleCreate} className="px-6 py-3 min-h-11 border border-primary/50 text-primary font-mono text-sm hover:bg-primary/10 transition-colors">
-                  WEAVE YOUR FIRST CHARACTER →
-                </button>
-              </div>
-            </div>
-          ) : (
-            characters?.map(char => {
-              const data = (char.data as any) || {};
-              const attrs = data.attributes || {};
-              const vp = data.vitalityPoints || {};
-              const burnout = data.burnout || 0;
-              const level = char.level || 1;
-              const maxVP = vp.max || calcVPMax(attrs.res || 10, level);
-              const vpCurrent = vp.current ?? maxVP;
-              const vpPercent = Math.min(100, Math.max(0, (vpCurrent / maxVP) * 100));
-              const isDeleting = deletingId === char.id;
-
-              return (
-                <div
-                  key={char.id}
-                  className={cn(
-                    "tc-roster-card group relative p-5 bg-card border border-border transition-transform duration-200 overflow-hidden flex flex-col",
-                    "hover:border-primary/50",
-                    isDeleting && "opacity-40 pointer-events-none"
-                  )}
-                >
-                  {/* Level badge */}
-                  <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary">
-                    LVL {level}
-                  </div>
-
-                  {/* Draft badge */}
-                  {char.isDraft && (
-                    <div className="absolute top-0 left-0 bg-yellow-600/10 border-r border-b border-yellow-600/20 px-2 py-0.5 font-mono text-[10px] text-yellow-600">
-                      DRAFT
-                    </div>
-                  )}
-
-                  {/* Portrait + Name */}
-                  <div className="flex items-start gap-3 mb-3 pr-10 mt-1">
-                    {data.avatarDataUrl ? (
-                      <img
-                        src={data.avatarDataUrl}
-                        alt="Portrait"
-                        className="w-13 h-13 object-cover border border-border flex-shrink-0 group-hover:border-primary/40 transition-colors"
-                        style={{ width: 52, height: 52 }}
-                      />
-                    ) : (
-                      <div className="w-13 h-13 border border-border/50 bg-muted/20 flex items-center justify-center text-muted-foreground/30 font-[family-name:'Cinzel',serif] text-lg flex-shrink-0" style={{ width: 52, height: 52 }}>
-                        {char.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-[family-name:'Cinzel',serif] text-foreground mb-1.5 truncate group-hover:text-primary/90 transition-colors">
-                        {char.name}
-                      </h2>
-                      <div className="flex flex-wrap gap-1">
-                        {char.affinity && (
-                          <span className="text-[10px] font-mono border border-chart-2/40 text-chart-2 px-1.5 py-0.5">{char.affinity}</span>
-                        )}
-                        {(data.primaryMode || char.mode) && (
-                          <span className="text-[10px] font-mono border border-primary/40 text-primary px-1.5 py-0.5">{data.primaryMode || char.mode}</span>
-                        )}
-                        {data.background && (
-                          <span className="text-[10px] font-mono border border-border text-muted-foreground px-1.5 py-0.5 truncate max-w-[100px]">{data.background}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Attribute mini row */}
-                  <div className="grid grid-cols-6 gap-1 mb-3 font-mono text-[10px]">
-                    {ATTRIBUTE_DEFS.map(a => {
-                      const val = attrs[a.key] || 10;
-                      const mod = calcMod(val);
-                      return (
-                        <div key={a.key} className="text-center">
-                          <div className="text-muted-foreground mb-0.5">{a.abbr}</div>
-                          <div className="text-foreground">{val}</div>
-                          <div className={cn("text-[9px]", mod >= 0 ? "text-chart-2/70" : "text-destructive/70")}>
-                            {mod >= 0 ? "+" : ""}{mod}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* VP bar */}
-                  <div className="mb-2">
-                    <div className="flex justify-between font-mono text-[10px] text-muted-foreground mb-1">
-                      <span className="flex items-center gap-1"><Shield className="w-2.5 h-2.5" /> VP</span>
-                      <span className={cn(vpPercent <= 25 ? "text-destructive" : vpPercent <= 50 ? "text-yellow-500" : "text-chart-2")}>
-                        {vpCurrent}/{maxVP}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-background border border-border/50">
-                      <div
-                        className={cn("h-full transition-all duration-300", vpPercent <= 25 ? "bg-destructive" : vpPercent <= 50 ? "bg-yellow-500" : "bg-chart-2")}
-                        style={{ width: `${vpPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Burnout indicator */}
-                  {burnout > 0 && (
-                    <div className="mb-2 flex gap-0.5">
-                      <Flame className="w-3 h-3 text-destructive/50 mr-0.5 flex-shrink-0" />
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className={cn("h-1.5 flex-1", i < burnout ? "bg-destructive/70" : "bg-border/30")} />
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex-1" />
-
-                  {/* Action buttons */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-border/60">
-                    <button
-                      onClick={() => setLocation(`/characters/${char.id}`)}
-                      className="min-h-10 py-1.5 text-[11px] font-mono border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      VIEW
-                    </button>
-                    <button
-                      onClick={() => setLocation(`/characters/${char.id}/build`)}
-                      className="min-h-10 py-1.5 text-[11px] font-mono border border-chart-2/40 text-chart-2 hover:bg-chart-2/10 transition-colors"
-                    >
-                      EDIT
-                    </button>
-                    <button
-                      onClick={() => handleDelete(char.id, char.name)}
-                      disabled={isDeleting}
-                      className="min-h-10 py-1.5 text-[11px] font-mono border border-destructive/50 text-destructive hover:border-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors"
-                    >
-                      {isDeleting ? "..." : "DELETE"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        <div className="ae-roster-toolbar">
+          <div className="ae-roster-filters" role="group" aria-label="Filter characters">
+            {([['all', 'All characters', roster.length], ['ready', 'Ready to play', readyCount], ['drafts', 'Drafts', roster.length - readyCount]] as const).map(([value, label, count]) => (
+              <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}<span>{count}</span></button>
+            ))}
+          </div>
+          <div className="ae-roster-search"><Search size={17} aria-hidden="true" /><input type="search" aria-label="Search characters by name, affinity, mode, background or guild" placeholder="Find a character…" value={search} onChange={event => setSearch(event.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")}><X size={15} /></button>}</div>
         </div>
+        {deleteError && <p role="alert" className="ae-inline-error">{deleteError}</p>}
+        <div className="ae-roster-grid" aria-busy={isLoading}>
+          {isLoading ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="ae-character-skeleton" aria-label="Loading character"><div /><span /><span /><span /></div>) : isError ? (
+            <div className="ae-roster-empty" role="alert"><BookOpen size={30} /><h3>The chronicle couldn’t be loaded.</h3><p>Please try again to retrieve your characters.</p><button className="ae-gold-button" onClick={() => void refetch()}>Try again <ArrowRight size={16} /></button></div>
+          ) : roster.length === 0 ? (
+            <div className="ae-roster-empty"><Feather size={32} /><h3>Your first story starts here.</h3><p>Weave a character and find your place in Aethros.</p><button className="ae-gold-button" onClick={handleCreate}><Plus size={16} /> Create your first character</button></div>
+          ) : visibleCharacters.length === 0 ? (
+            <div className="ae-roster-empty"><Search size={30} /><h3>No threads found.</h3><p>Try another name, affinity, or mode.</p><button className="ae-outline-button" onClick={() => { setSearch(""); setFilter("all"); }}>Show all characters</button></div>
+          ) : visibleCharacters.map((char, index) => {
+            const data = (char.data as any) || {};
+            const attrs = data.attributes || {};
+            const vp = data.vitalityPoints || {};
+            const burnout = data.burnout || 0;
+            const level = char.level || 1;
+            const maxVP = vp.max || calcVPMax(attrs.res || 10, level);
+            const vpCurrent = vp.current ?? maxVP;
+            const vpPercent = Math.min(100, Math.max(0, (vpCurrent / maxVP) * 100));
+            const isDeleting = deletingId === char.id;
+            return (
+              <article key={char.id} className={cn("ae-character-card", isDeleting && "ae-character-deleting")} style={{ animationDelay: `${Math.min(index, 5) * 55}ms` }}>
+                <div className="ae-character-card-top"><span>{char.isDraft ? <><Feather size={12} /> Draft in progress</> : <><span className="ae-ready-dot" /> Ready to play</>}</span><span className="ae-character-level">LEVEL <strong>{String(level).padStart(2, "0")}</strong></span></div>
+                <div className="ae-character-identity">
+                  <div className="ae-character-portrait">{data.avatarDataUrl ? <img src={data.avatarDataUrl} alt={`${char.name} portrait`} loading="lazy" /> : <span aria-hidden="true">{char.name.charAt(0).toUpperCase()}</span>}</div>
+                  <div><h3><Link href={`/characters/${char.id}`}>{char.name}</Link></h3><p>{data.primaryMode || char.mode || "Weaver"}{data.background ? ` · ${data.background}` : ""}</p></div>
+                </div>
+                <div className="ae-character-affinity"><Sparkles size={13} aria-hidden="true" /><span>{char.affinity || "Affinity unchosen"}</span><span className="ae-affinity-line" /></div>
+                <dl className="ae-character-attributes">{ATTRIBUTE_DEFS.map(attribute => {
+                  const value = attrs[attribute.key] || 10;
+                  const modifier = calcMod(value);
+                  return <div key={attribute.key}><dt title={attribute.label}>{attribute.abbr}</dt><dd>{value}<span className={modifier < 0 ? "ae-negative" : ""}>{modifier >= 0 ? "+" : ""}{modifier}</span></dd></div>;
+                })}</dl>
+                <div className="ae-character-vitality"><div><span><Shield size={13} aria-hidden="true" /> Vitality</span><span>{vpCurrent}<small> / {maxVP} VP</small></span></div><div className="ae-vitality-track" role="progressbar" aria-label={`${char.name} vitality`} aria-valuemin={0} aria-valuemax={maxVP} aria-valuenow={vpCurrent}><span className={cn(vpPercent <= 25 ? "ae-health-low" : vpPercent <= 50 ? "ae-health-mid" : "")} style={{ width: `${vpPercent}%` }} /></div></div>
+                {burnout > 0 && <div className="ae-burnout-summary"><Flame size={13} aria-hidden="true" /><span>Burnout {burnout}/6</span><div>{Array.from({ length: 6 }).map((_, step) => <i key={step} data-active={step < burnout} />)}</div></div>}
+                <div className="ae-character-actions"><Link href={`/characters/${char.id}`} className="ae-open-sheet" aria-label={`Open ${char.name}'s character sheet`}>Open sheet <ArrowRight size={16} aria-hidden="true" /></Link><Link href={`/characters/${char.id}/build`} className="ae-edit-character" aria-label={`Edit ${char.name}`}><Feather size={15} aria-hidden="true" /><span>Edit</span></Link><button onClick={() => void handleDelete(char.id, char.name)} disabled={isDeleting} className="ae-delete-character" title={`Delete ${char.name}`} aria-label={`Delete ${char.name}`}><Trash2 size={15} aria-hidden="true" /></button></div>
+              </article>
+            );
+          })}
+        </div>
+        {!isLoading && !isError && roster.length > 0 && <div className="ae-roster-footer"><span aria-live="polite">Showing {visibleCharacters.length} of {roster.length} characters</span><span aria-hidden="true">✦</span><span>Every choice leaves a thread.</span></div>}
       </div>
-    </div>
+    </main>
   );
 }

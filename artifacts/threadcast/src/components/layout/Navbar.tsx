@@ -1,140 +1,32 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/components/auth/auth-context";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Button } from "@/components/ui/button";
-import { BookOpen, Scroll, ShieldHalf, LogOut, Swords, Sun, Moon, Dices } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BookOpen, Scroll, ShieldHalf, LogOut, Compass, Sun, Moon, Dices } from "lucide-react";
+import "@/styles/journal-entry.css";
 
 export default function Navbar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-
-  const initials = user?.displayName
-    ? user.displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
-    : "?";
-
+  const initials = user?.displayName ? user.displayName.split(" ").map(word => word[0]).join("").slice(0, 2).toUpperCase() : "?";
+  const links = [
+    { href: "/characters", name: "Characters", icon: Scroll },
+    { href: "/compendium", name: "Compendium", icon: BookOpen },
+    { href: "/dice", name: "Dice Atelier", icon: Dices },
+    ...(user?.role === "weavekeeper" ? [{ href: "/weavekeeper", name: "Weavekeeper", icon: ShieldHalf }] : []),
+  ];
+  const isActive = (href: string) => location.startsWith(href) || (href === "/characters" && location.startsWith("/build"));
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-xl">
-      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-4 sm:px-6">
-        <div className="mr-4 hidden md:flex items-center">
-          <Link href="/characters" className="mr-7 flex items-center gap-2.5 group">
-            <div className="relative">
-              <Swords className="w-5 h-5 text-primary group-hover:text-primary transition-colors" />
-            </div>
-            <span className="font-[family-name:'Cinzel',serif] font-bold sm:inline-block text-primary tracking-wider text-sm group-hover:text-primary/90 transition-colors">
-              THREADCAST
-            </span>
-          </Link>
-          <nav className="flex items-center gap-1 text-sm font-medium" aria-label="Main navigation">
-            <Link href="/characters" aria-current={location.startsWith("/characters") || location.startsWith("/build") ? "page" : undefined} className="tc-nav-link rounded-sm">
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
-                location.startsWith("/characters") || location.startsWith("/build")
-                  ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}>
-                <Scroll className="w-3.5 h-3.5" />
-                <span>Characters</span>
-              </div>
-            </Link>
-            <Link href="/compendium" aria-current={location.startsWith("/compendium") ? "page" : undefined} className="tc-nav-link rounded-sm">
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
-                location.startsWith("/compendium")
-                  ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}>
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Compendium</span>
-              </div>
-            </Link>
-            <Link href="/dice" aria-current={location.startsWith("/dice") ? "page" : undefined} className="tc-nav-link rounded-sm">
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
-                location.startsWith("/dice")
-                  ? "text-foreground bg-primary/10 border border-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}>
-                <Dices className="w-3.5 h-3.5" />
-                <span>Dice Atelier</span>
-              </div>
-            </Link>
-            {user?.role === "weavekeeper" && (
-              <Link href="/weavekeeper" aria-current={location.startsWith("/weavekeeper") ? "page" : undefined} className="tc-nav-link rounded-sm">
-                <div className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-sm transition-all duration-150 font-mono text-xs tracking-wide",
-                  location.startsWith("/weavekeeper")
-                    ? "text-primary bg-primary/10 border border-primary/20"
-                    : "text-primary hover:text-primary hover:bg-primary/5"
-                )}>
-                  <ShieldHalf className="w-3.5 h-3.5" />
-                  <span>Weavekeeper</span>
-                </div>
-              </Link>
-            )}
-          </nav>
-        </div>
-
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <Link href="/characters" className="md:hidden font-[family-name:'Cinzel',serif] text-primary tracking-wide text-sm font-bold">
-            THREADCAST
-          </Link>
-          <div className="w-full flex-1 md:w-auto md:flex-none" />
-          <nav className="flex items-center gap-2">
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              className="w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-primary/60 transition-colors"
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            </button>
-
-            {user ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                    <span className="text-[10px] font-mono text-primary font-bold">{initials}</span>
-                  </div>
-                  <span className="text-sm font-mono text-muted-foreground hidden sm:block">{user.displayName}</span>
-                  {user.role === "weavekeeper" && (
-                    <span className="text-[9px] font-mono text-primary/60 border border-primary/20 px-1 py-0.5 hidden sm:block">WK</span>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => logout()}
-                  className="text-muted-foreground hover:text-foreground font-mono text-xs gap-1.5 h-9"
-                  data-testid="button-logout"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:block">Logout</span>
-                </Button>
-              </div>
-            ) : null}
-          </nav>
+    <header className="ae-navbar">
+      <div className="ae-navbar-inner">
+        <Link href="/characters" className="ae-brand" aria-label="THREADCAST character roster"><span className="ae-brand-seal"><Compass size={25} strokeWidth={1.2} aria-hidden="true" /></span><span>THREADCAST<small>WORLD OF AETHROS</small></span></Link>
+        <nav className="ae-desktop-navigation" aria-label="Main navigation">{links.map(({ href, name, icon: Icon }) => <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined}><Icon size={15} aria-hidden="true" /><span>{name}</span></Link>)}</nav>
+        <div className="ae-account-controls">
+          <button type="button" onClick={toggleTheme} className="ae-icon-button" title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"} aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}</button>
+          {user && <><div className="ae-account"><span className="ae-account-initials" aria-hidden="true">{initials}</span><span className="ae-account-name">{user.displayName}<small>{user.role === "weavekeeper" ? "Weavekeeper" : "Adventurer"}</small></span></div><button type="button" onClick={() => logout()} className="ae-icon-button" data-testid="button-logout" title="Logout" aria-label="Logout"><LogOut size={16} /></button></>}
         </div>
       </div>
-      {user && (
-        <nav className="tc-mobile-nav md:hidden flex items-center gap-1 overflow-x-auto border-t border-border px-3 py-1 font-mono text-[11px] uppercase tracking-wide" aria-label="Main navigation">
-          {[
-            { href: "/characters", name: "Characters", icon: Scroll },
-            { href: "/compendium", name: "Compendium", icon: BookOpen },
-            { href: "/dice", name: "Dice Atelier", icon: Dices },
-            ...(user.role === "weavekeeper" ? [{ href: "/weavekeeper", name: "Weavekeeper", icon: ShieldHalf }] : []),
-          ].map(({ href, name, icon: Icon }) => (
-            <Link key={href} href={href} data-testid={`link-mobile-${href.slice(1)}`}
-              aria-current={location.startsWith(href) || (href === "/characters" && location.startsWith("/build")) ? "page" : undefined}
-              className={cn("flex shrink-0 items-center gap-1.5 px-3 py-1.5 border-b-2", location.startsWith(href) || (href === "/characters" && location.startsWith("/build")) ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:text-foreground")}>
-              <Icon className="w-3.5 h-3.5" />{name}
-            </Link>
-          ))}
-        </nav>
-      )}
+      {user && <nav className="ae-mobile-navigation" aria-label="Main navigation">{links.map(({ href, name, icon: Icon }) => <Link key={href} href={href} data-testid={`link-mobile-${href.slice(1)}`} aria-current={isActive(href) ? "page" : undefined}><Icon size={16} aria-hidden="true" /><span>{name}</span></Link>)}</nav>}
     </header>
   );
 }
