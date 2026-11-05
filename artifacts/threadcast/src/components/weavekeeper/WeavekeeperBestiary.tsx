@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, BookOpen, ChevronDown, Copy, Dices, Plus, RefreshCw, Search, Shield, Skull, Trash2, X } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 import { useDiceRoller } from "@/components/shared/dice-roller-context";
+import { ALL_SKILLS } from "@/lib/ttrpg-data";
 import { cn } from "@/lib/utils";
 
 type Kind = "NPC" | "Monster" | "Creature" | "Construct" | "Boss";
@@ -89,6 +90,24 @@ export default function WeavekeeperBestiary() {
     const haystack = `${entry.name} ${entry.sheet.role} ${entry.sheet.section} ${entry.sheet.affinityModes}`.toLowerCase();
     return matchKind && haystack.includes(query.trim().toLowerCase());
   }), [entries, kindFilter, query]);
+
+  const rollableSkills = useMemo(() => {
+    if (!selected) return { standard: [], additional: [] };
+    const listed = new Map(selected.sheet.skills.map(skill => [skill.name.toLowerCase(), skill]));
+    const standardNames = new Set(ALL_SKILLS.map(skill => skill.name.toLowerCase()));
+    return {
+      standard: ALL_SKILLS.map(skill => {
+        const profileSkill = listed.get(skill.name.toLowerCase());
+        return {
+          name: skill.name,
+          attribute: skill.attr.toUpperCase(),
+          modifier: profileSkill?.modifier ?? mod(selected.sheet.attributes[skill.attr]),
+          fromProfile: !!profileSkill,
+        };
+      }),
+      additional: selected.sheet.skills.filter(skill => !standardNames.has(skill.name.toLowerCase())),
+    };
+  }, [selected]);
 
   async function patchSelected(patch: Record<string, unknown>) {
     if (!selected || saving) return;
@@ -182,8 +201,8 @@ export default function WeavekeeperBestiary() {
 
         <div className="grid gap-5 p-4 sm:p-6 xl:grid-cols-[.9fr_1.1fr]">
           <div className="space-y-5">
-            <section><h4 className="mb-3 font-mono text-[10px] uppercase tracking-[.18em] text-primary">Attributes</h4><div className="grid grid-cols-3 gap-2">{ATTRS.map(([key,label])=><div key={key} className="rounded-xl border border-border/70 bg-background/50 p-3 text-center"><div className="font-mono text-[9px] tracking-widest text-muted-foreground">{label}</div><div className="mt-1 font-[family-name:'Cinzel',serif] text-2xl text-foreground">{selected.sheet.attributes[key]}</div><div className="mt-0.5 font-mono text-xs text-primary">{signed(mod(selected.sheet.attributes[key]))}</div></div>)}</div><p className="mt-2 text-[10px] text-muted-foreground">Affinity / Modes: {selected.sheet.affinityModes}</p></section>
-            <section><div className="mb-3 flex items-center justify-between"><h4 className="font-mono text-[10px] uppercase tracking-[.18em] text-primary">Skills &amp; checks</h4><span className="text-[10px] text-muted-foreground">Click to roll d20</span></div>{selected.sheet.skills.length?<div className="flex flex-wrap gap-2">{selected.sheet.skills.map(item=><button key={item.name} onClick={()=>rollCheck(`${item.name} check`,item.modifier)} className="rounded-lg border border-border/70 bg-background/50 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5"><span className="block text-xs text-foreground">{item.name}</span><span className="font-mono text-[10px] text-primary">{signed(item.modifier)}</span></button>)}</div>:<p className="text-xs text-muted-foreground">No skill checks listed.</p>}</section>
+            <section><h4 className="mb-3 font-mono text-[10px] uppercase tracking-[.18em] text-primary">Attributes · roll to check</h4><div className="grid grid-cols-3 gap-2">{ATTRS.map(([key,label])=><button key={key} type="button" onClick={()=>rollCheck(`${label} attribute check`,mod(selected.sheet.attributes[key]))} aria-label={`Roll ${label} attribute check with ${signed(mod(selected.sheet.attributes[key]))} modifier`} className="group rounded-xl border border-border/70 bg-background/50 p-3 text-center transition hover:border-primary/50 hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><span className="block font-mono text-[9px] tracking-widest text-muted-foreground">{label}</span><span className="mt-1 block font-[family-name:'Cinzel',serif] text-2xl text-foreground">{selected.sheet.attributes[key]}</span><span className="mt-0.5 flex items-center justify-center gap-1 font-mono text-xs text-primary"><Dices className="h-3 w-3 opacity-0 transition group-hover:opacity-100"/>{signed(mod(selected.sheet.attributes[key]))}</span></button>)}</div><p className="mt-2 text-[10px] text-muted-foreground">Affinity / Modes: {selected.sheet.affinityModes}</p></section>
+            <section><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-mono text-[10px] uppercase tracking-[.18em] text-primary">Skills &amp; checks</h4><p className="mt-1 text-[10px] text-muted-foreground">All {ALL_SKILLS.length} standard skills are rollable. PDF-listed bonuses are used where present; other checks use the governing attribute.</p></div><span className="text-[10px] text-muted-foreground">Click to roll d20</span></div><div className="flex flex-wrap gap-2">{rollableSkills.standard.map(item=><button key={item.name} type="button" onClick={()=>rollCheck(`${item.name} check`,item.modifier)} aria-label={`Roll ${item.name} check with ${signed(item.modifier)} modifier`} title={`${item.attribute} · ${item.fromProfile?"PDF profile bonus":"attribute modifier"}`} className="rounded-lg border border-border/70 bg-background/50 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><span className="block text-xs text-foreground">{item.name}</span><span className="font-mono text-[10px] text-primary">{signed(item.modifier)}</span><span className="ml-2 font-mono text-[9px] text-muted-foreground">{item.attribute}</span></button>)}</div>{rollableSkills.additional.length>0&&<div className="mt-4 border-t border-border/60 pt-3"><p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Other skills listed in this profile</p><div className="flex flex-wrap gap-2">{rollableSkills.additional.map(item=><button key={item.name} type="button" onClick={()=>rollCheck(`${item.name} check`,item.modifier)} aria-label={`Roll ${item.name} check with ${signed(item.modifier)} modifier`} className="rounded-lg border border-border/70 bg-background/50 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><span className="block text-xs text-foreground">{item.name}</span><span className="font-mono text-[10px] text-primary">{signed(item.modifier)}</span></button>)}</div></div>}</section>
             <section><h4 className="mb-3 font-mono text-[10px] uppercase tracking-[.18em] text-primary">Condition tracker</h4><div className="flex flex-wrap gap-2">{selected.sheet.conditions.map(condition=><button key={condition} disabled={saving} onClick={()=>void patchSelected({conditions:selected.sheet.conditions.filter(item=>item!==condition)})} title="Remove condition" className="rounded-full border border-chart-2/30 bg-chart-2/10 px-3 py-1.5 text-xs text-chart-2">{condition}<span className="ml-2 opacity-60">×</span></button>)}{selected.sheet.conditions.length===0&&<span className="text-xs text-muted-foreground">No active conditions.</span>}</div><form onSubmit={event=>{event.preventDefault();const value=conditionDraft.trim();if(value&&!selected.sheet.conditions.includes(value)){void patchSelected({conditions:[...selected.sheet.conditions,value]});setConditionDraft("");}}} className="mt-2 flex gap-2"><input value={conditionDraft} onChange={event=>setConditionDraft(event.target.value)} maxLength={100} placeholder="Add condition" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background/60 px-3 text-xs outline-none focus:border-primary/50"/><button disabled={!conditionDraft.trim()||saving} className="rounded-lg border border-border px-3 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary disabled:opacity-40">Add</button></form></section>
             {selected.sheet.gmNotes.length>0&&<section className="rounded-xl border border-amber-500/20 bg-amber-500/[.04] p-4"><h4 className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.18em] text-amber-500"><BookOpen className="h-3.5 w-3.5"/>Weavekeeper notes</h4><ul className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">{selected.sheet.gmNotes.map(note=><li key={note}>• {note}</li>)}</ul></section>}
           </div>
