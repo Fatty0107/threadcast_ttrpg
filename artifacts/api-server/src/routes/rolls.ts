@@ -1,12 +1,13 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { Router } from "express";
 import { and, desc, eq } from "drizzle-orm";
-import { db, charactersTable, rollsTable, collaborativeCastsTable } from "@workspace/db";
+import { db, charactersTable, rollsTable, collaborativeCastsTable, weavekeeperBestiaryTable } from "@workspace/db";
 import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, ListRollsResponse,
   StartCollaborativeCastBody, GetCollaborativeCastParams, GetCollaborativeCastResponse,
   ResolveCollaborativeSupportParams, ResolveCollaborativeSupportBody, ResolveCollaborativeSupportResponse } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
+import type { BestiarySheet } from "../data/rank-f-bestiary";
 
 const router = Router();
 router.use("/rolls", requireAuth);
@@ -28,7 +29,7 @@ function webhookUrl(): string | null {
 
 type SavedRoll = typeof rollsTable.$inferSelect;
 function responseRoll(roll: SavedRoll) {
-  const { userId, requestId, deliveryStatus, ...visible } = roll;
+  const { userId, requestId, deliveryStatus, weavekeeperCreatureId, weavekeeperOnly, ...visible } = roll;
   return { ...visible, d2: roll.d2 ?? undefined, dc: roll.dc ?? undefined,
     isBreak: !!roll.isBreak, isMisfire: !!roll.isMisfire, createdAt: roll.createdAt.toISOString() };
 }
@@ -203,19 +204,35 @@ async function sendToDiscord(roll: SavedRoll, url: string, log: { warn: (data: o
   }
 }
 
-router.get("/rolls", async (_req, res): Promise<void> => {
-  const rolls = await db.select().from(rollsTable).orderBy(desc(rollsTable.id)).limit(100);
+router.get("/rolls", async (req, res): Promise<void> => {
+  const rolls = await db.select().from(rollsTable)
+    .where((req as any).user.role === "weavekeeper" ? undefined : eq(rollsTable.weavekeeperOnly, false))
+    .orderBy(desc(rollsTable.id)).limit(100);
   res.json(ListRollsResponse.parse(rolls.map(responseRoll)));
 });
 
 router.post("/rolls", async (req, res): Promise<void> => {
-  const parsed = CreateRollBody.safeParse(req.body);
+  const weavekeeperCreatureId = req.body?.weavekeeperCreatureId;
+  const weavekeeperTensionCost = req.body?.weavekeeperTensionCost;
+  const bodyForExistingRollSchema = req.body && typeof req.body === "object" ? { ...req.body } : req.body;
+  if (bodyForExistingRollSchema && typeof bodyForExistingRollSchema === "object") {
+    delete bodyForExistingRollSchema.weavekeeperCreatureId;
+    delete bodyForExistingRollSchema.weavekeeperTensionCost;
+  }
+  const parsed = CreateRollBody.safeParse(bodyForExistingRollSchema);
   if (!parsed.success || !req.body || Object.keys(req.body).some(key =>
-    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "castId", "tensionContribution", "contributedString", "contributedMode"].includes(key))) {
+    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "castId", "tensionContribution", "contributedString", "contributedMode", "weavekeeperCreatureId", "weavekeeperTensionCost"].includes(key))) {
     res.status(400).json({ error: "Invalid roll request" });
     return;
   }
   const input = parsed.data;
+  const user = (req as any).user;
+  const hasWeavekeeperCreature = weavekeeperCreatureId !== undefined;
+  if ((hasWeavekeeperCreature && (user.role !== "weavekeeper" || !Number.isSafeInteger(weavekeeperCreatureId) || weavekeeperCreatureId < 1 || input.characterId !== undefined || input.castId !== undefined)) ||
+      (weavekeeperTensionCost !== undefined && (!hasWeavekeeperCreature || !Number.isSafeInteger(weavekeeperTensionCost) || weavekeeperTensionCost < 0 || weavekeeperTensionCost > 1000))) {
+    res.status(403).json({ error: "Weavekeeper bestiary rolls are restricted to the Weavekeeper account" });
+    return;
+  }
   const isMend = input.category === "mend";
   const isDamage = input.category === "damage";
   const isTable = input.category === "table";
@@ -244,8 +261,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid dice configuration" });
     return;
   }
-  const user = (req as any).user;
   let characterName = user.displayName as string;
+  let bestiaryEntry: typeof weavekeeperBestiaryTable.$inferSelect | undefined;
+  if (hasWeavekeeperCreature) {
+    [bestiaryEntry] = await db.select().from(weavekeeperBestiaryTable)
+      .where(eq(weavekeeperBestiaryTable.id, weavekeeperCreatureId)).limit(1);
+    if (!bestiaryEntry) { res.status(404).json({ error: "Weavekeeper sheet not found" }); return; }
+    characterName = bestiaryEntry.name;
+  }
   if (input.characterId !== undefined) {
     const [character] = await db.select({ name: charactersTable.name })
       .from(charactersTable)
@@ -258,7 +281,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
       return;
     }
     characterName = character.name;
-  } else if (input.category !== "check") {
+  } else if (input.category !== "check" && !bestiaryEntry) {
     res.status(400).json({ error: "Character required for sheet rolls" });
     return;
   }
@@ -296,6 +319,8 @@ router.post("/rolls", async (req, res): Promise<void> => {
   const url = webhookUrl();
   const values = {
     userId: user.id, requestId: input.requestId, characterId: input.characterId ?? null,
+    weavekeeperCreatureId: bestiaryEntry?.id ?? null,
+    weavekeeperOnly: !!bestiaryEntry,
     castId: cast?.id ?? null, leadCharacterId: cast?.leadCharacterId ?? null,
     tensionContribution: input.tensionContribution ?? null,
     contributedString: input.contributedString?.trim() ?? null,
@@ -309,7 +334,34 @@ router.post("/rolls", async (req, res): Promise<void> => {
     deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
   };
   let created: SavedRoll | undefined;
-  if (isSupport && cast && input.characterId) {
+  if (bestiaryEntry) {
+    const result = await db.transaction(async tx => {
+      const [locked] = await tx.select().from(weavekeeperBestiaryTable)
+        .where(eq(weavekeeperBestiaryTable.id, bestiaryEntry!.id)).for("update").limit(1);
+      if (!locked) return { roll: undefined, error: "Weavekeeper sheet not found" };
+      const [repeat] = await tx.select().from(rollsTable)
+        .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
+      if (repeat) return { roll: repeat, error: null };
+      const sheet = locked.sheet as BestiarySheet;
+      const cost = weavekeeperTensionCost ?? 0;
+      if (sheet.tension.current < cost) return { roll: undefined, error: "This sheet does not have enough Tension" };
+      const [roll] = await tx.insert(rollsTable).values(values).onConflictDoNothing().returning();
+      if (!roll) {
+        const [retry] = await tx.select().from(rollsTable)
+          .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
+        return { roll: retry, error: retry ? null : "Roll request already recorded" };
+      }
+      if (cost > 0) {
+        await tx.update(weavekeeperBestiaryTable).set({
+          sheet: { ...sheet, tension: { ...sheet.tension, current: sheet.tension.current - cost } },
+          version: locked.version + 1,
+        }).where(eq(weavekeeperBestiaryTable.id, locked.id));
+      }
+      return { roll, error: null };
+    });
+    if (result.error || !result.roll) { res.status(409).json({ error: result.error ?? "Roll could not be recorded" }); return; }
+    created = result.roll;
+  } else if (isSupport && cast && input.characterId) {
     const result = await db.transaction(async tx => {
       // Serialize contributions to this cast, then re-check the request for retries.
       const [lockedCast] = await tx.select().from(collaborativeCastsTable)

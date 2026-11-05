@@ -23,6 +23,8 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
   const [modifier, setModifier] = useState(0);
   const [characterName, setCharacterName] = useState("Unknown");
   const [characterId, setCharacterId] = useState<number | undefined>();
+  const [weavekeeperCreatureId, setWeavekeeperCreatureId] = useState<number | undefined>();
+  const [weavekeeperTensionCost, setWeavekeeperTensionCost] = useState<number | undefined>();
   const [damage, setDamage] = useState<DamageDice | undefined>();
   const [mode, setMode] = useState<RollMode>("NORMAL");
   const [isRolling, setIsRolling] = useState(false);
@@ -49,7 +51,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setRollStyle(null);
   }, [user?.id]);
 
-  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown", newCharacterId?: number, newDamage?: DamageDice) => {
+  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown", newCharacterId?: number, newDamage?: DamageDice, newWeavekeeperCreatureId?: number, newTensionCost?: number) => {
     if (timer.current) clearTimeout(timer.current);
     returnFocusRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
       ? document.activeElement
@@ -58,6 +60,8 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setModifier(newModifier);
     setCharacterName(newCharacterName);
     setCharacterId(newCharacterId);
+    setWeavekeeperCreatureId(newWeavekeeperCreatureId);
+    setWeavekeeperTensionCost(newTensionCost);
     setDamage(newDamage);
     setRollError("");
     setMode("NORMAL");
@@ -75,7 +79,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setRollError("");
     let result: GameplayRoll;
     try {
-      result = await recordRoll({ title, modifier, characterId, mode: damage ? "NORMAL" : mode,
+      result = await recordRoll({ title, modifier, characterId, weavekeeperCreatureId, weavekeeperTensionCost, mode: damage ? "NORMAL" : mode,
         category: damage ? "damage" : "check", diceSides: damage?.diceSides ?? 20,
         diceCount: damage?.diceCount ?? (mode === "NORMAL" ? 1 : 2),
         bonusDiceSides: damage?.bonusDiceSides, bonusDiceCount: damage?.bonusDiceCount, multiplier: 1 });

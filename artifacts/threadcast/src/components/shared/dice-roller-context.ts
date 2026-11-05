@@ -6,7 +6,7 @@ interface DiceRollerContextType {
     diceCount: 0 | 1 | 2;
     bonusDiceSides?: 4 | 6 | 8 | 10 | 12;
     bonusDiceCount?: 1 | 2;
-  }) => void;
+  }, weavekeeperCreatureId?: number, tensionCost?: number) => void;
 }
 
 export const DiceRollerContext = createContext<DiceRollerContextType | undefined>(undefined);

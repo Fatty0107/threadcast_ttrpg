@@ -19,6 +19,7 @@ export function useGameplayRoll() {
     const roll = await create.mutateAsync({ data: { ...data, requestId } });
     if (retry.current?.requestId === requestId) retry.current = null;
     void client.invalidateQueries({ queryKey: [...getListRollsQueryKey(), user?.id] });
+    if (data.weavekeeperCreatureId !== undefined) window.dispatchEvent(new Event("weavekeeper-bestiary-updated"));
     return roll;
   };
 }

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { charactersTable, db, rollsTable } from "@workspace/db";
+import { charactersTable, db, rollsTable, weavekeeperBestiaryTable } from "@workspace/db";
 import { buildRollEmbed } from "./discord-roll-format";
 
 type Roll = typeof rollsTable.$inferSelect;
@@ -11,6 +11,15 @@ export async function postRollEmbed(roll: Roll, url: string): Promise<{ ok: bool
       const [character] = await db.select({ data: charactersTable.data })
         .from(charactersTable).where(eq(charactersTable.id, roll.characterId)).limit(1);
       portrait = (character?.data as { avatarDataUrl?: unknown } | null)?.avatarDataUrl;
+    } catch {
+      // A portrait read failure must not prevent the result itself from arriving.
+    }
+  }
+  if (roll.weavekeeperCreatureId !== null) {
+    try {
+      const [entry] = await db.select({ sheet: weavekeeperBestiaryTable.sheet })
+        .from(weavekeeperBestiaryTable).where(eq(weavekeeperBestiaryTable.id, roll.weavekeeperCreatureId)).limit(1);
+      portrait = (entry?.sheet as { avatarDataUrl?: unknown } | null)?.avatarDataUrl ?? portrait;
     } catch {
       // A portrait read failure must not prevent the result itself from arriving.
     }

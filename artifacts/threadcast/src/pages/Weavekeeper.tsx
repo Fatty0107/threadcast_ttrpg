@@ -5,11 +5,12 @@ import { useHomebrew } from "@/contexts/HomebrewContext";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CharacterSheetContent } from "@/components/character/CharacterSheetContent";
+import WeavekeeperBestiary from "@/components/weavekeeper/WeavekeeperBestiary";
 import { ATTRIBUTE_DEFS } from "@/lib/ttrpg-data";
 import { type AffinityString } from "@/lib/affinity-data";
 import {
   Users, Scroll, Plus, Trash2, Eye, EyeOff, Edit3, Globe,
-  ShieldHalf, Swords, Flame, Hammer, ChevronDown, ChevronRight, X,
+  ShieldHalf, Swords, Flame, Hammer, ChevronDown, ChevronRight, X, Skull,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -939,6 +940,9 @@ export default function Weavekeeper() {
             <TabsTrigger value="homebrew" className="font-mono text-xs gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               <Hammer className="w-3.5 h-3.5" /> Homebrew
             </TabsTrigger>
+            {user.role === "weavekeeper" && <TabsTrigger value="bestiary" className="font-mono text-xs gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+              <Skull className="w-3.5 h-3.5" /> Bestiary
+            </TabsTrigger>}
           </TabsList>
 
           {/* ── CAMPAIGN ─────────────────────────────────────────── */}
@@ -1106,6 +1110,10 @@ export default function Weavekeeper() {
               </TabsContent>
             </Tabs>
           </TabsContent>
+
+          {user.role === "weavekeeper" && <TabsContent value="bestiary">
+            <WeavekeeperBestiary />
+          </TabsContent>}
         </Tabs>
       </div>
     </div>

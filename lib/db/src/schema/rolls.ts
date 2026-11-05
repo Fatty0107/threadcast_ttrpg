@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -7,6 +7,8 @@ export const rollsTable = pgTable("gameplay_rolls", {
   userId: integer("user_id").notNull(),
   requestId: text("request_id").notNull(),
   characterId: integer("character_id"),
+  weavekeeperCreatureId: integer("weavekeeper_creature_id"),
+  weavekeeperOnly: boolean("weavekeeper_only").notNull().default(false),
   castId: uuid("cast_id"),
   leadCharacterId: integer("lead_character_id"),
   tensionContribution: integer("tension_contribution"),

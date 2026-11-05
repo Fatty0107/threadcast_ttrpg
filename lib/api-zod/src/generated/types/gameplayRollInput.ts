@@ -14,6 +14,10 @@ export interface GameplayRollInput {
   requestId: string;
   /** @minimum 1 */
   characterId?: number;
+  /** Weavekeeper-only NPC or creature sheet. */
+  weavekeeperCreatureId?: number;
+  /** Spent atomically on a Weavekeeper-only NPC cast check. */
+  weavekeeperTensionCost?: number;
   castId?: string;
   /**
      * @minimum 1

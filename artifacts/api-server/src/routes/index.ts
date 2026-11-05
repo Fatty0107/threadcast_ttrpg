@@ -6,6 +6,7 @@ import homebrewRouter from "./homebrew";
 import diceRouter from "./dice";
 import rollsRouter from "./rolls";
 import castsRouter from "./casts";
+import weavekeeperBestiaryRouter from "./weavekeeper-bestiary";
 
 const router: IRouter = Router();
 
@@ -13,6 +14,7 @@ router.use(healthRouter);
 router.use("/auth", authRouter);
 router.use("/characters", charactersRouter);
 router.use("/homebrew", homebrewRouter);
+router.use("/weavekeeper/bestiary", weavekeeperBestiaryRouter);
 router.use(diceRouter);
 router.use(rollsRouter);
 router.use(castsRouter);
