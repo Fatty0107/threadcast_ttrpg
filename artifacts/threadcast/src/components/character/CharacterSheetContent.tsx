@@ -82,6 +82,7 @@ interface SheetData {
   attributes?: Record<string, number>;
   vitalityPoints?: { current: number; max: number };
   tension?: { current: number; pool: number; safeLimit: number };
+  inspiration?: boolean;
   burnout?: number;
   fatigue?: number;
   corruption?: number;
@@ -1187,6 +1188,7 @@ ${ATTRIBUTE_DEFS.map(a => {
 <div style="margin-top:5px;font-family:monospace;font-size:8pt">
   <div style="margin-bottom:5px"><strong>Burnout</strong> (${burnout}/6 — ${burnoutLabel})<br>${checkBoxes(burnout,6)} <span style="color:#8b0000">${burnoutLabel}</span></div>
   <div style="margin-bottom:5px"><strong>Recovery Dice</strong> ${recoveryDiceCurrent}/${maxRecoveryDice}<br>${checkBoxes(recoveryDiceCurrent,maxRecoveryDice)}</div>
+  <div style="margin-bottom:5px"><strong>Inspiration</strong> ${localData.inspiration ? "Available" : "Not available"}</div>
   <div style="margin-bottom:5px"><strong>Fatigue</strong> ${fatigue}/5<br>${checkBoxes(fatigue,5)}</div>
   <div><strong>Corruption</strong> ${corruption}/10<br>${checkBoxes(corruption,10)}</div>
 </div>
@@ -1508,6 +1510,31 @@ ${([
             {strainMessage && <p role="status" className="mt-2 text-[11px] text-amber-500 font-mono">{strainMessage}</p>}
             {strainResult && <CastAftermathDisplay result={{ ...strainResult.aftermath, saveConfirmed: true, damageSaved: true }} />}
           </div>
+          <section className="tc-inspiration-card" aria-label="Inspiration tracker">
+            <div className="tc-inspiration-head">
+              <span className="tc-inspiration-icon" aria-hidden="true">✦</span>
+              <div>
+                <div className="tc-card-label">Inspiration</div>
+                <div className="tc-inspiration-state" data-ready={Boolean(localData.inspiration)} aria-live="polite">
+                  {localData.inspiration ? "Ready to spend" : "Not available"}
+                </div>
+              </div>
+            </div>
+            <p className="tc-inspiration-help">
+              Spend before a d20 attack, check, or save for advantage.
+            </p>
+            <button
+              type="button"
+              className="tc-inspiration-toggle"
+              aria-pressed={Boolean(localData.inspiration)}
+              aria-label={localData.inspiration ? "Spend Inspiration" : "Mark Inspiration as available"}
+              data-testid="button-inspiration"
+              onClick={() => patch({ inspiration: !localData.inspiration })}
+            >
+              {localData.inspiration ? "Spend Inspiration" : "Mark as available"}
+            </button>
+            <span className="tc-inspiration-note">Awarded by your GM · clear it after use</span>
+          </section>
         </div>
 
         {/* Mend Panel */}
