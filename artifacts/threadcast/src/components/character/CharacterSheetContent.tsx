@@ -1976,7 +1976,7 @@ ${([
           <p className="text-xs text-muted-foreground leading-relaxed border border-border/30 bg-muted/10 p-3">
             Your String is a part of your Affinity, not a fixed spell. The PL table shows examples of scale.
             Choose a String, Power Level, and Mode, then describe what you want to achieve and roll.
-            Safe maximum: PL {safePowerLevel}. Higher PL casts roll at Discord.
+            Safe maximum: PL {safePowerLevel}. Casting any String in your Primary Mode always rolls at Harmony; casts in other modes above this limit roll at Discord.
           </p>
           {(localData.strings || []).length === 0 && (
             <div className="py-8 text-center font-mono text-muted-foreground text-sm">No Strings attuned. Add them via character editing.</div>
@@ -3173,7 +3173,7 @@ function CastStringPanel({
   type ModeOption = { name: string; rollType: "HARMONY" | "NORMAL" | "DISCORD"; tier: "Primary" | "Secondary" | "Tertiary" | "Other" };
   const normalModes = new Set([...secondaryModes, ...tertiaryModes]);
   const availableModes: ModeOption[] = ALL_MODES.map(m => {
-    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: forcedDiscord || (castPL && castPL.pl > safePowerLevel) ? "DISCORD" as const : "HARMONY" as const, tier: "Primary" as const };
+    if (primaryMode && m.name === primaryMode) return { name: m.name, rollType: "HARMONY", tier: "Primary" as const };
     if (normalModes.has(m.name)) {
       const tier = secondaryModes.includes(m.name) ? "Secondary" as const : "Tertiary" as const;
       return { name: m.name, rollType: forcedDiscord || (castPL && castPL.pl > safePowerLevel) ? "DISCORD" as const : "NORMAL" as const, tier };
@@ -3301,7 +3301,7 @@ function CastStringPanel({
                 <span>{handout ? castPL.effect : `Example only: ${castPL.effect}`}</span>
                 {!handout && <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>}
               </div>
-              {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): Thread Check at Discord.</p>}
+              {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): modes other than your Primary Mode roll at Discord.</p>}
                <p className="mb-3 text-[10px] text-muted-foreground">DC is automatic for this String and PL. Mode changes the check type (Harmony, Normal, or Discord), not the DC. Describe your effect and roll without an approval step.</p>
                {castPL.cost > availableTension && <p className="mb-3 text-[10px] font-mono text-amber-500">Cost exceeds remaining Thread Pool room ({Math.max(0, availableTension)}T). This cast triggers automatic Snapback and releases Tension.</p>}
               {dicePreferenceError && <p className="mb-3 text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}

@@ -421,8 +421,13 @@ router.post("/casts", async (req, res): Promise<void> => {
       const primary = data?.primaryMode || character.mode;
       let rollMode: "NORMAL" | "HARMONY" | "DISCORD";
       if (input.kind === "cast") {
-        rollMode = components[0].mode === primary ? "HARMONY" : availableModes.includes(components[0].mode) ? "NORMAL" : "DISCORD";
-        if (overSafe || forcedDiscord) rollMode = "DISCORD";
+        // The character's chosen Primary Mode always grants Harmony on every String.
+        // Safe-PL and condition penalties only change rolls made through other modes.
+        rollMode = components[0].mode === primary
+          ? "HARMONY"
+          : overSafe || forcedDiscord
+            ? "DISCORD"
+            : availableModes.includes(components[0].mode) ? "NORMAL" : "DISCORD";
       } else {
         rollMode = weaveCheckMode(count, hasPrecisionWeave, overSafe, forcedDiscord);
       }
