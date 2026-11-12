@@ -39,6 +39,8 @@ function findSheetString(affinity: string, name: string) {
     (getCreationAffinity(affinity) ? undefined : findString(name));
 }
 
+const ALPHABETICAL_SKILLS = [...ALL_SKILLS].sort((left, right) => left.name.localeCompare(right.name));
+
 // ---- Types ----
 import { useResolveCollaborativeSupport } from "@workspace/api-client-react";
 interface SubItem {
@@ -1218,7 +1220,7 @@ ${equippedWeapons.map(item => {
 
 <h2>Skills</h2>
 <table><thead><tr><th>Skill</th><th>Attr</th><th>Attuned</th><th>Modifier</th><th>Total</th></tr></thead><tbody>
-${ALL_SKILLS.map(skill => {
+${ALPHABETICAL_SKILLS.map(skill => {
   const attrScore = attrs[skill.attr] || 10;
   const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
   const isAt = attunedSkills.includes(skill.name);
@@ -1910,7 +1912,7 @@ ${([
               </tr>
             </thead>
             <tbody>
-              {ALL_SKILLS.filter(skill => (!attunedOnly || attunedSkills.includes(skill.name)) && `${skill.name} ${skill.attr} ${ATTRIBUTE_DEFS.find(attr => attr.key === skill.attr)?.label || ""}`.toLowerCase().includes(skillSearch.trim().toLowerCase())).map(skill => {
+              {ALPHABETICAL_SKILLS.filter(skill => (!attunedOnly || attunedSkills.includes(skill.name)) && `${skill.name} ${skill.attr} ${ATTRIBUTE_DEFS.find(attr => attr.key === skill.attr)?.label || ""}`.toLowerCase().includes(skillSearch.trim().toLowerCase())).map(skill => {
                 const attrScore = attrs[skill.attr] || 10;
                 const mod = calcMod(attrScore) - (skill.attr === "ctr" ? nerveDamageCount : 0);
                 const isAttuned = attunedSkills.includes(skill.name);
