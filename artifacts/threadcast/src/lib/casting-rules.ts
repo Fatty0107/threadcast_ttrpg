@@ -46,6 +46,9 @@ export type CastAftermath = {
     permanentInjury?: { id: string; die: number; name: string; description: string };
   };
   damage?: number;
+  burnoutDamage?: number;
+  burnoutDamageDice?: number;
+  recoveredTension?: number;
   strain?: { die: number; total: number; dc: number; failed: boolean };
   warning?: string;
 };

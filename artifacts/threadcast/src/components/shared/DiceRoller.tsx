@@ -7,11 +7,10 @@ import { DiceStage, ROLL_DURATION_MS, type StageDie } from "./DiceStage";
 import { Link } from "wouter";
 import { Dices, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
-import { DiceRollerContext } from "./dice-roller-context";
+import { DiceRollerContext, type RollMode, type SheetRollOptions } from "./dice-roller-context";
 import type { DiceStyle, GameplayRoll } from "@workspace/api-client-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
-type RollMode = "NORMAL" | "HARMONY" | "DISCORD";
 type DamageDice = { diceSides: 0 | 4 | 6 | 8 | 10 | 12; diceCount: 0 | 1 | 2; bonusDiceSides?: 4 | 6 | 8 | 10 | 12; bonusDiceCount?: 1 | 2 };
 
 export function DiceRollerProvider({ children }: { children: ReactNode }) {
@@ -27,6 +26,10 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
   const [weavekeeperTensionCost, setWeavekeeperTensionCost] = useState<number | undefined>();
   const [damage, setDamage] = useState<DamageDice | undefined>();
   const [mode, setMode] = useState<RollMode>("NORMAL");
+  const [modeLocked, setModeLocked] = useState(false);
+  const [modeReason, setModeReason] = useState("");
+  const [skillName, setSkillName] = useState<string | undefined>();
+  const [checkAttribute, setCheckAttribute] = useState<SheetRollOptions["checkAttribute"]>();
   const [isRolling, setIsRolling] = useState(false);
   const [rollingDice, setRollingDice] = useState<StageDie[]>([]);
   const [rollKey, setRollKey] = useState(0);
@@ -51,7 +54,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setRollStyle(null);
   }, [user?.id]);
 
-  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown", newCharacterId?: number, newDamage?: DamageDice, newWeavekeeperCreatureId?: number, newTensionCost?: number) => {
+  const openRoll = useCallback((newTitle: string, newModifier: number, newCharacterName = "Unknown", newCharacterId?: number, newDamage?: DamageDice, newWeavekeeperCreatureId?: number, newTensionCost?: number, options: SheetRollOptions = {}) => {
     if (timer.current) clearTimeout(timer.current);
     returnFocusRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
       ? document.activeElement
@@ -64,7 +67,11 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     setWeavekeeperTensionCost(newTensionCost);
     setDamage(newDamage);
     setRollError("");
-    setMode("NORMAL");
+    setMode(options.mode ?? "NORMAL");
+    setModeLocked(options.modeLocked ?? false);
+    setModeReason(options.modeReason ?? "");
+    setSkillName(options.skillName);
+    setCheckAttribute(options.checkAttribute);
     setCurrentResult(null);
     setIsRolling(false);
     setRollingDice([]);
@@ -80,6 +87,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
     let result: GameplayRoll;
     try {
       result = await recordRoll({ title, modifier, characterId, weavekeeperCreatureId, weavekeeperTensionCost, mode: damage ? "NORMAL" : mode,
+        skillName: damage ? undefined : skillName, checkAttribute: damage ? undefined : checkAttribute,
         category: damage ? "damage" : "check", diceSides: damage?.diceSides ?? 20,
         diceCount: damage?.diceCount ?? (mode === "NORMAL" ? 1 : 2),
         bonusDiceSides: damage?.bonusDiceSides, bonusDiceCount: damage?.bonusDiceCount, multiplier: 1 });
@@ -195,6 +203,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                       key={m}
                       data-testid={`button-roll-mode-${m.toLowerCase()}`}
                       aria-pressed={mode === m}
+                      disabled={modeLocked}
                       className={`flex-1 py-2 text-xs font-mono border transition-colors ${
                         mode === m
                           ? "bg-primary text-primary-foreground border-primary"
@@ -212,6 +221,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                     {mode === "DISCORD" && "2d20 keep lowest — conditions are against you"}
                     {mode === "NORMAL" && "1d20 — standard Thread Check"}
                   </>}
+                  {modeReason && <span className="block mt-1 text-destructive/80">{modeReason}</span>}
                 </div>
                 <Button className="w-full h-14 text-sm sm:text-base tracking-[.16em]" onClick={executeRoll} disabled={diceLoading} data-testid="button-roll-thread-check">
                   <Dices className="mr-2 h-5 w-5" /> {diceLoading ? "LOADING YOUR DICE" : damage ? "ROLL DAMAGE" : "CAST THE DICE"}
@@ -242,7 +252,7 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                       {damage ? `${damage.diceCount ? `${damage.diceCount}d${damage.diceSides}` : "flat"}${currentResult.extraDice.length ? ` + ${currentResult.extraDice.length} bonus dice` : ""}` : currentResult.mode === "NORMAL" ? "d20" : currentResult.mode === "HARMONY" ? `[${currentResult.d1}, ${currentResult.d2}] ▲ keep highest` : `[${currentResult.d1}, ${currentResult.d2}] ▼ keep lowest`}
                     </div>
                     <div className="text-3xl text-foreground">
-                      {damage ? currentResult.finalDie : currentResult.d2 === undefined ? currentResult.d1 : currentResult.mode === "HARMONY" ? Math.max(currentResult.d1, currentResult.d2) : Math.min(currentResult.d1, currentResult.d2)}
+                      {currentResult.finalDie}
                     </div>
                   </div>
                   <div className="text-xl text-muted-foreground mb-1">{formatModifier(modifier)}</div>
@@ -255,6 +265,14 @@ export function DiceRollerProvider({ children }: { children: ReactNode }) {
                     {currentResult.total}
                   </div>
                 </div>
+                {skillName && (() => {
+                  const rawFinalDie = currentResult.d2 === undefined ? currentResult.d1
+                    : currentResult.mode === "HARMONY" ? Math.max(currentResult.d1, currentResult.d2)
+                    : Math.min(currentResult.d1, currentResult.d2);
+                  return currentResult.finalDie !== rawFinalDie ? (
+                    <p className="mb-4 text-xs text-chart-2">Skill Refinement: d20 {rawFinalDie} counts as 10.</p>
+                  ) : null;
+                })()}
 
                 {damage && <p className="mb-4 text-xs text-muted-foreground">
                   {damage.diceSides === 0 ? "1 flat" : [currentResult.d1, currentResult.d2].filter(v => v !== undefined).join(" + ")}

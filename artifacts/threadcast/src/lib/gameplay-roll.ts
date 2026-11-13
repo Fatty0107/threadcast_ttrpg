@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getListRollsQueryKey, useCreateRoll, type GameplayRollInput,
+  getGetCharacterQueryKey, getListRollsQueryKey, useCreateRoll, type GameplayRollInput,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/components/auth/auth-context";
 
@@ -19,6 +19,9 @@ export function useGameplayRoll() {
     const roll = await create.mutateAsync({ data: { ...data, requestId } });
     if (retry.current?.requestId === requestId) retry.current = null;
     void client.invalidateQueries({ queryKey: [...getListRollsQueryKey(), user?.id] });
+    if (data.characterId !== undefined && data.tensionContribution !== undefined) {
+      void client.invalidateQueries({ queryKey: getGetCharacterQueryKey(data.characterId) });
+    }
     if (data.weavekeeperCreatureId !== undefined) window.dispatchEvent(new Event("weavekeeper-bestiary-updated"));
     return roll;
   };

@@ -17,7 +17,7 @@ import {
 import { findString } from "@/lib/affinity-data";
 import { getCreationAffinity, getHandoutString } from "@/lib/creation-affinities";
 import { CORE_POWER_LEVELS, maximumSafePowerLevel, weaveMultiplier, strainDC, type CastAftermath } from "@/lib/casting-rules";
-import { guildBonusAlreadyInAttributes } from "@workspace/casting-rules";
+import { getEffectiveBurnoutLevel, guildBonusAlreadyInAttributes, isMentalAttribute } from "@workspace/casting-rules";
 import { formatCompactCr, formatDenominationBreakdown } from "@workspace/currency";
 import { CurrencyWallet } from "./CurrencyWallet";
 import { CastAftermath as CastAftermathView } from "./CastAftermath";
@@ -101,6 +101,8 @@ interface SheetData {
   tertiaryMode2?: string;
   refinementBonus?: number;
   attunedSkills?: string[];
+  passiveSkills?: string[];
+  refinedSkills?: string[];
   skills?: { name: string; attribute: string; attuned: boolean }[];
   strings?: string[];
   techniques?: { name: string; mode?: string; description?: string }[];
@@ -484,6 +486,8 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
   const wkItems = wkAdditions?.items ?? [];
   const wkBackgrounds = wkAdditions?.backgrounds ?? [];
   const wkNotes = wkAdditions?.notes ?? [];
+  const hasBurnoutResistance = feats.includes("Burnout Resistance") || localData.guildFeatChoice === "Burnout Resistance" || wkFeats.some(feat => feat.name === "Burnout Resistance");
+  const effectiveBurnout = getEffectiveBurnoutLevel(burnout, hasBurnoutResistance);
 
   // Feat passive bonuses
   const featVpBonus    = feats.includes("Iron Constitution")    ? 4 : 0;
@@ -537,6 +541,15 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     s => !attunedSkillsBase.includes(s) && !attunementFeatSkills.includes(s)
   );
   const attunedSkills = [...new Set([...attunedSkillsBase, ...attunementFeatSkills, ...guildAttunements, ...wkAttunements, ...wkExpertise])];
+  const passiveSkills = [...new Set((localData.passiveSkills || []).filter(name => ALL_SKILLS.some(skill => skill.name === name)))].slice(0, 2);
+  const refinedSkills = [...new Set((localData.refinedSkills || []).filter(name =>
+    ALL_SKILLS.some(skill => skill.name === name) && attunedSkills.includes(name)))];
+  const passiveSkillScore = (name: string) => {
+    const skill = ALL_SKILLS.find(item => item.name === name);
+    if (!skill) return null;
+    const modifier = calcMod(attrs[skill.attr] || 10) - (skill.attr === "ctr" ? nerveDamageCount : 0);
+    return 10 + modifier + (attunedSkills.includes(name) ? rb : 0);
+  };
   const expertiseSkills: string[] = [];
   feats.forEach((name, idx) => {
     if (name === "Expertise") {
@@ -745,14 +758,16 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     }
   }
 
-  async function rollStrainCheck() {
+  async function rollStrainCheck(recoverTension = false, tensionRecoveryAmount?: number): Promise<boolean> {
     const latest = localDataRef.current;
-    const dc = strainDC(latest.tension?.current ?? 0, castingMetricsRef.current.safeLimit);
-    if (strainLock.current || dc === null || dicePreferencesLoading) return;
+    const currentTension = latest.tension?.current ?? 0;
+    const naturalDC = strainDC(currentTension, castingMetricsRef.current.safeLimit);
+    const dc = naturalDC ?? (recoverTension && effectiveBurnout >= 2 && currentTension > 0 ? 10 : null);
+    if (strainLock.current || dc === null || dicePreferencesLoading) return false;
     const release = beginCastRequest();
     if (!release) {
       setStrainMessage("Another cast is resolving. Finish it before the Strain Check.");
-      return;
+      return false;
     }
     strainLock.current = true;
     setStrainPending(true);
@@ -762,14 +777,19 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
       const stored = readStoredCastRequests();
       if (stored.length) throw new Error("A previous request is awaiting confirmation. Resume it above before rolling Strain.");
       await flushSheetBeforeCast();
-      const entry = saveCastRequest("strain", { characterId: character.id });
+      const entry = saveCastRequest("strain", {
+        characterId: character.id,
+        ...(recoverTension ? { recoverTension: true, ...(tensionRecoveryAmount !== undefined ? { tensionRecoveryAmount } : {}) } : {}),
+      });
       const response = await submitStrainRequest(entry);
       const strain = response.aftermath.strain;
       setStrainMessage(strain
-        ? `Strain: ${strain.total} vs DC ${strain.dc} — ${strain.failed ? "failed; Snapback resolved atomically." : "passed"}.`
+        ? `Strain: ${strain.total} vs DC ${strain.dc} — ${strain.failed ? "failed; Snapback resolved atomically." : `passed${response.aftermath.recoveredTension ? `; released ${response.aftermath.recoveredTension} Tension` : ""}`}.`
         : "Strain Check resolved atomically.");
+      return !!strain && !strain.failed;
     } catch (error) {
       setStrainMessage(`Strain Check needs confirmation: ${rollErrorMessage(error)}`);
+      return false;
     } finally {
       strainLock.current = false;
       setStrainPending(false);
@@ -881,11 +901,12 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
         characterId: character.id,
         title: "Thread Sense",
         category: "check",
-        mode: "NORMAL",
+        mode: effectiveBurnout >= 1 ? "DISCORD" : "NORMAL",
         modifier: 0,
         diceSides: 20,
-        diceCount: 1,
+        diceCount: effectiveBurnout >= 1 ? 2 : 1,
         multiplier: 1,
+        checkAttribute: "ths",
         threadSenseType: senseType,
       });
       setThreadSenseRolls(previous => ({
@@ -907,7 +928,7 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     supportLock.current = true;
     setSupportError("");
     try {
-      const threadDiscord = burnout >= 1 || castingConditionsWithInjuries.includes("Discord on Thread Checks until Mend") ||
+      const threadDiscord = castingConditionsWithInjuries.includes("Discord on Thread Checks until Mend") ||
         castingConditionsWithInjuries.includes("Shaking Hands");
       const result = await recordRoll({ characterId: character.id, title: "Collaborative support · CTR",
         category: "support", mode: threadDiscord ? "DISCORD" : "NORMAL", modifier: calcMod(attrs.ctr || 10) - nerveDamageCount,
@@ -936,6 +957,13 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     mendRollLock.current = true;
     const diceUsed = recoveryDiceUsed;
     setMendError("");
+    let tensionRecoveredSafely = true;
+    if (effectiveBurnout >= 2 && (localDataRef.current.tension?.current ?? 0) > 0) {
+      tensionRecoveredSafely = await rollStrainCheck(true);
+    }
+    const mendData = localDataRef.current;
+    const mendTension = mendData.tension || tension;
+    const mendVP = mendData.vitalityPoints || vp;
     let result;
     try {
       result = await recordRoll({ characterId: character.id, title: "Mend", category: "mend",
@@ -948,17 +976,17 @@ export function CharacterSheetContent({ character, onUpdate, onCastState, before
     const d1 = result.d1;
     const d2 = result.d2!;
     const diceRoll = result.total;
-    const healed = Math.min(diceRoll, maxVP - vp.current);
-    const resetCharges = { ...(localData.featCharges || {}) };
+    const healed = Math.min(diceRoll, maxVP - mendVP.current);
+    const resetCharges = { ...(mendData.featCharges || {}) };
     FEATS.filter(f => f.usesPerRest && (f.restType === "mend" || f.restType === "combat")).forEach(f => {
       delete resetCharges[f.name];
     });
     patch({
-      tension: { ...tension, current: 0 },
-      vitalityPoints: { ...vp, current: Math.min(maxVP, vp.current + healed) },
-      recoveryDiceCurrent: Math.max(0, recoveryDiceCurrent - recoveryDiceUsed),
+      tension: { ...mendTension, current: tensionRecoveredSafely ? 0 : mendTension.current },
+      vitalityPoints: { ...mendVP, current: Math.min(maxVP, mendVP.current + healed) },
+      recoveryDiceCurrent: Math.max(0, (mendData.recoveryDiceCurrent ?? recoveryDiceCurrent) - diceUsed),
       featCharges: resetCharges,
-      castingConditions: (localData.castingConditions || []).filter(c => !c.includes("until Mend") && c !== "Shaking Hands"),
+      castingConditions: (mendData.castingConditions || []).filter(c => !c.includes("until Mend") && c !== "Shaking Hands"),
     });
     setMendRoll({ d1, d2, diceUsed, diceRoll, healed, rolling: true, rollKey: (mendRoll?.rollKey ?? 0) + 1 });
     setRecoveryDiceUsed(0);
@@ -1191,7 +1219,7 @@ ${ATTRIBUTE_DEFS.map(a => {
 <div>
 <h3>Condition Tracks</h3>
 <div style="margin-top:5px;font-family:monospace;font-size:8pt">
-  <div style="margin-bottom:5px"><strong>Burnout</strong> (${burnout}/6 — ${burnoutLabel})<br>${checkBoxes(burnout,6)} <span style="color:#8b0000">${burnoutLabel}</span></div>
+  <div style="margin-bottom:5px"><strong>Burnout</strong> (${burnout}/6 — ${burnoutLabel})<br>${checkBoxes(burnout,6)} <span style="color:#8b0000">${burnoutLabel}</span>${hasBurnoutResistance ? `<br><span style="color:#2a6030">Burnout Resistance: mechanical effects use level ${effectiveBurnout}.</span>` : ""}</div>
   <div style="margin-bottom:5px"><strong>Recovery Dice</strong> ${recoveryDiceCurrent}/${maxRecoveryDice}<br>${checkBoxes(recoveryDiceCurrent,maxRecoveryDice)}</div>
   <div style="margin-bottom:5px"><strong>Inspiration</strong> ${localData.inspiration ? "Available" : "Not available"}</div>
   <div style="margin-bottom:5px"><strong>Fatigue</strong> ${fatigue}/5<br>${checkBoxes(fatigue,5)}</div>
@@ -1229,6 +1257,8 @@ ${ALPHABETICAL_SKILLS.map(skill => {
    return `<tr><td class="${isAt?"at":""}">${skill.name}</td><td style="font-family:monospace;font-size:7.5pt">${skill.attr.toUpperCase()}</td><td style="text-align:center">${expertiseSkills.includes(skill.name)?"E":isAt?"●":"○"}</td><td style="font-family:monospace">${mod>=0?"+":""}${mod}${bonus?" +"+bonus:""}</td><td style="font-family:monospace;font-weight:bold">${total>=0?"+":""}${total}</td></tr>`;
 }).join("")}
 </tbody></table>
+<div style="margin-top:5px;font-size:8pt"><strong>Passive Skills</strong>: ${passiveSkills.length ? passiveSkills.map(name => `${printEscape(name)} ${passiveSkillScore(name)}`).join(" · ") : "None selected"}</div>
+<div style="margin-top:3px;font-size:8pt"><strong>Skill Refinement</strong>: ${refinedSkills.length ? `${refinedSkills.map(printEscape).join(" · ")} — final d20 results 2–9 count as 10; natural 1 and 20 retain their effects.` : "None selected"}</div>
 
 ${totalStr > 0 ? `<h2>Strings (${totalStr})</h2><div>${(localData.strings||[]).map((s:string)=>`<div style="border:1px solid #bbb;padding:3px 7px;margin-bottom:3px;font-size:9pt">${s}</div>`).join("")}</div>` : ""}
 ${(localData.weavings||[]).length > 0 ? `<h2>Weaving Combinations</h2><div style="font-size:7.5pt;color:#555;font-family:monospace;margin-bottom:4px">2 Strings = Normal (Precision Weave: Harmony); 3 = Discord ×2 cost; 4 = Discord ×3 cost (Lv7+). Strings are domains, not spells.</div><table><thead><tr><th>#</th><th>Strings</th><th>Power Levels</th><th>Modes</th><th>Check</th><th>Tension</th></tr></thead><tbody>${weaveRows}</tbody></table>` : ""}
@@ -1496,7 +1526,9 @@ ${([
                  <div className="tc-card-number mt-2" data-testid="text-tension">{tension.current} <small>/ {threadPool} T</small></div>
               </div>
               <div className="tc-stepper">
-                <button aria-label="Release one tension" data-testid="button-tension-decrease" onClick={() => patchNested("tension", "current", Math.max(0, tension.current - 1))}>−</button>
+                <button aria-label="Release one tension" data-testid="button-tension-decrease" disabled={strainPending || dicePreferencesLoading} onClick={() => effectiveBurnout >= 2
+                  ? void rollStrainCheck(true, 1)
+                  : patchNested("tension", "current", Math.max(0, tension.current - 1))}>−</button>
                  <button aria-label="Gain one tension" data-testid="button-tension-increase" onClick={() => patchNested("tension", "current", Math.min(threadPool, tension.current + 1))}>+</button>
               </div>
             </div>
@@ -1504,14 +1536,17 @@ ${([
                <span>Safe limit <strong>{safeLimit}</strong></span>
                <span className="tc-tension-status" data-danger={tension.current > safeLimit}>{tension.current > safeLimit ? "Above safe limit" : "Within safe limit"}</span>
             </div>
-            <button type="button" className="tc-command mt-3" disabled={tension.current === 0 || safeLimit === 0}
-              onClick={() => patchNested("tension", "current", Math.max(0, tension.current - safeLimit))}>
-              Release tension <span className="tc-button-detail">Minor action · up to {safeLimit}T</span>
+            <button type="button" className="tc-command mt-3" disabled={tension.current === 0 || safeLimit === 0 || strainPending || dicePreferencesLoading}
+              onClick={() => effectiveBurnout >= 2
+                ? void rollStrainCheck(true)
+                : patchNested("tension", "current", Math.max(0, tension.current - safeLimit))}>
+              Release tension <span className="tc-button-detail">Minor action · up to {safeLimit}T{effectiveBurnout >= 2 ? " · Strain check required" : ""}</span>
             </button>
+            {effectiveBurnout >= 2 && tension.current > 0 && <p className="mt-2 text-[10px] font-mono text-amber-500">Burnout: Stretched · Tension release or Mend recovery requires a RES Strain Check; a d20 result of 1–3 triggers Snapback.</p>}
             {tension.current > safeLimit && (
               <div className="mt-3 border-t border-border/50 pt-3 font-mono text-[11px]">
                 <p className="text-amber-500 mb-2">At the start of each turn above Safe Limit, make a RES Strain Check (DC {strainDC(tension.current, safeLimit)}). A failure triggers Snapback.</p>
-                <button type="button" onClick={rollStrainCheck} disabled={strainPending || dicePreferencesLoading} className="tc-command border-amber-500/50 text-amber-500 disabled:opacity-50">{strainPending ? "ROLLING STRAIN…" : "START TURN · ROLL STRAIN"}</button>
+                <button type="button" onClick={() => void rollStrainCheck()} disabled={strainPending || dicePreferencesLoading} className="tc-command border-amber-500/50 text-amber-500 disabled:opacity-50">{strainPending ? "ROLLING STRAIN…" : "START TURN · ROLL STRAIN"}</button>
               </div>
             )}
             {strainMessage && <p role="status" className="mt-2 text-[11px] text-amber-500 font-mono">{strainMessage}</p>}
@@ -1658,7 +1693,12 @@ ${([
                           className="tc-roll"
                           aria-label={`Roll ${attr.label} check with ${fmtMod(mod)} modifier`}
                           data-testid={`button-roll-attribute-${attr.key}`}
-                          onClick={() => openRoll(`${attr.label} Check`, mod, character.name, character.id)}
+                          onClick={() => openRoll(`${attr.label} Check`, mod, character.name, character.id, undefined, undefined, undefined, {
+                            checkAttribute: attr.key as "pot" | "ctr" | "res" | "acu" | "pre" | "ths",
+                            ...(effectiveBurnout >= 1 && isMentalAttribute(attr.key) ? {
+                              mode: "DISCORD" as const, modeLocked: true, modeReason: "Burnout: Frayed imposes Discord on mental checks.",
+                            } : {}),
+                          })}
                         ><Dice5 size={14} aria-hidden="true" />{fmtMod(mod)}</button>
                       </div>
                       {(score !== baseScore) && <div className="text-[10px] font-mono text-chart-2 mt-1" title="Total includes feat and guild bonuses">Total {score}{bonus > 0 ? ` · feat +${bonus}` : ""}</div>}
@@ -1720,10 +1760,13 @@ ${([
                 max={threadPool}
                 safeLimit={safeLimit}
                 onSpend={() => patchNested("tension", "current", Math.min(threadPool, tension.current + 1))}
-                onRelease={() => patchNested("tension", "current", Math.max(0, tension.current - 1))}
+                onRelease={() => effectiveBurnout >= 2
+                  ? void rollStrainCheck(true, 1)
+                  : patchNested("tension", "current", Math.max(0, tension.current - 1))}
               />
               <div className="w-full">
                 <div className="tc-card-label mb-3">Burnout / {burnout} of 6</div>
+                {hasBurnoutResistance && <p className="mb-2 text-[10px] font-mono text-chart-2">Burnout Resistance active · mechanical effects use level {effectiveBurnout}.</p>}
                 <BurnoutTrack level={burnout} />
                 <div className="flex gap-2 mt-4">
                   <button className="tc-command flex-1" aria-label="Decrease burnout by one" data-testid="button-burnout-decrease" onClick={() => patch({ burnout: Math.max(0, burnout - 1) })}>− Burnout</button>
@@ -1731,8 +1774,8 @@ ${([
                 </div>
                 <div className="tc-burnout-list">
                   {BURNOUT_LEVELS.map(bl => (
-                    <div key={bl.level} data-current={bl.level === burnout}>
-                      <span className={cn("font-bold", bl.level === burnout ? "text-destructive" : "text-muted-foreground")}>
+                    <div key={bl.level} data-current={bl.level === effectiveBurnout}>
+                      <span className={cn("font-bold", bl.level === effectiveBurnout ? "text-destructive" : "text-muted-foreground")}>
                         {bl.level}: {bl.label}
                       </span>
                       <span className="text-muted-foreground">{bl.penalty}</span>
@@ -1760,7 +1803,10 @@ ${([
                   className="tc-roll"
                   aria-label="Roll initiative with Acuity"
                   data-testid="button-roll-initiative"
-                  onClick={() => openRoll("Initiative (Acuity)", calcMod(attrs.acu || 10), character.name, character.id)}
+                  onClick={() => openRoll("Initiative (Acuity)", calcMod(attrs.acu || 10), character.name, character.id, undefined, undefined, undefined, {
+                    checkAttribute: "acu",
+                    ...(effectiveBurnout >= 1 ? { mode: "DISCORD" as const, modeLocked: true, modeReason: "Burnout: Frayed imposes Discord on mental checks." } : {}),
+                  })}
                 >ACU {fmtMod(calcMod(attrs.acu || 10))} · Roll</button>
               </div>
             </div>
@@ -1896,6 +1942,24 @@ ${([
             <span><GameTerm term="refinement bonus">Refinement Bonus</GameTerm>: <strong className="text-primary">+{rb}</strong></span>
             <span>Attuned: {attunedSkills.length}/{ALL_SKILLS.length}</span>
           </div>
+          <div className="tc-surface !p-3 mb-4">
+            <div className="tc-card-label mb-2">Passive skills <span className="text-muted-foreground normal-case tracking-normal">· fixed awareness score</span></div>
+            {passiveSkills.length ? <div className="grid gap-2 sm:grid-cols-2">
+              {passiveSkills.map(name => {
+                const skill = ALL_SKILLS.find(item => item.name === name)!;
+                const score = passiveSkillScore(name);
+                return <div key={name} className="flex items-center justify-between gap-3 border border-border/30 bg-background/40 px-3 py-2">
+                  <span className="font-mono text-sm">{name}<span className="ml-2 text-[10px] text-muted-foreground">{skill.attr.toUpperCase()}{attunedSkills.includes(name) ? ` · Attuned +${rb}` : ""}</span></span>
+                  <strong className="font-mono text-lg text-primary" aria-label={`Passive ${name} ${score}`}>{score}</strong>
+                </div>;
+              })}
+            </div> : <p className="text-xs text-muted-foreground">No Passive Skills selected. Set them in character creation.</p>}
+            <p className="mt-2 text-[10px] text-muted-foreground">10 + linked Attribute modifier, plus Refinement Bonus when Attuned. Scores update automatically as your stats and level change.</p>
+          </div>
+          {refinedSkills.length > 0 && <div className="tc-surface !p-3 mb-4">
+            <div className="tc-card-label mb-1">Skill Refinement</div>
+            <p className="text-xs text-muted-foreground">{refinedSkills.join(" · ")} · On eligible checks, a final d20 result of 2–9 counts as 10. Natural 1 and 20 keep their THREADCAST effects.</p>
+          </div>}
           <div className="tc-skill-tools">
             <label className="tc-skill-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Find a skill</span><input type="search" value={skillSearch} onChange={event => setSkillSearch(event.target.value)} placeholder="Find a skill or attribute…" /></label>
             <button type="button" className="tc-command" aria-pressed={attunedOnly} onClick={() => setAttunedOnly(value => !value)}><Fingerprint size={16} aria-hidden="true" />Attuned only</button>
@@ -1927,6 +1991,7 @@ ${([
                       <GameTerm term={skill.name.toLowerCase()} className="text-foreground">{skill.name}</GameTerm>
                       {isFeatAttuned && <span className="text-[9px] font-mono text-primary/60 ml-1">feat</span>}
                       {isWeavekeeperGranted && <span className="text-[9px] font-mono text-chart-2 ml-1">Weavekeeper</span>}
+                      {refinedSkills.includes(skill.name) && <span className="text-[9px] font-mono text-primary ml-1">refined</span>}
                     </td>
                     <td className="py-2.5 text-center">
                       <GameTerm term={skill.attr} className="text-muted-foreground text-xs">{skill.attr.toUpperCase()}</GameTerm>
@@ -1941,7 +2006,12 @@ ${([
                         onClick={() => {
                           if (isFeatAttuned || isWeavekeeperGranted) return;
                           const next = isAttuned ? attunedSkillsBase.filter(s => s !== skill.name) : [...attunedSkillsBase, skill.name];
-                          patch({ attunedSkills: next });
+                          patch({
+                            attunedSkills: next,
+                            ...(isAttuned && refinedSkills.includes(skill.name)
+                              ? { refinedSkills: refinedSkills.filter(name => name !== skill.name) }
+                              : {}),
+                          });
                         }}
                         title={isWeavekeeperGranted ? "Granted by the Weavekeeper" : isFeatAttuned ? "Attuned via feat" : undefined}
                       >
@@ -1956,7 +2026,13 @@ ${([
                       <button
                         className="tc-roll"
                         aria-label={`Roll ${skill.name} check with ${fmtMod(total)} modifier`}
-                        onClick={() => openRoll(`${skill.name} Check`, total, character.name, character.id)}
+                        onClick={() => openRoll(`${skill.name} Check`, total, character.name, character.id, undefined, undefined, undefined, {
+                          skillName: skill.name,
+                          checkAttribute: skill.attr,
+                          ...(effectiveBurnout >= 1 && isMentalAttribute(skill.attr) ? {
+                            mode: "DISCORD" as const, modeLocked: true, modeReason: "Burnout: Frayed imposes Discord on mental checks.",
+                          } : {}),
+                        })}
                       >
                         <Dice5 size={14} aria-hidden="true" />{fmtMod(total)}
                       </button>
@@ -2015,7 +2091,7 @@ ${([
                 castingConditions={castingConditionsWithInjuries}
                 ctrModifierPenalty={checkAttrKey === "ctr" ? nerveDamageCount : 0}
                 lostThread={lostStringNames.has(sName.trim().toLowerCase().replace(/^the\s+/, "").replace(/\s+string$/, ""))}
-                burnout={burnout}
+                burnout={effectiveBurnout}
                 onBeginCast={beginCastRequest}
                 onCast={finishCast}
                 primaryMode={primaryMode}
@@ -2100,7 +2176,7 @@ ${([
                 availableTension={availableTension}
                 castingConditions={castingConditionsWithInjuries}
                 lostStrings={[...lostStringNames]}
-                burnout={burnout}
+                burnout={effectiveBurnout}
                 hasPrecisionWeave={feats.includes("Precision Weave")}
                 precisionWeaveChargeAvailable={isFeatAvailable("Precision Weave")}
                 onBeginCast={beginCastRequest}
@@ -2886,7 +2962,7 @@ function WeaveCastRow({
   onCast: (input: Omit<CastInput, "requestId" | "characterId">) => Promise<{ roll: GameplayRoll; aftermath: CastUIAftermath }>;
 }) {
   const mod = calcMod(ctrScore) - ctrModifierPenalty - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
-  const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
+  const forcedDiscord = castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
   const recordRoll = useGameplayRoll();
   const requestLock = useRef(false);
   const releaseCastRef = useRef<(() => void) | null>(null);
@@ -2896,7 +2972,7 @@ function WeaveCastRow({
   const diceStyle = dicePreferenceError ? DEFAULT_DICE_STYLE : activeDiceStyle;
   const [castOpen, setCastOpen] = useState(false);
   const [animDice, setAnimDice] = useState<{ d1: number; d2?: number; rollType: "HARMONY" | "NORMAL" | "DISCORD" } | null>(null);
-  const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; dc: number; intent: string; modes: string[] } | null>(null);
+  const [castResult, setCastResult] = useState<{ d1: number; d2?: number; finalDie: number; total: number; isMisfire: boolean; rollType: "HARMONY" | "NORMAL" | "DISCORD"; dc: number; intent: string; modes: string[] } | null>(null);
   const [aftermath, setAftermath] = useState<CastUIAftermath | null>(null);
   const [rolledCost, setRolledCost] = useState<number | null>(null);
   const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2942,7 +3018,7 @@ function WeaveCastRow({
         Number.isFinite(powerLevel) &&
         Number.isInteger(powerLevel) &&
         powerLevel >= 1 &&
-        powerLevel <= 5 &&
+        powerLevel <= (burnout >= 4 ? 2 : 5) &&
         ALL_MODES.some(mode => mode.name === weave.modes?.[si]);
     }) && new Set((weave.strings || []).slice(0, weave.numStrings)).size === weave.numStrings;
   const weaveRollType: "HARMONY" | "NORMAL" | "DISCORD" = overSafePL || forcedDiscord ? "DISCORD" : weave.numStrings === 2
@@ -2957,7 +3033,7 @@ function WeaveCastRow({
   }
 
   async function doRoll() {
-    if (!isConfigured || !weave.intent?.trim() || dicePreferencesLoading || animDice || requestLock.current) return;
+    if (burnout >= 5 || !isConfigured || !weave.intent?.trim() || dicePreferencesLoading || animDice || requestLock.current) return;
     const release = onBeginCast();
     if (!release) {
       setRollError("Another cast for this character is still resolving. Wait for it to finish before rolling.");
@@ -2998,7 +3074,7 @@ function WeaveCastRow({
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", dc: result.dc ?? weaveDC, intent, modes });
+      setCastResult({ d1, d2, finalDie, total, isMisfire: result.isMisfire, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", dc: result.dc ?? weaveDC, intent, modes });
     }, ROLL_DURATION_MS);
   }
 
@@ -3028,18 +3104,18 @@ function WeaveCastRow({
       {/* Per-string config */}
       {Array.from({ length: weave.numStrings }).map((_, si) => (
         <div key={si} className="grid grid-cols-3 gap-1.5">
-          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice || burnout >= 5} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.strings || [])[si] || ""}
             onChange={e => { const next = [...(localData.weavings||[])]; const ns = [...(weave.strings||[])]; ns[si] = e.target.value; next[wi] = { ...weave, strings: ns }; patch({ weavings: next }); }}>
             <option value="">String {si + 1}</option>
             {(localData.strings || []).map((s: string) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice || burnout >= 5} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.powerLevels || [])[si] || 1}
             onChange={e => { const next = [...(localData.weavings||[])]; const np = [...(weave.powerLevels||[1,1,1,1])]; np[si] = parseInt(e.target.value); next[wi] = { ...weave, powerLevels: np }; patch({ weavings: next }); }}>
-            {[1,2,3,4,5].map(pl => <option key={pl} value={pl}>PL {pl}</option>)}
+            {[1,2,3,4,5].map(pl => <option key={pl} value={pl} disabled={burnout >= 4 && pl > 2}>PL {pl}</option>)}
           </select>
-          <select disabled={!!animDice} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
+          <select disabled={!!animDice || burnout >= 5} className="bg-background border border-border text-[10px] font-mono px-1 py-0.5 focus:outline-none focus:border-primary"
             value={(weave.modes || [])[si] || ""}
             onChange={e => { const next = [...(localData.weavings||[])]; const nm = [...(weave.modes||[])]; nm[si] = e.target.value; next[wi] = { ...weave, modes: nm }; patch({ weavings: next }); }}>
             <option value="">Mode</option>
@@ -3053,6 +3129,8 @@ function WeaveCastRow({
         onChange={e => { const next = [...(localData.weavings || [])]; next[wi] = { ...weave, intent: e.target.value }; patch({ weavings: next }); }}
         placeholder="Describe how each String and Mode contributes to one effect…"
         className="w-full bg-background border border-border p-2 text-xs focus:outline-none focus:border-primary resize-y" />
+      {burnout >= 5 && <p className="text-[10px] text-destructive">Burnout: Breaking or Thread Death · String casting is unavailable.</p>}
+      {burnout === 4 && <p className="text-[10px] text-amber-500">Burnout: Cracked · Weaves are limited to PL 2 per String.</p>}
       {overSafePL && <p className="text-[10px] text-amber-500">A String exceeds your safe maximum (PL {safePowerLevel}); this Weave rolls at Discord.</p>}
       <p className="text-[10px] text-muted-foreground">Describe the combined effect freely. DC is calculated from the selected Strings and PLs (highest DC +2 per String beyond two); Modes determine the check type. No approval is required to roll.</p>
       {/* Cast area */}
@@ -3083,7 +3161,7 @@ function WeaveCastRow({
             </div>
           ) : castResult ? (
             <div>
-              <div className={cn("p-3 border mb-2", castResult.finalDie === 1 ? "border-destructive/50 bg-destructive/5" : castResult.finalDie === 20 ? "border-primary/50 bg-primary/5" : castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" : "border-border bg-muted/10")}>
+                <div className={cn("p-3 border mb-2", castResult.isMisfire ? "border-destructive/50 bg-destructive/5" : castResult.finalDie === 20 ? "border-primary/50 bg-primary/5" : castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" : "border-border bg-muted/10")}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className={cn("w-12 h-12 border-2 flex items-center justify-center text-2xl font-mono font-bold", castResult.finalDie === castResult.d1 && castResult.d1 !== castResult.d2 ? diceCol(castResult.rollType) : "border-border/40 text-muted-foreground")}>{castResult.d1}</div>
                   {castResult.d2 !== undefined && (<>
@@ -3092,12 +3170,12 @@ function WeaveCastRow({
                   </>)}
                   <div className="ml-auto text-right">
                     <div className="text-[10px] font-mono text-muted-foreground">{castResult.modes.join(" + ")} · {castResult.rollType} {fmtMod(mod)}</div>
-                    <div className={cn("text-3xl font-bold font-mono", castResult.finalDie === 1 ? "text-destructive" : castResult.finalDie === 20 ? "text-primary" : castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground")}>{castResult.total}</div>
+                    <div className={cn("text-3xl font-bold font-mono", castResult.isMisfire ? "text-destructive" : castResult.finalDie === 20 ? "text-primary" : castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground")}>{castResult.total}</div>
                     <div className="text-[10px] font-mono text-muted-foreground">vs DC {castResult.dc}</div>
                   </div>
                 </div>
                 {castResult.finalDie === 20 && <div className="font-mono text-[10px] text-primary font-bold mb-1">✦ THREAD BREAK — Exceptional weave!</div>}
-                {castResult.finalDie === 1 ? <div className="font-mono text-[10px] text-destructive font-bold">✸ MISFIRE — Weave collapses. Snapback on primary string.</div>
+                {castResult.isMisfire ? <div className="font-mono text-[10px] text-destructive font-bold">✸ MISFIRE — Weave collapses. Snapback on primary string.</div>
                   : castResult.finalDie === 20 || castResult.total >= castResult.dc ? <div className="font-mono text-[10px] text-chart-2 font-bold">SUCCESS — {effectType} effect: {castResult.intent}.</div>
                   : <div className="font-mono text-[10px] text-muted-foreground font-bold">MISHAP — see the rolled table result below. Tension was spent.</div>}
               </div>
@@ -3111,7 +3189,7 @@ function WeaveCastRow({
                 <span className="text-[10px] font-mono ml-auto">{weaveRollType}</span>
               </div>
               <div className="text-[10px] font-mono text-muted-foreground mb-3">{weaveRollType === "HARMONY" ? "Roll 2d20, keep highest." : weaveRollType === "DISCORD" ? "Roll 2d20, keep lowest." : "Roll 1d20."} Thread Check: CTR {fmtMod(mod)}</div>
-              <button onClick={doRoll} disabled={pending || !isConfigured || !weave.intent?.trim() || dicePreferencesLoading} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">{pending ? "RESOLVING…" : "⚄ ROLL THE WEAVE"}</button>
+              <button onClick={doRoll} disabled={burnout >= 5 || pending || !isConfigured || !weave.intent?.trim() || dicePreferencesLoading} className="w-full py-2.5 border-2 border-primary text-primary font-mono disabled:cursor-not-allowed disabled:opacity-50 hover:bg-primary/10">{pending ? "RESOLVING…" : "⚄ ROLL THE WEAVE"}</button>
               {rollError && <p role="alert" className="text-xs text-destructive">Cast not confirmed: {rollError}. Retry this same cast to recover its original result.</p>}
             </div>
           )}
@@ -3125,7 +3203,7 @@ function WeaveCastRow({
             {isConfigured && castCost > availableTension && <span className="text-amber-500 block sm:inline sm:ml-2">Exceeds remaining Thread Pool ({Math.max(0, availableTension)}T); automatic Snapback on cast.</span>}
             {weaveDC > 0 && <span className="text-muted-foreground/50 ml-2">DC {weaveDC}</span>}
           </span>
-          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={!isConfigured || !weave.intent?.trim()}>CAST (+{castCost}T)</button>
+          <button className="px-2 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50" onClick={openCast} disabled={burnout >= 5 || !isConfigured || !weave.intent?.trim()}>CAST (+{castCost}T)</button>
         </div>
       )}
     </div>
@@ -3133,7 +3211,7 @@ function WeaveCastRow({
 }
 
 interface CastPL { pl: number; cost: number; dc: number; effect: string }
-interface CastResult { d1: number; d2?: number; finalDie: number; total: number; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number }
+interface CastResult { d1: number; d2?: number; finalDie: number; total: number; isMisfire: boolean; rollType: "HARMONY" | "NORMAL" | "DISCORD"; chosenMode: string; dc: number }
 
 function CastStringPanel({
   str, attrScore, characterName, characterId, availableTension, onCast,
@@ -3147,7 +3225,7 @@ function CastStringPanel({
   safePowerLevel: number; custom: boolean; handout: boolean;
 }) {
   const mod = calcMod(attrScore) - ctrModifierPenalty - (castingConditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
-  const forcedDiscord = burnout >= 1 || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
+  const forcedDiscord = (burnout >= 1 && isMentalAttribute(str.checkAttr)) || castingConditions.includes("Discord on Thread Checks until Mend") || castingConditions.includes("Shaking Hands");
   const recordRoll = useGameplayRoll();
   const requestLock = useRef(false);
   const releaseCastRef = useRef<(() => void) | null>(null);
@@ -3184,7 +3262,7 @@ function CastStringPanel({
   });
 
   function initiateCast(pl: number, cost: number, dc: number, effect: string) {
-    if (animDice || lostThread) return;
+    if (animDice || lostThread || burnout >= 5 || (burnout >= 4 && pl > 2)) return;
     setCastPL({ pl, cost, dc, effect });
     setCastIntent("");
     setSelectedMode(null);
@@ -3205,7 +3283,7 @@ function CastStringPanel({
   }
 
   async function doRoll() {
-    if (lostThread || !selectedMode || !castPL || !castIntent.trim() || dicePreferencesLoading || requestLock.current) return;
+    if (lostThread || burnout >= 5 || (burnout >= 4 && !!castPL && castPL.pl > 2) || !selectedMode || !castPL || !castIntent.trim() || dicePreferencesLoading || requestLock.current) return;
     const release = onBeginCast();
     if (!release) {
       setRollError("Another cast for this character is still resolving. Wait for it to finish before rolling.");
@@ -3247,7 +3325,7 @@ function CastStringPanel({
       rollTimerRef.current = null;
       requestLock.current = false;
       setAnimDice(null);
-      setCastResult({ d1, d2, finalDie, total, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", chosenMode: mode.name, dc: result.dc ?? pl.dc });
+      setCastResult({ d1, d2, finalDie, total, isMisfire: result.isMisfire, rollType: result.mode as "HARMONY" | "NORMAL" | "DISCORD", chosenMode: mode.name, dc: result.dc ?? pl.dc });
     }, ROLL_DURATION_MS);
   }
 
@@ -3304,6 +3382,8 @@ function CastStringPanel({
                 {!handout && <button type="button" onClick={() => setCastIntent(castPL.effect)} disabled={!!animDice || !!castResult} className="shrink-0 underline hover:text-primary disabled:opacity-50">Use example</button>}
               </div>
               {castPL.pl > safePowerLevel && <p className="mb-2 text-[10px] font-mono text-amber-500">PL {castPL.pl} exceeds your safe maximum (PL {safePowerLevel}): modes other than your Primary Mode roll at Discord.</p>}
+              {burnout >= 5 && <p className="mb-2 text-[10px] font-mono text-destructive">Burnout: Breaking or Thread Death · String casting is unavailable.</p>}
+              {burnout === 4 && <p className="mb-2 text-[10px] font-mono text-amber-500">Burnout: Cracked · String casting is limited to PL 2.</p>}
                <p className="mb-3 text-[10px] text-muted-foreground">DC is automatic for this String and PL. Mode changes the check type (Harmony, Normal, or Discord), not the DC. Describe your effect and roll without an approval step.</p>
                {castPL.cost > availableTension && <p className="mb-3 text-[10px] font-mono text-amber-500">Cost exceeds remaining Thread Pool room ({Math.max(0, availableTension)}T). This cast triggers automatic Snapback and releases Tension.</p>}
               {dicePreferenceError && <p className="mb-3 text-[10px] font-mono text-amber-500">Dice preference unavailable; using the house die.</p>}
@@ -3323,7 +3403,7 @@ function CastStringPanel({
                 /* ── RESULT ── */
                 <div>
                   <div className={cn("p-4 border mb-3",
-                    castResult.finalDie === 1 ? "border-destructive/50 bg-destructive/5" :
+                    castResult.isMisfire ? "border-destructive/50 bg-destructive/5" :
                     castResult.finalDie === 20 ? "border-primary/50 bg-primary/5" :
                     castResult.total >= castResult.dc ? "border-chart-2/40 bg-chart-2/5" :
                     "border-border bg-muted/10"
@@ -3351,7 +3431,7 @@ function CastStringPanel({
                           {" + "}{fmtMod(mod)}
                         </div>
                         <div className={cn("text-4xl font-bold font-mono",
-                          castResult.finalDie === 1 ? "text-destructive" :
+                          castResult.isMisfire ? "text-destructive" :
                           castResult.finalDie === 20 ? "text-primary" :
                           castResult.total >= castResult.dc ? "text-chart-2" : "text-foreground"
                         )}>
@@ -3364,7 +3444,7 @@ function CastStringPanel({
                     {castResult.finalDie === 20 && (
                       <div className="font-mono text-xs text-primary font-bold mb-2 tracking-wide">✦ THREAD BREAK — Exceptional effect!</div>
                     )}
-                    {castResult.finalDie === 1 ? (
+                    {castResult.isMisfire ? (
                       <div>
                         <div className="font-mono text-xs text-destructive font-bold mb-1">✸ MISFIRE — SNAPBACK</div>
                         <div className="font-mono text-xs text-muted-foreground leading-relaxed">Snapback table outcome and applied damage appear below.</div>
@@ -3479,7 +3559,7 @@ function CastStringPanel({
                   <td className="py-1.5 text-right">
                     <button
                       onClick={() => initiateCast(lvl.pl, lvl.cost, lvl.dc, lvl.effect)}
-                      disabled={!!animDice || lostThread}
+                      disabled={!!animDice || lostThread || burnout >= 5 || (burnout >= 4 && lvl.pl > 2)}
                       className="px-2 py-0.5 text-[10px] border border-chart-2/50 text-chart-2 hover:bg-chart-2/10 transition-colors font-mono"
                     >
                       CAST

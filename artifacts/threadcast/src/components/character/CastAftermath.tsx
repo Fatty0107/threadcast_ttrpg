@@ -4,6 +4,8 @@ export function CastAftermath({ result }: { result: Aftermath }) {
   return (
     <div className="mt-3 border border-border bg-background p-3 space-y-1 font-mono text-[11px]" aria-live="polite">
       <p>Tension +{result.cost} → {result.tension}/{result.pool} · Safe Limit {result.safeLimit}</p>
+      {result.recoveredTension !== undefined && <p className="text-chart-2">Unsafe recovery passed · released {result.recoveredTension} Tension.</p>}
+      {result.burnoutDamage !== undefined && <p className="text-destructive">Burnout Scorched: {result.burnoutDamageDice}d6 = {result.burnoutDamage} VP damage applied for Tension spent above the Safe Limit.</p>}
       {result.overflow && <p className="text-destructive font-bold">THREAD POOL EXCEEDED — automatic Snapback; Tension released.</p>}
       {result.table && (
         <div className="border-t border-border pt-2">

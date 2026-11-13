@@ -52,6 +52,8 @@ interface BuildState {
   secondaryModes: [string, string];
   tertiaryModes: [string, string];
   attunedSkills: string[];
+  passiveSkills: string[];
+  refinedSkills: string[];
   selectedStrings: string[];
   selectedFeats: string[];
   includePacks: boolean;
@@ -83,6 +85,8 @@ const DEFAULT_BUILD: BuildState = {
   secondaryModes: ["", ""],
   tertiaryModes: ["", ""],
   attunedSkills: [],
+  passiveSkills: [],
+  refinedSkills: [],
   selectedStrings: [],
   selectedFeats: [],
   includePacks: true,
@@ -113,6 +117,16 @@ function getStringBudget(level: number): number {
 
 function getFeatSlots(level: number): number {
   return Math.floor(level / 2);
+}
+
+function getSkillRefinementSlots(level: number): number {
+  return level >= 8 ? 2 : level >= 4 ? 1 : 0;
+}
+
+function getPassiveSkillScore(skillName: string, attrs: Attributes, attunedSkills: string[], level: number): number | null {
+  const skill = ALL_SKILLS.find(item => item.name === skillName);
+  if (!skill) return null;
+  return 10 + calcMod(attrs[skill.attr]) + (attunedSkills.includes(skill.name) ? getRefinementBonus(level) : 0);
 }
 
 const ATTR_ICONS: Record<AttrKey, React.ReactNode> = {
@@ -223,6 +237,21 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   useEffect(() => {
     if (!existingChar || populated) return;
     const data = (existingChar.data as any) || {};
+    const existingLevel = existingChar.level || 1;
+    const existingBackgroundSkills = BACKGROUNDS.find(b => b.name === data.background)?.startingSkills ?? [];
+    const existingGuildSkills = getGuildRankData(data.guild || "", data.guildRank || "")?.attunements ?? [];
+    const existingFeatSkills = (Array.isArray(data.feats) ? data.feats : []).flatMap((feat: string, index: number) =>
+      feat === "Attunement (Skilled)" && typeof data.featChoices?.[String(index)]?.skill === "string"
+        ? [data.featChoices[String(index)].skill] : []);
+    const existingWeavekeeperSkills = Array.isArray(data.weavekeeperAdditions?.attunements)
+      ? data.weavekeeperAdditions.attunements : [];
+    const existingAttunedSkills = new Set([
+      ...(Array.isArray(data.attunedSkills) ? data.attunedSkills : []),
+      ...existingBackgroundSkills,
+      ...existingGuildSkills,
+      ...existingFeatSkills,
+      ...existingWeavekeeperSkills,
+    ]);
     const savedAttrs = data.baseAttributes || data.attributes;
     const baseAttrs: Attributes = savedAttrs ? {
       pot: savedAttrs.pot ?? 10, ctr: savedAttrs.ctr ?? 10,
@@ -239,7 +268,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     setBuild({
       name: existingChar.name || "",
       avatarDataUrl: data.avatarDataUrl || "",
-      level: existingChar.level || 1,
+      level: existingLevel,
       affinity: canonicalAffinity(existingChar.affinity || ""),
       guild: data.guild || "",
       guildRank: data.guildRank || "",
@@ -256,6 +285,10 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
         ALL_SKILLS.some(known => known.name === skill) &&
         !BACKGROUNDS.find(b => b.name === data.background)?.startingSkills.includes(skill) &&
         !getGuildRankData(data.guild || "", data.guildRank || "")?.attunements.includes(skill)))],
+      passiveSkills: [...new Set(((Array.isArray(data.passiveSkills) ? data.passiveSkills : []) as string[])
+        .filter(skill => ALL_SKILLS.some(known => known.name === skill)))].slice(0, 2),
+      refinedSkills: [...new Set(((Array.isArray(data.refinedSkills) ? data.refinedSkills : []) as string[])
+        .filter(skill => ALL_SKILLS.some(known => known.name === skill) && existingAttunedSkills.has(skill)))].slice(0, getSkillRefinementSlots(existingLevel)),
       selectedStrings: Array.isArray(data.strings) ? data.strings : [],
       selectedFeats: Array.isArray(data.feats) ? data.feats.filter((f: string) => {
         const grd = getGuildRankData(data.guild || "", data.guildRank || "");
@@ -295,9 +328,33 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   );
   const affinityStrings = getCreationAffinity(build.affinity)?.strings ??
     getAffinityStrings(build.affinity);
+  const bgStartingSkills = bg?.startingSkills ?? [];
+  const guildAttunements = guildRankData?.attunements ?? [];
+  const lockedSkills = [...new Set([...bgStartingSkills, ...guildAttunements])];
+  const existingData = (existingChar?.data as any) ?? {};
+  const existingFeatAttunements = (Array.isArray(existingData.feats) ? existingData.feats : []).flatMap((feat: string, index: number) =>
+    feat === "Attunement (Skilled)" && typeof existingData.featChoices?.[String(index)]?.skill === "string"
+      ? [existingData.featChoices[String(index)].skill] : []);
+  const existingWeavekeeperAttunements = Array.isArray(existingData.weavekeeperAdditions?.attunements)
+    ? existingData.weavekeeperAdditions.attunements : [];
+  const effectiveAttunedSkills = [...new Set([...lockedSkills, ...build.attunedSkills, ...existingFeatAttunements, ...existingWeavekeeperAttunements])];
+  const skillRefinementSlots = getSkillRefinementSlots(level);
 
   function updateBuild(patch: Partial<BuildState> | ((prev: BuildState) => Partial<BuildState>)) {
-    setBuild(prev => ({ ...prev, ...(typeof patch === "function" ? patch(prev) : patch) }));
+    setBuild(prev => {
+      const next = { ...prev, ...(typeof patch === "function" ? patch(prev) : patch) };
+      const nextAttuned = new Set([
+        ...(BACKGROUNDS.find(b => b.name === next.background)?.startingSkills ?? []),
+        ...(getGuildRankData(next.guild, next.guildRank)?.attunements ?? []),
+        ...next.attunedSkills,
+        ...existingFeatAttunements,
+        ...existingWeavekeeperAttunements,
+      ]);
+      return {
+        ...next,
+        refinedSkills: next.refinedSkills.filter(skill => nextAttuned.has(skill)).slice(0, getSkillRefinementSlots(next.level)),
+      };
+    });
     setSubmitError(null);
   }
 
@@ -409,8 +466,16 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       const chosen = build.selectedStrings.map(s => s.trim());
       return chosen.every(Boolean) && chosen.length <= stringBudget && new Set(chosen).size === chosen.length;
     }
-    if (checkStep === 5) return build.attunedSkills.length === 2 &&
-      build.attunedSkills.every(s => ALL_SKILLS.some(skill => skill.name === s) && !lockedSkills.includes(s));
+    if (checkStep === 5) {
+      const uniquePassiveSkills = new Set(build.passiveSkills);
+      const uniqueRefinedSkills = new Set(build.refinedSkills);
+      return build.attunedSkills.length === 2 &&
+        build.attunedSkills.every(s => ALL_SKILLS.some(skill => skill.name === s) && !lockedSkills.includes(s)) &&
+        build.passiveSkills.length === 2 && uniquePassiveSkills.size === 2 &&
+        build.passiveSkills.every(s => ALL_SKILLS.some(skill => skill.name === s)) &&
+        build.refinedSkills.length === skillRefinementSlots && uniqueRefinedSkills.size === skillRefinementSlots &&
+        build.refinedSkills.every(s => ALL_SKILLS.some(skill => skill.name === s) && effectiveAttunedSkills.includes(s));
+    }
     if (checkStep === 6) return (!guildRankData || guildRankData.featChoices.includes(build.guildFeatChoice)) &&
       build.selectedFeats.length <= featSlots &&
       build.selectedFeats.every(f => FEATS.some(feat => feat.name === f && feat.minLevel <= level));
@@ -423,7 +488,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
     const invalidStep = STEPS.findIndex((_, index) => index < STEPS.length - 1 && !canAdvance(index));
     if (invalidStep !== -1) {
       setStep(invalidStep);
-      setSubmitError(invalidStep === 5 ? "Choose exactly 2 additional Attuned skills before saving." :
+      setSubmitError(invalidStep === 5 ? "Choose 2 additional Attuned skills, 2 Passive Skills, and the available Skill Refinement choices before saving." :
         `Review the ${STEPS[invalidStep].label.toLowerCase()} choices before saving.`);
       return;
     }
@@ -480,6 +545,8 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
       tertiaryMode2: level >= 7 ? build.tertiaryModes[1] : "",
       refinementBonus: getRefinementBonus(level),
       attunedSkills: allAttunedSkills,
+      passiveSkills: build.passiveSkills,
+      refinedSkills: build.refinedSkills.slice(0, getSkillRefinementSlots(level)),
       strings: build.selectedStrings.filter(s => s.trim()),
       techniques: previousData.techniques ?? [],
       feats: allFeats,
@@ -523,9 +590,6 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
   const allModeNames = ALL_MODES.map(m => m.name);
   const secondaryAvailable = allModeNames.filter(m => m !== build.primaryMode);
   const tertiaryAvailable = allModeNames.filter(m => m !== build.primaryMode && !build.secondaryModes.includes(m));
-  const bgStartingSkills = bg?.startingSkills ?? [];
-  const guildAttunements = guildRankData?.attunements ?? [];
-  const lockedSkills = [...new Set([...bgStartingSkills, ...guildAttunements])];
 
   if (charId && !populated) {
     return (
@@ -1206,7 +1270,7 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
 
           {/* STEP 5: SKILLS */}
           {step === 5 && (
-            <Section title="Skills" subtitle="Your background and guild rank grant starting skills automatically. Choose 2 more from the available skills below.">
+            <Section title="Skills" subtitle="Your background and guild rank grant starting skills automatically. Choose 2 additional Attuned skills and 2 Passive Skills. Skill Refinement unlocks at levels 4 and 8.">
               <div className="space-y-2 mb-4">
                 {bgStartingSkills.length > 0 && (
                   <div className="p-3 bg-muted/20 border border-border/50">
@@ -1266,6 +1330,73 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="p-4 border border-primary/20 bg-primary/5 space-y-3">
+                  <div>
+                    <p className="text-xs font-mono text-primary uppercase tracking-widest">Passive Skills · Level 1</p>
+                    <p className="mt-1 text-[10px] font-mono text-muted-foreground">Choose two from all 18 skills. Passive score = 10 + Attribute Modifier + current RB if Attuned. Passive scores are fixed and do not roll.</p>
+                    <p className="mt-2 text-[10px] font-mono text-muted-foreground">Selected: {build.passiveSkills.length}/2</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {ALL_SKILLS.map(skill => {
+                      const selected = build.passiveSkills.includes(skill.name);
+                      const score = getPassiveSkillScore(skill.name, totalAttrs, effectiveAttunedSkills, level);
+                      return (
+                        <button key={`passive-${skill.name}`} type="button"
+                          onClick={() => updateBuild(prev => ({
+                            passiveSkills: prev.passiveSkills.includes(skill.name)
+                              ? prev.passiveSkills.filter(name => name !== skill.name)
+                              : prev.passiveSkills.length < 2 ? [...prev.passiveSkills, skill.name] : prev.passiveSkills,
+                          }))}
+                          disabled={!selected && build.passiveSkills.length >= 2}
+                          aria-pressed={selected}
+                          className={cn("flex items-center justify-between gap-3 p-3 border text-left font-mono text-sm transition-colors disabled:opacity-50",
+                            selected ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40")}
+                        >
+                          <span>{skill.name}</span>
+                          <span className="shrink-0 text-[10px] opacity-70">{skill.attr.toUpperCase()} · {selected ? `PASSIVE ${score}` : "SELECT"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-4 border border-chart-2/20 bg-chart-2/5 space-y-3">
+                  <div>
+                    <p className="text-xs font-mono text-chart-2 uppercase tracking-widest">Skill Refinement</p>
+                    <p className="mt-1 text-[10px] font-mono text-muted-foreground">At level 4 choose one Attuned skill; at level 8 choose a second. On those skill checks, final d20 results 2–9 count as 10. Natural 1 and natural 20 keep their usual effects.</p>
+                    <p className="mt-2 text-[10px] font-mono text-muted-foreground">Selected: {build.refinedSkills.length}/{skillRefinementSlots}</p>
+                  </div>
+                  {skillRefinementSlots === 0 ? (
+                    <p className="text-[10px] font-mono text-muted-foreground">Unlocks at level 4.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {effectiveAttunedSkills.map(skillName => {
+                        const skill = ALL_SKILLS.find(item => item.name === skillName);
+                        if (!skill) return null;
+                        const selected = build.refinedSkills.includes(skillName);
+                        return (
+                          <button key={`refined-${skillName}`} type="button"
+                            onClick={() => updateBuild(prev => ({
+                              refinedSkills: prev.refinedSkills.includes(skillName)
+                                ? prev.refinedSkills.filter(name => name !== skillName)
+                                : prev.refinedSkills.length < skillRefinementSlots ? [...prev.refinedSkills, skillName] : prev.refinedSkills,
+                            }))}
+                            disabled={!selected && build.refinedSkills.length >= skillRefinementSlots}
+                            aria-pressed={selected}
+                            className={cn("flex items-center justify-between gap-3 p-3 border text-left font-mono text-sm transition-colors disabled:opacity-50",
+                              selected ? "border-chart-2 bg-chart-2/10 text-chart-2" : "border-border text-muted-foreground hover:border-chart-2/40")}
+                          >
+                            <span>{skillName}</span>
+                            <span className="text-[10px] opacity-70">{selected ? "REFINED" : skill.attr.toUpperCase()}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </Section>
           )}
@@ -1447,6 +1578,11 @@ export default function CharacterBuilder({ charId }: { charId?: string }) {
                   <ReviewRow label="Tertiary Modes" value={build.tertiaryModes.filter(m => m).join(", ") + " (Normal)"} />
                 )}
                 <ReviewRow label="Strings" value={build.selectedStrings.filter(s => s.trim()).join(", ") || "None"} />
+                <ReviewRow label="Passive Skills" value={build.passiveSkills.map(skill => {
+                  const score = getPassiveSkillScore(skill, totalAttrs, effectiveAttunedSkills, level);
+                  return score === null ? skill : `${skill} ${score}`;
+                }).join(", ") || "—"} />
+                <ReviewRow label="Refined Skills" value={build.refinedSkills.join(", ") || "—"} />
                 {build.selectedFeats.length > 0 && (
                   <ReviewRow label="Feats" value={build.selectedFeats.join(", ")} />
                 )}

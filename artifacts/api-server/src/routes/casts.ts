@@ -4,7 +4,7 @@ import { Router } from "express";
 import {
   db, charactersTable, rollsTable, castResponsesTable, collaborativeCastsTable,
 } from "@workspace/db";
-import { canonicalAffinity, CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, getHandoutStringLevelForCharacter, guildAttributeBonus, guildBonusAlreadyInAttributes, isHandoutAffinity, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
+import { canonicalAffinity, CORE_POWER_LEVELS, calcMod, calcSafeLimit, calcThreadPool, getEffectiveBurnoutLevel, getHandoutStringLevelForCharacter, guildAttributeBonus, guildBonusAlreadyInAttributes, isHandoutAffinity, isMentalAttribute, maximumSafePowerLevel, namedStringLevel, weaveCheckMode, weaveMultiplier } from "@workspace/casting-rules";
 import { CreateCastBody, CreateCastStrainCheckBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
@@ -41,6 +41,12 @@ const MODES = new Set(["Striker", "Anchor", "Slider", "Binder", "Shearer", "Tens
 const FEAT_BONUSES: Record<string, { pool?: number; safe?: number }> = {
   "Extended Thread Pool": { pool: 4, safe: 2 },
 };
+function featsContainBurnoutResistance(data: any): boolean {
+  return (Array.isArray(data?.feats) && data.feats.includes("Burnout Resistance")) ||
+    data?.guildFeatChoice === "Burnout Resistance" ||
+    (Array.isArray(data?.weavekeeperAdditions?.feats) &&
+      data.weavekeeperAdditions.feats.some((feat: any) => feat?.name === "Burnout Resistance"));
+}
 const MISHAPS: Effect[] = [
   { name: "Flinch", description: "Effect fails. Lose your Minor Action next turn and take 1d4 feedback damage.", damage: { sides: 4, count: 1 }, condition: "Lose Minor Action next turn" },
   { name: "Backlash", description: "Effect occurs at half power. Discord on Thread Checks until Mend.", condition: "Discord on Thread Checks until Mend" },
@@ -71,6 +77,7 @@ async function saveRoll(tx: Tx, args: {
   title: string; category: "cast" | "weave" | "table" | "damage" | "check";
   mode: "NORMAL" | "HARMONY" | "DISCORD"; sides: number; count: number;
   modifier?: number; dc?: number; requestId?: string; diceName?: string; diceColor?: string; fixedDice?: number[];
+  misfireThreshold?: 1 | 3;
 }): Promise<RollRecord> {
   if (args.fixedDice && (args.fixedDice.length !== args.count ||
       args.fixedDice.some(value => !Number.isInteger(value) || value < 1 || value > args.sides))) {
@@ -88,7 +95,7 @@ async function saveRoll(tx: Tx, args: {
   const modifier = args.modifier ?? 0;
   const total = args.category === "damage" ? Math.max(1, finalDie + modifier) : finalDie + modifier;
   const isBreak = ["cast", "weave", "check"].includes(args.category) && finalDie === 20;
-  const isMisfire = ["cast", "weave", "check"].includes(args.category) && finalDie === 1;
+  const isMisfire = ["cast", "weave", "check"].includes(args.category) && finalDie <= (args.misfireThreshold ?? 1);
   const outcome = args.category === "damage" ? "Damage" : args.category === "table" ? "Rolled"
     : isBreak ? "Thread Break" : isMisfire ? "Misfire"
     : args.dc ? total >= args.dc ? "Success" : "Failure" : "Rolled";
@@ -405,6 +412,14 @@ router.post("/casts", async (req, res): Promise<void> => {
       const computed = components.map(c => getStringLevel(c.string, c.powerLevel, character));
       if (computed.some(level => !level)) throw Object.assign(new Error("Invalid String power level"), { statusCode: 400 });
       const levels = computed as NonNullable<typeof computed[number]>[];
+      const hasBurnoutResistance = featsContainBurnoutResistance(data);
+      const effectiveBurnout = getEffectiveBurnoutLevel(Number(data?.burnout) || 0, hasBurnoutResistance);
+      if (effectiveBurnout >= 5) {
+        throw Object.assign(new Error("Burnout prevents casting Strings"), { statusCode: 403 });
+      }
+      if (effectiveBurnout >= 4 && components.some(component => component.powerLevel > 2)) {
+        throw Object.assign(new Error("Burnout limits String casting to PL 2"), { statusCode: 403 });
+      }
       const multiplier = input.kind === "weave" ? weaveMultiplier(count) : 1;
       const rawCost = levels.reduce((sum, level) => sum + level.cost, 0) * multiplier;
       const feats: string[] = Array.isArray(data?.feats) ? data.feats : [];
@@ -415,7 +430,8 @@ router.post("/casts", async (req, res): Promise<void> => {
       const overflow = current + cost > pool;
       const overSafe = components.some(component => component.powerLevel > maximumSafePowerLevel(character.level, getAttr(data, "pot")));
       const conditions: string[] = Array.isArray(data?.castingConditions) ? [...data.castingConditions] : [];
-      const forcedDiscord = (Number(data?.burnout) || 0) >= 1 ||
+      const rollAttr = input.kind === "weave" ? "ctr" : levels[0].checkAttr;
+      const forcedDiscord = (effectiveBurnout >= 1 && isMentalAttribute(rollAttr)) ||
         conditions.includes("Discord on Thread Checks until Mend") || conditions.includes("Shaking Hands") ||
         injuries.some(injury => injury.name === "The Shakes");
       const primary = data?.primaryMode || character.mode;
@@ -431,14 +447,14 @@ router.post("/casts", async (req, res): Promise<void> => {
       } else {
         rollMode = weaveCheckMode(count, hasPrecisionWeave, overSafe, forcedDiscord);
       }
-      const rollAttr = input.kind === "weave" ? "ctr" : levels[0].checkAttr;
       const modifier = castingModifier(data, rollAttr) - (conditions.includes("−1 to Thread Checks until Mend") ? 1 : 0);
       const dc = input.kind === "cast" ? levels[0].dc : Math.max(...levels.map(level => level.dc)) + (count - 2) * 2;
       const title = `${input.kind === "cast" ? components[0].string : "Weave"} · ${intent}`.slice(0, 160);
       const roll = await saveCastRoll(tx, {
         userId: user.id, characterId: character.id, playerName: user.displayName, characterName: character.name,
         title, category: input.kind, mode: rollMode, sides: 20, count: rollMode === "NORMAL" ? 1 : 2,
-        modifier, dc, requestId: input.requestId, ...(input.castId ? { tensionContribution: cost } : {}),
+        modifier, dc, requestId: input.requestId, misfireThreshold: effectiveBurnout >= 2 ? 3 : 1,
+        ...(input.castId ? { tensionContribution: cost } : {}),
       });
       newRolls.push(roll);
 
@@ -449,6 +465,24 @@ router.post("/casts", async (req, res): Promise<void> => {
       sheet.featCharges = featCharges;
       sheet.tension = { ...(data?.tension ?? {}), current: overflow ? 0 : current + cost, pool, safeLimit };
       let aftermath: any = { cost, tension: sheet.tension.current, pool, safeLimit, overflow };
+      if (effectiveBurnout >= 3) {
+        const tensionAboveSafe = Math.max(0, current + cost - Math.max(current, safeLimit));
+        const damageDiceCount = Math.ceil(tensionAboveSafe);
+        if (damageDiceCount > 0) {
+          const damage = await saveCastRoll(tx, {
+            userId: user.id, characterId: character.id, playerName: user.displayName, characterName: character.name,
+            title: `Burnout · damage for ${damageDiceCount} Tension above Safe Limit`, category: "damage",
+            mode: "NORMAL", sides: 6, count: damageDiceCount,
+          });
+          newRolls.push(damage);
+          const currentVP = data?.vitalityPoints?.current;
+          if (Number.isFinite(currentVP)) sheet.vitalityPoints = {
+            ...data.vitalityPoints, current: Math.max(0, currentVP - damage.total),
+          };
+          aftermath.burnoutDamage = damage.total;
+          aftermath.burnoutDamageDice = damageDiceCount;
+        }
+      }
       const failed = roll.isMisfire || (!roll.isBreak && roll.total < dc);
       const effectContext: EffectContext = {
         userId: user.id, playerName: user.displayName, character, data, sheet, aftermath,
@@ -523,7 +557,7 @@ router.post("/casts", async (req, res): Promise<void> => {
 
 router.post("/casts/strain", async (req, res): Promise<void> => {
   const parsed = CreateCastStrainCheckBody.safeParse(req.body);
-  if (!parsed.success || !req.body || Object.keys(req.body).some(key => !["requestId", "characterId"].includes(key))) {
+  if (!parsed.success || !req.body || Object.keys(req.body).some(key => !["requestId", "characterId", "recoverTension", "tensionRecoveryAmount"].includes(key))) {
     res.status(400).json({ error: "Invalid strain check request" });
     return;
   }
@@ -556,17 +590,27 @@ router.post("/casts/strain", async (req, res): Promise<void> => {
       if (!locked) throw Object.assign(new Error("Character unavailable for this strain check"), { statusCode: 403 });
       const [character] = await tx.select().from(charactersTable).where(eq(charactersTable.id, locked.id)).limit(1);
       const data = character.data as any;
+      const effectiveBurnout = getEffectiveBurnoutLevel(Number(data?.burnout) || 0, featsContainBurnoutResistance(data));
       const { pool, safeLimit } = poolAndSafe(character);
       const tension = Number.isFinite(data?.tension?.current) ? data.tension.current : 0;
-      if (tension <= safeLimit) {
+      const unsafeRecovery = input.recoverTension === true;
+      const recoveryAmount = input.tensionRecoveryAmount ?? safeLimit;
+      if (unsafeRecovery && (effectiveBurnout < 2 || tension <= 0)) {
+        throw Object.assign(new Error("Unsafe Tension recovery requires effective Burnout 2 or higher and Tension to release"), { statusCode: 409 });
+      }
+      if ((input.tensionRecoveryAmount !== undefined && !unsafeRecovery) ||
+          (unsafeRecovery && (!Number.isInteger(recoveryAmount) || recoveryAmount < 1 || recoveryAmount > safeLimit))) {
+        throw Object.assign(new Error("Unsafe recovery amount must be between 1 and the Safe Limit"), { statusCode: 400 });
+      }
+      if (tension <= safeLimit && !unsafeRecovery) {
         throw Object.assign(new Error("A strain check is only available when Tension exceeds the Safe Limit"), { statusCode: 409 });
       }
-      const dc = 10 + Math.max(0, tension - safeLimit);
+      const dc = tension > safeLimit ? 10 + (tension - safeLimit) : 10;
       const modifier = calcMod(getAttr(data, "res"));
       const roll = await saveCastRoll(tx, {
         userId: user.id, characterId: character.id, playerName: user.displayName, characterName: character.name,
         title: "Strain check", category: "check", mode: "NORMAL", sides: 20, count: 1,
-        modifier, dc, requestId: input.requestId,
+        modifier, dc, requestId: input.requestId, misfireThreshold: effectiveBurnout >= 2 ? 3 : 1,
       });
       newRolls.push(roll);
 
@@ -588,6 +632,11 @@ router.post("/casts/strain", async (req, res): Promise<void> => {
           userId: user.id, playerName: user.displayName, character, data, sheet, aftermath,
           conditions, consequences, injuries, newRolls,
         }, "Snapback");
+      } else if (unsafeRecovery) {
+        const recoveredTension = Math.min(tension, recoveryAmount);
+        sheet.tension.current = tension - recoveredTension;
+        aftermath.tension = sheet.tension.current;
+        aftermath.recoveredTension = recoveredTension;
       }
 
       sheet.castingConditions = conditions;

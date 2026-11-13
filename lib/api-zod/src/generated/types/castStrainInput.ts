@@ -10,4 +10,6 @@ export interface CastStrainInput {
   requestId: string;
   /** @minimum 1 */
   characterId: number;
+  recoverTension?: boolean;
+  tensionRecoveryAmount?: number;
 }

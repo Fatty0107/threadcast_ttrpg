@@ -443,6 +443,8 @@ export const CreateRollBody = zod.object({
   "bonusDiceCount": zod.number().min(1).max(createRollBodyBonusDiceCountMax).optional(),
   "multiplier": zod.number().min(1).max(createRollBodyMultiplierMax),
   "dc": zod.number().min(1).max(createRollBodyDcMax).optional(),
+  "skillName": zod.string().min(1).max(100).optional().describe('Skill name for applying character-sheet Skill Refinement and condition rules.'),
+  "checkAttribute": zod.enum(['pot', 'ctr', 'res', 'acu', 'pre', 'ths']).optional().describe('Linked attribute for a character-sheet skill or attribute check.'),
   "threadSenseType": zod.string().min(1).max(createRollBodyThreadSenseTypeMax).optional().describe('Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.')
 })
 
@@ -487,7 +489,9 @@ export const CreateCastBody = zod.object({
 
 export const CreateCastStrainCheckBody = zod.object({
   "requestId": zod.string().uuid(),
-  "characterId": zod.number().min(1)
+  "characterId": zod.number().min(1),
+  "recoverTension": zod.boolean().optional().describe('Attempt the unsafe Tension release required by effective Burnout 2+.'),
+  "tensionRecoveryAmount": zod.number().int().min(1).max(1000).optional().describe('Tension to release after a successful unsafe-recovery check; defaults to the Safe Limit.')
 })
 
 

@@ -1,6 +1,7 @@
 // ============================================================
 // THREADCAST — Complete TTRPG Data
 // ============================================================
+import { THREADCAST_SKILLS } from "@workspace/casting-rules";
 
 // --- ATTRIBUTE MECHANICS ---
 export const calcMod = (score: number) => Math.floor((score - 10) / 2);
@@ -52,26 +53,7 @@ export type AttrKey = "pot" | "ctr" | "res" | "acu" | "pre" | "ths";
 export type Attributes = Record<AttrKey, number>;
 
 // --- SKILLS ---
-export const ALL_SKILLS = [
-  { name: "Thread Reach", attr: "ths" },
-  { name: "Surge", attr: "pot" },
-  { name: "Weave Reading", attr: "ths" },
-  { name: "Signature Suppression", attr: "ctr" },
-  { name: "Strand Awareness", attr: "ths" },
-  { name: "Ward Craft", attr: "ctr" },
-  { name: "Inscription", attr: "acu" },
-  { name: "Anatomy of Magic", attr: "acu" },
-  { name: "Combat Forms", attr: "acu" },
-  { name: "Swift Hands", attr: "ctr" },
-  { name: "Grit", attr: "res" },
-  { name: "Discernment", attr: "acu" },
-  { name: "Lore", attr: "acu" },
-  { name: "Guild Protocol", attr: "pre" },
-  { name: "Street Sense", attr: "acu" },
-  { name: "Survival", attr: "res" },
-  { name: "Presence", attr: "pre" },
-  { name: "Trade Craft", attr: "acu" },
-] as const;
+export const ALL_SKILLS = THREADCAST_SKILLS;
 
 // --- MODES ---
 export const ALL_MODES = [

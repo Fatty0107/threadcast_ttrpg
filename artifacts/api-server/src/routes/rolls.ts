@@ -8,6 +8,7 @@ import { CreateRollBody, ListRollsResponseItem, GetRollDiscordStatusResponse, Li
 import { requireAuth } from "../middlewares/requireAuth";
 import { postRollEmbed } from "../lib/discord-roll";
 import type { BestiarySheet } from "../data/rank-f-bestiary";
+import { getEffectiveBurnoutLevel, isMentalAttribute, refinedSkillDie, THREADCAST_SKILLS } from "@workspace/casting-rules";
 
 const router = Router();
 router.use("/rolls", requireAuth);
@@ -221,12 +222,19 @@ router.post("/rolls", async (req, res): Promise<void> => {
   }
   const parsed = CreateRollBody.safeParse(bodyForExistingRollSchema);
   if (!parsed.success || !req.body || Object.keys(req.body).some(key =>
-    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "castId", "tensionContribution", "contributedString", "contributedMode", "weavekeeperCreatureId", "weavekeeperTensionCost"].includes(key))) {
+    !["requestId", "characterId", "title", "category", "mode", "modifier", "diceSides", "diceCount", "bonusDiceSides", "bonusDiceCount", "multiplier", "dc", "castId", "tensionContribution", "contributedString", "contributedMode", "weavekeeperCreatureId", "weavekeeperTensionCost", "skillName", "checkAttribute", "threadSenseType"].includes(key))) {
     res.status(400).json({ error: "Invalid roll request" });
     return;
   }
   const input = parsed.data;
   const user = (req as any).user;
+  const skillDefinition = input.skillName ? THREADCAST_SKILLS.find(skill => skill.name === input.skillName) : undefined;
+  if ((input.skillName && (!skillDefinition || input.category !== "check" || !input.characterId ||
+        (input.checkAttribute && input.checkAttribute !== skillDefinition.attr))) ||
+      (input.checkAttribute && (input.category !== "check" || !input.characterId)) ||
+      (input.threadSenseType && (input.category !== "check" || !input.characterId))) {
+    res.status(400).json({ error: "Invalid character check metadata" }); return;
+  }
   const hasWeavekeeperCreature = weavekeeperCreatureId !== undefined;
   if ((hasWeavekeeperCreature && (user.role !== "weavekeeper" || !Number.isSafeInteger(weavekeeperCreatureId) || weavekeeperCreatureId < 1 || input.characterId !== undefined || input.castId !== undefined)) ||
       (weavekeeperTensionCost !== undefined && (!hasWeavekeeperCreature || !Number.isSafeInteger(weavekeeperTensionCost) || weavekeeperTensionCost < 0 || weavekeeperTensionCost > 1000))) {
@@ -262,6 +270,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
     return;
   }
   let characterName = user.displayName as string;
+  let characterRecord: { name: string; data: unknown; level: number } | undefined;
   let bestiaryEntry: typeof weavekeeperBestiaryTable.$inferSelect | undefined;
   if (hasWeavekeeperCreature) {
     [bestiaryEntry] = await db.select().from(weavekeeperBestiaryTable)
@@ -270,7 +279,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
     characterName = bestiaryEntry.name;
   }
   if (input.characterId !== undefined) {
-    const [character] = await db.select({ name: charactersTable.name })
+    const [character] = await db.select({ name: charactersTable.name, data: charactersTable.data, level: charactersTable.level })
       .from(charactersTable)
       .where(user.role === "weavekeeper"
         ? eq(charactersTable.id, input.characterId)
@@ -281,6 +290,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
       return;
     }
     characterName = character.name;
+    characterRecord = character;
   } else if (input.category !== "check" && !bestiaryEntry) {
     res.status(400).json({ error: "Character required for sheet rolls" });
     return;
@@ -294,6 +304,32 @@ router.post("/rolls", async (req, res): Promise<void> => {
       res.status(403).json({ error: "Character cannot roll for this cast" }); return;
     }
   }
+  let resolvedMode = input.mode;
+  let resolvedDiceCount = input.diceCount;
+  let applySkillRefinement = false;
+  if (characterRecord && input.category === "check" && input.diceSides === 20) {
+    const characterData = characterRecord.data as any;
+    const checkAttribute = skillDefinition?.attr ?? input.checkAttribute ?? (input.threadSenseType ? "ths" : undefined);
+    const hasBurnoutResistance = (Array.isArray(characterData?.feats) && characterData.feats.includes("Burnout Resistance")) ||
+      characterData?.guildFeatChoice === "Burnout Resistance" ||
+      (Array.isArray(characterData?.weavekeeperAdditions?.feats) && characterData.weavekeeperAdditions.feats.some((feat: any) => feat?.name === "Burnout Resistance"));
+    const effectiveBurnout = getEffectiveBurnoutLevel(Number(characterData?.burnout) || 0, hasBurnoutResistance);
+    if (checkAttribute && isMentalAttribute(checkAttribute) && effectiveBurnout >= 1) resolvedMode = "DISCORD";
+    resolvedDiceCount = resolvedMode === "NORMAL" ? 1 : 2;
+    const refinedSkills: string[] = Array.isArray(characterData?.refinedSkills) ? characterData.refinedSkills : [];
+    const attunementFeatSkills = (Array.isArray(characterData?.feats) ? characterData.feats : []).flatMap((feat: string, index: number) =>
+      feat === "Attunement (Skilled)" && typeof characterData?.featChoices?.[String(index)]?.skill === "string"
+        ? [characterData.featChoices[String(index)].skill] : []);
+    const weavekeeperAttunements: string[] = Array.isArray(characterData?.weavekeeperAdditions?.attunements)
+      ? characterData.weavekeeperAdditions.attunements : [];
+    const attunedSkills = new Set([
+      ...(Array.isArray(characterData?.attunedSkills) ? characterData.attunedSkills : []),
+      ...attunementFeatSkills,
+      ...weavekeeperAttunements,
+    ]);
+    applySkillRefinement = !!skillDefinition && characterRecord.level >= 4 &&
+      refinedSkills.includes(skillDefinition.name) && attunedSkills.has(skillDefinition.name);
+  }
   const [previous] = await db.select().from(rollsTable)
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1);
   if (previous) {
@@ -302,13 +338,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
   }
 
   const d1 = input.diceSides === 0 ? 1 : randomInt(1, input.diceSides + 1);
-  const d2 = input.diceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
+  const d2 = resolvedDiceCount === 2 ? randomInt(1, input.diceSides + 1) : null;
   const extraDice = Array.from({ length: input.bonusDiceCount ?? 0 }, () => ({
     sides: input.bonusDiceSides!, value: randomInt(1, input.bonusDiceSides! + 1),
   }));
-  const finalDie = isDamage ? d1 + (d2 ?? 0) + extraDice.reduce((sum, die) => sum + die.value, 0)
+  const rawFinalDie = isDamage ? d1 + (d2 ?? 0) + extraDice.reduce((sum, die) => sum + die.value, 0)
     : isMend ? d1 + d2! : d2 === null ? d1
-    : input.mode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
+    : resolvedMode === "HARMONY" ? Math.max(d1, d2) : Math.min(d1, d2);
+  const finalDie = applySkillRefinement ? refinedSkillDie(rawFinalDie) : rawFinalDie;
   const total = isDamage ? Math.max(1, finalDie + input.modifier) : finalDie * input.multiplier + input.modifier;
   const isBreak = !isTable && !isMend && !isDamage && finalDie === 20;
   const isMisfire = !isTable && !isMend && !isDamage && finalDie === 1;
@@ -327,13 +364,14 @@ router.post("/rolls", async (req, res): Promise<void> => {
     contributedMode: input.contributedMode?.trim() ?? null,
     sourceRollId: null,
     playerName: user.displayName, characterName, title: input.title.trim(),
-    category: input.category, mode: input.mode, diceSides: input.diceSides,
+    category: input.category, mode: resolvedMode, diceSides: input.diceSides,
     d1, d2, extraDice, modifier: input.modifier, multiplier: input.multiplier, finalDie, total,
     dc: input.dc ?? null, isBreak: Number(isBreak), isMisfire: Number(isMisfire),
     outcome, diceName: style?.name ?? "Standard Issue", diceColor: style?.edgeColor ?? "#C48650",
     deliveryStatus: !process.env.DISCORD_WEBHOOK_URL ? "disabled" : url ? "pending" : "failed",
   };
   let created: SavedRoll | undefined;
+  let supportBurnoutDamage: SavedRoll | undefined;
   if (bestiaryEntry) {
     const result = await db.transaction(async tx => {
       const [locked] = await tx.select().from(weavekeeperBestiaryTable)
@@ -372,14 +410,41 @@ router.post("/rolls", async (req, res): Promise<void> => {
       const [sheet] = await tx.select().from(charactersTable)
         .where(and(eq(charactersTable.id, input.characterId!), eq(charactersTable.userId, user.id))).for("update");
       if (!sheet) return { roll: undefined, error: "Character unavailable" };
-      const data = sheet.data as { tension?: { current: number; pool: number; safeLimit: number } };
+      const data = sheet.data as any;
       const tension = data.tension;
       if (!tension || !Number.isFinite(tension.current) || !Number.isFinite(tension.pool) ||
           tension.current + input.tensionContribution! > tension.pool)
         return { roll: undefined, error: "Not enough Thread Pool room on this character" };
       const [roll] = await tx.insert(rollsTable).values(values).onConflictDoNothing().returning();
       if (!roll) return { roll: undefined, error: "Roll request already recorded; refresh the cast" };
-      await tx.update(charactersTable).set({ data: { ...data, tension: { ...tension, current: tension.current + input.tensionContribution! } } })
+      const nextTension = tension.current + input.tensionContribution!;
+      const hasBurnoutResistance = (Array.isArray(data.feats) && data.feats.includes("Burnout Resistance")) ||
+        data.guildFeatChoice === "Burnout Resistance" ||
+        (Array.isArray(data.weavekeeperAdditions?.feats) && data.weavekeeperAdditions.feats.some((feat: any) => feat?.name === "Burnout Resistance"));
+      const effectiveBurnout = getEffectiveBurnoutLevel(Number(data.burnout) || 0, hasBurnoutResistance);
+      const safeLimit = Number.isFinite(tension.safeLimit) ? tension.safeLimit : 0;
+      const damageDiceCount = effectiveBurnout >= 3
+        ? Math.ceil(Math.max(0, nextTension - Math.max(tension.current, safeLimit)))
+        : 0;
+      let updatedVitality = data.vitalityPoints;
+      if (damageDiceCount > 0) {
+        const dice = Array.from({ length: damageDiceCount }, () => randomInt(1, 7));
+        const damage = dice.reduce((sum, value) => sum + value, 0);
+        const currentVP = Number.isFinite(data.vitalityPoints?.current) ? data.vitalityPoints.current : undefined;
+        if (currentVP !== undefined) updatedVitality = { ...data.vitalityPoints, current: Math.max(0, currentVP - damage) };
+        [supportBurnoutDamage] = await tx.insert(rollsTable).values({
+          ...values, requestId: randomUUID(), parentRollId: roll.id, sourceRollId: null,
+          title: `Burnout · ${damageDiceCount}d6 damage for Tension above Safe Limit`, category: "damage",
+          mode: "NORMAL", diceSides: 6, d1: dice[0], d2: dice[1] ?? null,
+          extraDice: dice.slice(2).map(value => ({ sides: 6, value })), modifier: 0, multiplier: 1,
+          finalDie: damage, total: damage, dc: null, isBreak: 0, isMisfire: 0, outcome: "Damage",
+        }).returning();
+      }
+      await tx.update(charactersTable).set({ data: {
+        ...data,
+        tension: { ...tension, current: nextTension },
+        ...(updatedVitality ? { vitalityPoints: updatedVitality } : {}),
+      } })
         .where(eq(charactersTable.id, sheet.id));
       if (!lockedCast.participantIds.includes(sheet.id))
         await tx.update(collaborativeCastsTable).set({ participantIds: [...lockedCast.participantIds, sheet.id] })
@@ -395,6 +460,7 @@ router.post("/rolls", async (req, res): Promise<void> => {
     .where(and(eq(rollsTable.userId, user.id), eq(rollsTable.requestId, input.requestId))).limit(1))[0];
   res.status(201).json(ListRollsResponseItem.parse(responseRoll(roll)));
   if (created && url) void sendToDiscord(roll, url, req.log);
+  if (supportBurnoutDamage && url) void sendToDiscord(supportBurnoutDamage, url, req.log);
 });
 
 router.get("/rolls/discord/status", async (req, res): Promise<void> => {

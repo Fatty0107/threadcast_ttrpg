@@ -68,6 +68,8 @@ export interface GameplayRollInput {
      * @maximum 40
      */
   dc?: number;
+  skillName?: string;
+  checkAttribute?: 'pot' | 'ctr' | 'res' | 'acu' | 'pre' | 'ths';
   /**
      * Optional typed Thread Sense check. Only valid for category check with characterId; title, modifier, mode, and diceCount are derived server-side.
      * @minLength 1

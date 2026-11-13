@@ -6,6 +6,42 @@ export interface NamedStringLevel {
   checkAttr: "ths" | "ctr" | "pot";
 }
 
+export const THREADCAST_SKILLS = [
+  { name: "Thread Reach", attr: "ths" },
+  { name: "Surge", attr: "pot" },
+  { name: "Weave Reading", attr: "ths" },
+  { name: "Signature Suppression", attr: "ctr" },
+  { name: "Strand Awareness", attr: "ths" },
+  { name: "Ward Craft", attr: "ctr" },
+  { name: "Inscription", attr: "acu" },
+  { name: "Anatomy of Magic", attr: "acu" },
+  { name: "Combat Forms", attr: "acu" },
+  { name: "Swift Hands", attr: "ctr" },
+  { name: "Grit", attr: "res" },
+  { name: "Discernment", attr: "acu" },
+  { name: "Lore", attr: "acu" },
+  { name: "Guild Protocol", attr: "pre" },
+  { name: "Street Sense", attr: "acu" },
+  { name: "Survival", attr: "res" },
+  { name: "Presence", attr: "pre" },
+  { name: "Trade Craft", attr: "acu" },
+] as const;
+
+export type ThreadcastSkillName = typeof THREADCAST_SKILLS[number]["name"];
+export type ThreadcastAttribute = typeof THREADCAST_SKILLS[number]["attr"] | "pre";
+
+export function getEffectiveBurnoutLevel(level: number, hasResistance: boolean): number {
+  return Math.max(0, Math.min(6, Math.floor(Number.isFinite(level) ? level : 0) - (hasResistance ? 1 : 0)));
+}
+
+export function isMentalAttribute(attribute: string): boolean {
+  return attribute === "acu" || attribute === "pre" || attribute === "ths";
+}
+
+export function refinedSkillDie(finalDie: number): number {
+  return finalDie === 1 ? 1 : Math.max(10, finalDie);
+}
+
 export const CORE_POWER_LEVELS: NamedStringLevel[] = [
   { cost: 1, dc: 8, checkAttr: "ctr" },
   { cost: 3, dc: 11, checkAttr: "ctr" },

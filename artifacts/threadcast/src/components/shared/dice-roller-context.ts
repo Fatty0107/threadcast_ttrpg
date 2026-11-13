@@ -1,12 +1,21 @@
 import { createContext, useContext } from "react";
 
+export type RollMode = "NORMAL" | "HARMONY" | "DISCORD";
+export type SheetRollOptions = {
+  mode?: RollMode;
+  modeLocked?: boolean;
+  modeReason?: string;
+  skillName?: string;
+  checkAttribute?: "pot" | "ctr" | "res" | "acu" | "pre" | "ths";
+};
+
 interface DiceRollerContextType {
   openRoll: (title: string, modifier: number, characterName?: string, characterId?: number, damage?: {
     diceSides: 0 | 4 | 6 | 8 | 10 | 12;
     diceCount: 0 | 1 | 2;
     bonusDiceSides?: 4 | 6 | 8 | 10 | 12;
     bonusDiceCount?: 1 | 2;
-  }, weavekeeperCreatureId?: number, tensionCost?: number) => void;
+  }, weavekeeperCreatureId?: number, tensionCost?: number, options?: SheetRollOptions) => void;
 }
 
 export const DiceRollerContext = createContext<DiceRollerContextType | undefined>(undefined);
