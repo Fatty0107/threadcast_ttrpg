@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { lookupTerm, type GlossaryEntry } from "@/lib/game-glossary";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface GameTermProps {
   term: string;
@@ -11,20 +12,13 @@ interface GameTermProps {
 
 export function GameTerm({ term, children, className, entry: overrideEntry }: GameTermProps) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<"top" | "bottom">("top");
-  const ref = useRef<HTMLSpanElement>(null);
 
   const entry = overrideEntry ?? lookupTerm(term);
   if (!entry) return <span className={className}>{children ?? term}</span>;
 
-  useEffect(() => {
-    if (!open || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    setPosition(rect.top < 160 ? "bottom" : "top");
-  }, [open]);
-
   return (
-    <span className="relative inline-block" ref={ref}>
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
       <span
         className={cn(
           "cursor-help border-b border-dotted border-current/50 hover:border-current transition-colors",
@@ -36,16 +30,17 @@ export function GameTerm({ term, children, className, entry: overrideEntry }: Ga
       >
         {children ?? term}
       </span>
-
-      {open && (
-        <span
-          className={cn(
-            "absolute z-50 left-0 w-64 bg-card border border-border p-3 shadow-xl pointer-events-none",
-            "text-left font-mono text-xs normal-case font-normal tracking-normal",
-            position === "top" ? "bottom-full mb-2" : "top-full mt-2"
-          )}
-          style={{ minWidth: "16rem" }}
-        >
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        align="start"
+        collisionPadding={12}
+        className={cn(
+          "w-64 border border-border bg-card p-3 shadow-xl pointer-events-none",
+          "text-left font-mono text-xs text-foreground normal-case font-normal tracking-normal"
+        )}
+        style={{ width: "min(16rem, calc(100vw - 1.5rem))", minWidth: "min(16rem, calc(100vw - 1.5rem))" }}
+      >
           <span className="block text-primary font-bold mb-1 font-[family-name:'Cinzel',serif] text-xs uppercase tracking-wide">
             {entry.term}
           </span>
@@ -55,9 +50,8 @@ export function GameTerm({ term, children, className, entry: overrideEntry }: Ga
               {entry.detail}
             </span>
           )}
-        </span>
-      )}
-    </span>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
